@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-menu span {
+            color: #94a3b8;
+        }
+
+        .user-menu a {
+            background: #e94560;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .user-menu a:hover {
+            background: #c73e54;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #e94560;
+        }
+
+        .stat-card h3 {
+            color: #94a3b8;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            color: white;
+            font-size: 2.2em;
+            font-weight: bold;
+        }
+
+        .stat-card .value.revenue {
+            color: #22c55e;
+        }
+
+        .stat-card .icon {
+            font-size: 2.5em;
+            opacity: 0.5;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .table-section {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        .table-section h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        td {
+            color: white;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-CONFIRMED {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+
+        .status-PENDING {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+
+        .status-CANCELLED {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .status-COMPLETED {
+            background: #3b82f620;
+            color: #3b82f6;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #94a3b8;
+            text-decoration: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .back-link:hover {
+            background: #94a3b8;
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin" class="active">📊 Dashboard</a>
+            <a href="/admin/bookings">📋 Quản lý Booking</a>
+            <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
+            <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📊 Dashboard</h1>
+            <div class="user-menu">
+                <span>Xin chào, <span
+                        th:text="${session.user.fullName != null ? session.user.fullName : session.user.username}">Admin</span></span>
+                <a href="/logout">Đăng xuất</a>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Tổng số phòng</h3>
+                <div class="value" th:text="${totalRooms}">10</div>
+            </div>
+            <div class="stat-card">
+                <h3>Phòng trống</h3>
+                <div class="value" th:text="${availableRooms}">8</div>
+            </div>
+            <div class="stat-card">
+                <h3>Booking hôm nay</h3>
+                <div class="value" th:text="${todayBookings}">5</div>
+            </div>
+            <div class="stat-card">
+                <h3>Doanh thu tháng này</h3>
+                <div class="value revenue">
+                    <span th:text="${#numbers.formatDecimal(monthlyRevenue, 0, 'COMMA', 0, 'POINT')}">10,000,000</span>
+                    VNĐ
+                </div>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <h2>📋 Booking gần đây</h2>
+            <table th:if="${recentBookings != null and !recentBookings.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Khách hàng</th>
+                        <th>Phòng</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="booking : ${recentBookings}">
+                        <td th:text="${booking.id}">1</td>
+                        <td th:text="${booking.guestName}">Nguyễn Văn A</td>
+                        <td th:text="${booking.room.roomNumber}">101</td>
+                        <td th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01/2024</td>
+                        <td th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">05/01/2024</td>
+                        <td>
+                            <span
+                                th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')}">2,000,000</span>
+                            VNĐ
+                        </td>
+                        <td>
+                            <span class="status-badge" th:classappend="'status-' + ${booking.status}"
+                                th:text="${booking.status.displayName}">Đã xác nhận</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${recentBookings == null or recentBookings.isEmpty()}"
+                style="color: #94a3b8; text-align: center; padding: 40px;">
+                Chưa có booking nào
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

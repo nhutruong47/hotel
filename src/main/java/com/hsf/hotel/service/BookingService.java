@@ -29,6 +29,39 @@ public class BookingService {
         return bookingRepository.findById(id);
     }
 
+    // Admin methods
+    public List<Booking> getAllBookings() {
+        return bookingRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    public List<Booking> getTodayBookings() {
+        LocalDate today = LocalDate.now();
+        return bookingRepository.findByCheckInDate(today);
+    }
+
+    public List<Booking> getBookingsByStatus(BookingStatus status) {
+        return bookingRepository.findByStatusOrderByCreatedAtDesc(status);
+    }
+
+    public BigDecimal getMonthlyRevenue() {
+        LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
+        List<Booking> monthlyBookings = bookingRepository.findBookingsInDateRange(startOfMonth, endOfMonth);
+
+        return monthlyBookings.stream()
+                .filter(b -> b.getStatus() != BookingStatus.CANCELLED)
+                .map(Booking::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    @Transactional
+    public Booking updateBookingStatus(Integer bookingId, BookingStatus newStatus) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+        booking.setStatus(newStatus);
+        return bookingRepository.save(booking);
+    }
+
     public BigDecimal calculateTotalPrice(Room room, LocalDate checkIn, LocalDate checkOut) {
         long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
         return room.getPricePerNight().multiply(BigDecimal.valueOf(nights));

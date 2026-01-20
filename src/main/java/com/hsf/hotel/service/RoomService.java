@@ -6,6 +6,7 @@ import com.hsf.hotel.repository.BookingRepository;
 import com.hsf.hotel.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -44,5 +45,12 @@ public class RoomService {
 
     public Room saveRoom(Room room) {
         return roomRepository.save(room);
+    }
+
+    @Transactional
+    public void deleteRoom(Integer id) {
+        Room room = roomRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
+        roomRepository.delete(room);
     }
 }

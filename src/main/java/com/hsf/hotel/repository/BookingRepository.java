@@ -13,16 +13,27 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
-    List<Booking> findByUserOrderByCreatedAtDesc(User user);
+        List<Booking> findByUserOrderByCreatedAtDesc(User user);
 
-    List<Booking> findByUserAndStatusOrderByCreatedAtDesc(User user, BookingStatus status);
+        List<Booking> findByUserAndStatusOrderByCreatedAtDesc(User user, BookingStatus status);
 
-    // Check if room is available for given date range
-    @Query("SELECT b FROM Booking b WHERE b.room = :room " +
-            "AND b.status NOT IN ('CANCELLED') " +
-            "AND ((b.checkInDate <= :checkOut AND b.checkOutDate >= :checkIn))")
-    List<Booking> findConflictingBookings(
-            @Param("room") Room room,
-            @Param("checkIn") LocalDate checkIn,
-            @Param("checkOut") LocalDate checkOut);
+        // Admin queries
+        List<Booking> findAllByOrderByCreatedAtDesc();
+
+        List<Booking> findByCheckInDate(LocalDate checkInDate);
+
+        List<Booking> findByStatusOrderByCreatedAtDesc(BookingStatus status);
+
+        @Query("SELECT b FROM Booking b WHERE b.checkInDate >= :startDate AND b.checkInDate <= :endDate")
+        List<Booking> findBookingsInDateRange(@Param("startDate") LocalDate startDate,
+                        @Param("endDate") LocalDate endDate);
+
+        // Check if room is available for given date range
+        @Query("SELECT b FROM Booking b WHERE b.room = :room " +
+                        "AND b.status NOT IN ('CANCELLED') " +
+                        "AND ((b.checkInDate <= :checkOut AND b.checkOutDate >= :checkIn))")
+        List<Booking> findConflictingBookings(
+                        @Param("room") Room room,
+                        @Param("checkIn") LocalDate checkIn,
+                        @Param("checkOut") LocalDate checkOut);
 }

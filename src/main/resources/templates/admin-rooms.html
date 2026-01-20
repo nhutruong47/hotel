@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Phòng - Admin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .btn-add:hover {
+            transform: scale(1.05);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #22c55e20;
+            color: #22c55e;
+            border: 1px solid #22c55e40;
+        }
+
+        .alert-error {
+            background: #ef444420;
+            color: #ef4444;
+            border: 1px solid #ef444440;
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .room-card {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            transition: 0.3s;
+        }
+
+        .room-card:hover {
+            border-color: #e94560;
+        }
+
+        .room-img {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(45deg, #e94560, #ff6b6b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .room-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .room-info {
+            padding: 20px;
+        }
+
+        .room-info h3 {
+            color: white;
+            margin-bottom: 8px;
+        }
+
+        .room-type-badge {
+            display: inline-block;
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .room-price {
+            color: #22c55e;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .room-desc {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .room-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .status-available {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+
+        .status-unavailable {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2563eb;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 30px;
+            width: 500px;
+            max-width: 90%;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: white;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #16213e;
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: scale(1.02);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input {
+            width: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin">📊 Dashboard</a>
+            <a href="/admin/bookings">📋 Quản lý Booking</a>
+            <a href="/admin/rooms" class="active">🛏️ Quản lý Phòng</a>
+            <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>🛏️ Quản lý Phòng</h1>
+            <button class="btn-add" onclick="openModal()">➕ Thêm phòng mới</button>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <div class="room-grid">
+            <div class="room-card" th:each="room : ${rooms}">
+                <div class="room-img">
+                    <img th:if="${room.imageUrl}" th:src="${room.imageUrl}" alt="Room">
+                    <span th:unless="${room.imageUrl}" style="color: white; font-size: 2em;">🛏️</span>
+                </div>
+                <div class="room-info">
+                    <span class="room-type-badge" th:text="${room.roomType.displayName}">Standard</span>
+                    <h3 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h3>
+                    <p class="room-price">
+                        <span
+                            th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">500,000</span>
+                        VNĐ/đêm
+                    </p>
+                    <p class="room-desc" th:text="${room.description ?: 'Không có mô tả'}">Mô tả phòng</p>
+                    <span class="room-status"
+                        th:classappend="${room.isAvailable} ? 'status-available' : 'status-unavailable'"
+                        th:text="${room.isAvailable} ? 'Còn trống' : 'Đã đặt'">Còn trống</span>
+                    <div class="room-actions">
+                        <button class="btn-edit"
+                            th:onclick="'editRoom(' + ${room.id} + ', \'' + ${room.roomNumber} + '\', \'' + ${room.roomType} + '\', ' + ${room.pricePerNight} + ', \'' + ${room.description ?: ''} + '\', \'' + ${room.imageUrl ?: ''} + '\', ' + ${room.isAvailable} + ')'">✏️
+                            Sửa</button>
+                        <form th:action="@{/admin/room/{id}/delete(id=${room.id})}" method="post" style="flex: 1;"
+                            onsubmit="return confirm('Bạn có chắc muốn xóa phòng này?')">
+                            <button type="submit" class="btn-delete" style="width: 100%;">🗑️ Xóa</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Thêm/Sửa Phòng -->
+    <div class="modal" id="roomModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Thêm phòng mới</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form action="/admin/room" method="post">
+                <input type="hidden" name="id" id="roomId">
+                <div class="form-group">
+                    <label>Số phòng</label>
+                    <input type="text" name="roomNumber" id="roomNumber" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loại phòng</label>
+                        <select name="roomType" id="roomType" required>
+                            <option th:each="type : ${roomTypes}" th:value="${type}" th:text="${type.displayName}">Type
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Giá/đêm (VNĐ)</label>
+                        <input type="number" name="pricePerNight" id="pricePerNight" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mô tả</label>
+                    <textarea name="description" id="roomDescription"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>URL Hình ảnh</label>
+                    <input type="text" name="imageUrl" id="roomImageUrl">
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" name="isAvailable" id="roomAvailable" value="true" checked>
+                    <label for="roomAvailable" style="margin-bottom: 0;">Phòng còn trống</label>
+                </div>
+                <button type="submit" class="btn-submit">💾 Lưu phòng</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('roomModal').classList.add('active');
+            document.getElementById('modalTitle').innerText = 'Thêm phòng mới';
+            document.getElementById('roomId').value = '';
+            document.getElementById('roomNumber').value = '';
+            document.getElementById('roomType').value = 'STANDARD';
+            document.getElementById('pricePerNight').value = '';
+            document.getElementById('roomDescription').value = '';
+            document.getElementById('roomImageUrl').value = '';
+            document.getElementById('roomAvailable').checked = true;
+        }
+
+        function editRoom(id, roomNumber, roomType, price, description, imageUrl, isAvailable) {
+            document.getElementById('roomModal').classList.add('active');
+            document.getElementById('modalTitle').innerText = 'Sửa phòng ' + roomNumber;
+            document.getElementById('roomId').value = id;
+            document.getElementById('roomNumber').value = roomNumber;
+            document.getElementById('roomType').value = roomType;
+            document.getElementById('pricePerNight').value = price;
+            document.getElementById('roomDescription').value = description;
+            document.getElementById('roomImageUrl').value = imageUrl;
+            document.getElementById('roomAvailable').checked = isAvailable;
+        }
+
+        function closeModal() {
+            document.getElementById('roomModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('roomModal').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>
