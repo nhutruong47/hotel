@@ -64,11 +64,10 @@ public class BookingService {
 
     public BigDecimal getMonthlyRevenue() {
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
-        LocalDate endOfMonth = startOfMonth.plusMonths(1).minusDays(1);
-        List<Booking> monthlyBookings = bookingRepository.findBookingsInDateRange(startOfMonth, endOfMonth);
+        LocalDate endOfMonth = startOfMonth.plusMonths(1); // Exclude end of month for proper range
+        List<Booking> monthlyBookings = bookingRepository.findSuccessfulBookingsInDateRange(startOfMonth, endOfMonth);
 
         return monthlyBookings.stream()
-                .filter(b -> b.getStatus() != BookingStatus.CANCELLED && b.getStatus() != BookingStatus.REJECTED)
                 .map(Booking::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -104,7 +103,7 @@ public class BookingService {
             String guestName, String guestPhone, String notes) {
         // Step 1: Check availability
         if (!isRoomAvailable(room, checkIn, checkOut)) {
-            throw new RuntimeException("Phòng không khả dụng trong khoảng thời gian này");
+            throw new RuntimeException("Phòng đã được đặt trong khoảng thời gian này");
         }
 
         // Step 2: Create booking with PENDING status

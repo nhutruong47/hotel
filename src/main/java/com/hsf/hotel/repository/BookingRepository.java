@@ -31,6 +31,9 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         List<Booking> findBookingsInDateRange(@Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate);
 
+        @Query("SELECT b FROM Booking b WHERE b.checkInDate >= :startDate AND b.checkInDate <= :endDate AND b.status IN ('CONFIRMED', 'COMPLETED')")
+        List<Booking> findSuccessfulBookingsInDateRange(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
+
         // Check if room is available for given date range
         @Query("SELECT b FROM Booking b WHERE b.room = :room " +
                         "AND b.status NOT IN ('CANCELLED', 'REJECTED') " +
