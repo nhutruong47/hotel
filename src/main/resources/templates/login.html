@@ -1,45 +1,155 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
     <meta charset="UTF-8">
     <title>Như Hotel - Auth</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        .box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 320px; }
-        h2 { text-align: center; color: #333; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        .link { text-align: center; margin-top: 15px; color: #007bff; cursor: pointer; font-size: 14px; }
-        .hidden { display: none; }
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 360px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-register {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .link {
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .link:hover {
+            text-decoration: underline;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
+
 <body>
-<div class="box">
-    <div id="login-form">
-        <h2>Đăng Nhập</h2>
-        <form th:action="@{/login}" method="post">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit" class="btn">Đăng Nhập</button>
-        </form>
-        <div class="link" onclick="toggle()">Chưa có tài khoản? Đăng ký</div>
+    <div class="box">
+        <div class="logo">🏨 Như Hotel</div>
+
+        <!-- Success/Error Messages -->
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <div id="login-form" th:classappend="${param.register != null ? 'hidden' : ''}">
+            <h2>Đăng Nhập</h2>
+            <form th:action="@{/login}" method="post">
+                <input type="text" name="username" placeholder="Tên đăng nhập" required>
+                <input type="password" name="password" placeholder="Mật khẩu" required>
+                <button type="submit" class="btn">Đăng Nhập</button>
+            </form>
+            <div class="link" onclick="toggle()">Chưa có tài khoản? Đăng ký ngay</div>
+        </div>
+
+        <div id="reg-form" th:classappend="${param.register != null ? '' : 'hidden'}">
+            <h2>Đăng Ký Tài Khoản</h2>
+            <form th:action="@{/register}" method="post">
+                <input type="text" name="username" placeholder="Tên đăng nhập *" required>
+                <input type="email" name="email" placeholder="Email *" required>
+                <input type="password" name="password" placeholder="Mật khẩu (ít nhất 6 ký tự) *" required
+                    minlength="6">
+                <input type="text" name="fullName" placeholder="Họ và tên">
+                <button type="submit" class="btn btn-register">Tạo tài khoản</button>
+            </form>
+            <p style="font-size: 12px; color: #666; text-align: center; margin-top: 10px;">
+                📧 Bạn sẽ nhận email xác thực sau khi đăng ký
+            </p>
+            <div class="link" onclick="toggle()">Đã có tài khoản? Đăng nhập</div>
+        </div>
     </div>
-    <div id="reg-form" class="hidden">
-        <h2>Đăng Ký</h2>
-        <form th:action="@{/register}" method="post">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <input type="text" name="fullName" placeholder="Full Name">
-            <button type="submit" class="btn" style="background: #28a745;">Tạo tài khoản</button>
-        </form>
-        <div class="link" onclick="toggle()">Đã có tài khoản? Đăng nhập</div>
-    </div>
-</div>
-<script>
-    function toggle() {
-        document.getElementById('login-form').classList.toggle('hidden');
-        document.getElementById('reg-form').classList.toggle('hidden');
-    }
-</script>
+    <script>
+        function toggle() {
+            document.getElementById('login-form').classList.toggle('hidden');
+            document.getElementById('reg-form').classList.toggle('hidden');
+        }
+    </script>
 </body>
+
 </html>

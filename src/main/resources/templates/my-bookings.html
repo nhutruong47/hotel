@@ -141,8 +141,16 @@
             background: linear-gradient(135deg, #f39c12, #e67e22);
         }
 
+        .booking-status.AWAITING_PAYMENT {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        }
+
         .booking-status.CONFIRMED {
             background: linear-gradient(135deg, #27ae60, #2ecc71);
+        }
+
+        .booking-status.REJECTED {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
         }
 
         .booking-status.CANCELLED {
@@ -163,6 +171,32 @@
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
+        }
+
+        .btn-pay {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-pay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .deadline-info {
+            font-size: 11px;
+            color: #e74c3c;
+            margin-top: 5px;
         }
 
         .booking-info {
@@ -304,7 +338,9 @@
                 <div class="booking-status" th:classappend="${booking.status}">
                     <span class="icon" th:switch="${booking.status.name()}">
                         <span th:case="'PENDING'">⏳</span>
+                        <span th:case="'AWAITING_PAYMENT'">💳</span>
                         <span th:case="'CONFIRMED'">✅</span>
+                        <span th:case="'REJECTED'">🚫</span>
                         <span th:case="'CANCELLED'">❌</span>
                         <span th:case="'COMPLETED'">🏆</span>
                     </span>
@@ -344,6 +380,15 @@
                         đ
                         <br><small>Tổng tiền</small>
                     </div>
+                    <!-- Payment button for AWAITING_PAYMENT -->
+                    <div th:if="${booking.status.name() == 'AWAITING_PAYMENT'}">
+                        <a th:href="@{/booking/{id}/payment(id=${booking.id})}" class="btn-pay">💳 Thanh toán ngay</a>
+                        <div class="deadline-info" th:if="${booking.paymentDeadline}">
+                            Hạn: <span th:text="${#temporals.format(booking.paymentDeadline, 'dd/MM HH:mm')}">01/02
+                                12:00</span>
+                        </div>
+                    </div>
+                    <!-- Cancel button for PENDING/CONFIRMED -->
                     <form th:if="${booking.status.name() == 'CONFIRMED' or booking.status.name() == 'PENDING'}"
                         th:action="@{/booking/{id}/cancel(id=${booking.id})}" method="post" style="display:inline;"
                         onsubmit="return confirm('Bạn có chắc muốn hủy đặt phòng này?');">

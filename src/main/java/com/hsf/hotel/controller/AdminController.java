@@ -45,12 +45,14 @@ public class AdminController {
         List<Booking> allBookings = bookingService.getAllBookings();
         List<Booking> todayBookings = bookingService.getTodayBookings();
         BigDecimal monthlyRevenue = bookingService.getMonthlyRevenue();
+        long pendingCount = bookingService.getPendingBookingsCount();
 
         model.addAttribute("totalRooms", allRooms.size());
         model.addAttribute("availableRooms", availableRooms.size());
         model.addAttribute("totalBookings", allBookings.size());
         model.addAttribute("todayBookings", todayBookings.size());
         model.addAttribute("monthlyRevenue", monthlyRevenue);
+        model.addAttribute("pendingCount", pendingCount);
         model.addAttribute("recentBookings", allBookings.stream().limit(5).toList());
 
         return "admin-dashboard";
@@ -90,6 +92,72 @@ public class AdminController {
         try {
             bookingService.updateBookingStatus(id, BookingStatus.valueOf(status));
             redirectAttributes.addFlashAttribute("success", "Cập nhật trạng thái thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/bookings";
+    }
+
+    /**
+     * WORKFLOW: Admin duyệt booking
+     */
+    @PostMapping("/booking/{id}/approve")
+    public String approveBooking(@PathVariable Integer id,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+
+        try {
+            User admin = (User) session.getAttribute("user");
+            bookingService.approveBooking(id, admin);
+            redirectAttributes.addFlashAttribute("success", "Đã duyệt đơn đặt phòng #" + id);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/bookings";
+    }
+
+    /**
+     * WORKFLOW: Admin từ chối booking
+     */
+    @PostMapping("/booking/{id}/reject")
+    public String rejectBooking(@PathVariable Integer id,
+            @RequestParam(required = false) String reason,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+
+        try {
+            User admin = (User) session.getAttribute("user");
+            bookingService.rejectBooking(id, admin, reason);
+            redirectAttributes.addFlashAttribute("success", "Đã từ chối đơn đặt phòng #" + id);
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/bookings";
+    }
+
+    /**
+     * WORKFLOW: Xác nhận thanh toán
+     */
+    @PostMapping("/booking/{id}/confirm-payment")
+    public String confirmPayment(@PathVariable Integer id,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+
+        try {
+            bookingService.confirmPayment(id);
+            redirectAttributes.addFlashAttribute("success", "Đã xác nhận thanh toán cho đơn #" + id);
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }

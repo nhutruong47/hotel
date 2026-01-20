@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Xác thực tài khoản - Như Hotel</title>
+</head>
+
+<body style="font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+    <div
+        style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #667eea, #764ba2); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🏨 Như Hotel</h1>
+            <p style="color: rgba(255,255,255,0.9); margin-top: 10px;">Xác thực tài khoản</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 30px;">
+            <h2 style="color: #333; margin-top: 0;">Xin chào <span
+                    th:text="${user.fullName != null ? user.fullName : user.username}">Khách</span>!</h2>
+
+            <p style="color: #666; line-height: 1.6;">
+                Cảm ơn bạn đã đăng ký tài khoản tại <strong>Như Hotel</strong>.
+                Để hoàn tất quá trình đăng ký, vui lòng xác thực email của bạn bằng cách nhấn vào nút bên dưới.
+            </p>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a th:href="${verificationLink}"
+                    style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                    ✅ Xác thực email
+                </a>
+            </div>
+
+            <p style="color: #999; font-size: 14px;">
+                Hoặc copy link này vào trình duyệt:<br>
+                <a th:href="${verificationLink}" th:text="${verificationLink}"
+                    style="color: #667eea; word-break: break-all;">Link</a>
+            </p>
+
+            <p style="color: #999; font-size: 14px;">
+                ⏰ Link này sẽ hết hạn sau 24 giờ.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+            <p style="color: #999; margin: 0; font-size: 12px;">
+                Bạn nhận được email này vì đã đăng ký tài khoản tại Như Hotel.<br>
+                Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -20,6 +20,11 @@ public class User {
     private String email;
     private String role = "USER";
 
+    // Email verification fields
+    private Boolean emailVerified = false;
+    private String verificationToken;
+    private LocalDateTime tokenExpiry;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public User() {
@@ -80,5 +85,29 @@ public class User {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getVerificationToken() {
+        return verificationToken;
+    }
+
+    public void setVerificationToken(String verificationToken) {
+        this.verificationToken = verificationToken;
+    }
+
+    public LocalDateTime getTokenExpiry() {
+        return tokenExpiry;
+    }
+
+    public void setTokenExpiry(LocalDateTime tokenExpiry) {
+        this.tokenExpiry = tokenExpiry;
     }
 }

@@ -224,6 +224,91 @@
             background: #94a3b8;
             color: #1a1a2e;
         }
+
+        /* Notification styles */
+        .notification-badge {
+            background: #e94560;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            animation: slideIn 0.5s ease;
+            max-width: 350px;
+        }
+
+        .notification-popup.new-booking {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-popup h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .notification-popup p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .notification-popup .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .status-AWAITING_PAYMENT {
+            background: #9b59b620;
+            color: #9b59b6;
+        }
+
+        .status-REJECTED {
+            background: #6c757d20;
+            color: #6c757d;
+        }
     </style>
 </head>
 
@@ -257,6 +342,10 @@
             <div class="stat-card">
                 <h3>Phòng trống</h3>
                 <div class="value" th:text="${availableRooms}">8</div>
+            </div>
+            <div class="stat-card">
+                <h3>⏳ Chờ duyệt</h3>
+                <div class="value" style="color: #f39c12;" id="pending-count" th:text="${pendingCount}">0</div>
             </div>
             <div class="stat-card">
                 <h3>Booking hôm nay</h3>
@@ -307,9 +396,77 @@
             <p th:if="${recentBookings == null or recentBookings.isEmpty()}"
                 style="color: #94a3b8; text-align: center; padding: 40px;">
                 Chưa có booking nào
-            </p>
         </div>
     </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <script>
+        // Realtime notifications using polling (SSE backup)
+        let lastPendingCount = parseInt(document.getElementById('pending-count')?.textContent || '0');
+
+        function showNotification(type, title, message) {
+            const container = document.getElementById('notification-container');
+            const popup = document.createElement('div');
+            popup.className = 'notification-popup ' + (type === 'newBooking' ? 'new-booking' : '');
+            popup.innerHTML = `
+                <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+                <h4>${type === 'payment' ? '💰' : '🔔'} ${title}</h4>
+                <p>${message}</p>
+            `;
+            container.appendChild(popup);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => popup.remove(), 5000);
+
+            // Play sound (optional)
+            // new Audio('/notification.mp3').play();
+        }
+
+        // Polling for updates every 10 seconds
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/notifications/poll');
+                const data = await response.json();
+
+                const pendingEl = document.getElementById('pending-count');
+                if (pendingEl) {
+                    const newCount = data.pendingCount;
+                    if (newCount > lastPendingCount) {
+                        showNotification('newBooking', 'Booking mới!',
+                            'Có ' + (newCount - lastPendingCount) + ' booking mới cần duyệt');
+                    }
+                    pendingEl.textContent = newCount;
+                    lastPendingCount = newCount;
+                }
+            } catch (e) {
+                console.log('Polling error:', e);
+            }
+        }, 10000);
+
+        // Try SSE if supported
+        if (typeof EventSource !== 'undefined') {
+            const eventSource = new EventSource('/api/notifications/stream');
+
+            eventSource.addEventListener('payment', function (e) {
+                const data = JSON.parse(e.data);
+                showNotification('payment', 'Thanh toán mới!', data.message);
+            });
+
+            eventSource.addEventListener('newBooking', function (e) {
+                const data = JSON.parse(e.data);
+                showNotification('newBooking', 'Booking mới!', data.message);
+                // Update pending count
+                const el = document.getElementById('pending-count');
+                if (el) el.textContent = parseInt(el.textContent) + 1;
+            });
+
+            eventSource.onerror = function () {
+                console.log('SSE connection error, using polling instead');
+            };
+        }
+    </script>
 </body>
 
 </html>

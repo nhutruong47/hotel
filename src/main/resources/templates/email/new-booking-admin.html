@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Booking mới cần duyệt - Như Hotel Admin</title>
+</head>
+
+<body style="font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+    <div
+        style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #ffc107, #fd7e14); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🏨 Như Hotel Admin</h1>
+            <p style="color: rgba(255,255,255,0.9); margin-top: 10px;">Booking mới cần xử lý</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 30px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span
+                    style="display: inline-block; background: #fff3cd; color: #856404; padding: 10px 20px; border-radius: 20px; font-weight: 600;">
+                    🔔 Chờ duyệt
+                </span>
+            </div>
+
+            <h2 style="color: #333; margin-top: 0;">Có booking mới cần xác nhận!</h2>
+
+            <!-- Booking Details -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #333;">📋 Chi tiết booking</h3>
+                <table style="width: 100%; color: #666;">
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Mã booking:</strong></td>
+                        <td style="padding: 8px 0;" th:text="'#' + ${booking.id}">#123</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Khách hàng:</strong></td>
+                        <td style="padding: 8px 0;" th:text="${booking.guestName}">Nguyễn Văn A</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Phòng:</strong></td>
+                        <td style="padding: 8px 0;"
+                            th:text="${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.displayName}">101 -
+                            Deluxe</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Check-in:</strong></td>
+                        <td style="padding: 8px 0;" th:text="${checkInDate}">01/02/2026</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Check-out:</strong></td>
+                        <td style="padding: 8px 0;" th:text="${checkOutDate}">05/02/2026</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Tổng tiền:</strong></td>
+                        <td style="padding: 8px 0; color: #28a745; font-weight: bold;"
+                            th:text="${#numbers.formatInteger(booking.totalPrice, 0, 'COMMA')} + ' VNĐ'">1,000,000 VNĐ
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a th:href="${adminLink}"
+                    style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    Xem & Duyệt booking
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+            <p style="color: #999; margin: 0; font-size: 12px;">
+                Email tự động từ hệ thống Như Hotel<br>
+                Vui lòng không reply email này
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

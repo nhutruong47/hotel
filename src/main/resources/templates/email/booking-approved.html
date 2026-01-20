@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đặt phòng đã được duyệt - Như Hotel</title>
+</head>
+
+<body style="font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+    <div
+        style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #28a745, #20c997); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🏨 Như Hotel</h1>
+            <p style="color: rgba(255,255,255,0.9); margin-top: 10px;">Xác nhận đặt phòng</p>
+        </div>
+
+        <!-- Content -->
+        <div style="padding: 30px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span
+                    style="display: inline-block; background: #d4edda; color: #155724; padding: 10px 20px; border-radius: 20px; font-weight: 600;">
+                    ✅ Đã duyệt
+                </span>
+            </div>
+
+            <h2 style="color: #333; margin-top: 0;">Đặt phòng của bạn đã được duyệt!</h2>
+
+            <p style="color: #666; line-height: 1.6;">
+                Xin chào <strong
+                    th:text="${booking.user.fullName != null ? booking.user.fullName : booking.user.username}">Khách</strong>,
+                chúng tôi vui mừng thông báo đặt phòng của bạn đã được duyệt.
+            </p>
+
+            <!-- Booking Details -->
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #333;">📋 Chi tiết đặt phòng</h3>
+                <table style="width: 100%; color: #666;">
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Mã đặt phòng:</strong></td>
+                        <td style="padding: 8px 0;" th:text="'#' + ${booking.id}">#123</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Phòng:</strong></td>
+                        <td style="padding: 8px 0;"
+                            th:text="${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.displayName}">101 -
+                            Deluxe</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Ngày nhận phòng:</strong></td>
+                        <td style="padding: 8px 0;" th:text="${checkInDate}">01/02/2026</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Ngày trả phòng:</strong></td>
+                        <td style="padding: 8px 0;" th:text="${checkOutDate}">05/02/2026</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px 0;"><strong>Tổng tiền:</strong></td>
+                        <td style="padding: 8px 0; color: #28a745; font-weight: bold;"
+                            th:text="${#numbers.formatInteger(booking.totalPrice, 0, 'COMMA')} + ' VNĐ'">1,000,000 VNĐ
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- Payment Deadline -->
+            <div
+                style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
+                <p style="margin: 0; color: #856404;">
+                    ⚠️ <strong>Hạn thanh toán:</strong> <span th:text="${paymentDeadline}">01/02/2026 12:00</span><br>
+                    <small>Vui lòng thanh toán trước thời hạn để giữ phòng.</small>
+                </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a th:href="${myBookingsLink}"
+                    style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #28a745, #20c997); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                    Xem đặt phòng của tôi
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+            <p style="color: #999; margin: 0; font-size: 12px;">
+                Cảm ơn bạn đã chọn Như Hotel!<br>
+                Liên hệ: hotel@nhuhotel.com | 0123-456-789
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>
