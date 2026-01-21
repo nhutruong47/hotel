@@ -1,9 +1,12 @@
 package com.hsf.hotel.controller;
 
+import java.util.HashMap;
+import java.util.Map;
 import com.hsf.hotel.model.Room;
 import com.hsf.hotel.model.RoomType;
 import com.hsf.hotel.model.User;
 import com.hsf.hotel.service.RoomService;
+import com.hsf.hotel.service.ReviewService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -17,6 +20,9 @@ public class RoomController {
     @Autowired
     private RoomService roomService;
 
+    @Autowired
+    private ReviewService reviewService;
+
     @GetMapping("/")
     public String index(HttpSession session, Model model) {
         User user = (User) session.getAttribute("user");
@@ -25,7 +31,20 @@ public class RoomController {
         }
 
         List<Room> rooms = roomService.getAvailableRooms();
+        
+        // Create maps to hold rating information
+        Map<Integer, Double> roomRatings = new HashMap<>();
+        Map<Integer, Long> roomReviewCounts = new HashMap<>();
+        
+        // Populate rating information for each room
+        for (Room room : rooms) {
+            roomRatings.put(room.getId(), reviewService.getAverageRatingForRoom(room));
+            roomReviewCounts.put(room.getId(), reviewService.countReviewsForRoom(room));
+        }
+        
         model.addAttribute("rooms", rooms);
+        model.addAttribute("roomRatings", roomRatings);
+        model.addAttribute("roomReviewCounts", roomReviewCounts);
         model.addAttribute("roomTypes", RoomType.values());
         return "index";
     }

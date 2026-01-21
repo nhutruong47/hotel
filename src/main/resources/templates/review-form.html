@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đánh giá - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar h2 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .user-info {
+            color: #ecf0f1;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            color: #ff7675 !important;
+            border: 1px solid #ff7675;
+        }
+
+        .logout-btn:hover {
+            background: #ff7675 !important;
+            color: white !important;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .review-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 30px;
+            color: white;
+            text-align: center;
+        }
+
+        .card-header h2 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .card-body {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .booking-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .booking-info p {
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .booking-info strong {
+            color: #333;
+        }
+
+        .rating-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px dashed #ddd;
+        }
+
+        .rating-container h4 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .container-preview {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .preview-room {
+            flex: 1;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .preview-room h4 {
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .preview-details {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .preview-details p {
+            margin-bottom: 5px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #060;
+            border: 1px solid #cfc;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #01579b;
+            border: 1px solid #bbdefb;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+
+        .btn-submit:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-cancel {
+            display: inline-block;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .btn-cancel:hover {
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state h4 {
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h2>🏨 Như Hotel</h2>
+        <div class="nav-links" th:if="${session.user}">
+            <a href="/">Trang chủ</a>
+            <a href="/my-bookings">Đặt phòng của tôi</a>
+            <a href="/my-reviews">Đánh giá của tôi</a>
+            <a href="/ai-recommend">🤖 Trợ lý AI</a>
+            <a href="/admin" th:if="${session.user.role == 'ADMIN'}" style="color: #f1c40f;">⚙️ Admin</a>
+            <span class="user-info">Xin chào, <span
+                    th:text="${session.user.fullName ?: session.user.username}">Khách</span>!</span>
+            <a href="/logout" class="logout-btn">Đăng xuất</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="review-card">
+            <div class="card-header">
+                <h2 th:text="${review != null} ? '✏️ Chỉnh sửa đánh giá' : '⭐ Viết đánh giá'">⭐ Đánh giá</h2>
+                <p th:if="${review == null}">Chia sẻ trải nghiệm của bạn về kỳ nghỉ tại khách sạn</p>
+            </div>
+
+            <div class="card-body">
+                <div class="alert alert-error" th:if="${error}" th:text="${error}">Error message</div>
+                <div class="alert alert-success" th:if="${success}" th:text="${success}">Success message</div>
+
+                <!-- Edit Review Form -->
+                <form th:if="${review != null}" th:action="@{/review/{id}/update(id=${review.id})}" method="post">
+                    <div class="rating-container">
+                        <h4>⭐ Đánh giá của bạn</h4>
+                        <div th:replace="~{fragments/rating-stars :: ratingForm(name='rating', value=${review.rating}, required=true)}"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bình luận</label>
+                        <textarea name="comment" required th:text="${review.comment}">Nhập bình luận của bạn...</textarea>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="anonymous" id="anonymous" th:checked="${review.anonymous}">
+                        <label for="anonymous">Đánh giá ẩn danh</label>
+                    </div>
+
+                    <button type="submit" class="btn-submit">💾 Lưu thay đổi</button>
+                    <a href="/my-reviews" class="btn-cancel">← Quay lại danh sách đánh giá</a>
+                </form>
+
+                <!-- New Review Form -->
+                <div th:if="${review == null}">
+                    <div class="alert alert-info" th:if="${eligibleBookings == null or eligibleBookings.isEmpty()}">
+                        Bạn hiện không có đặt phòng nào đủ điều kiện để đánh giá. 
+                        Chỉ các đặt phòng đã hoàn thành mới có thể được đánh giá.
+                    </div>
+
+                    <!-- Booking Selection -->
+                    <div th:if="${eligibleBookings != null and not eligibleBookings.isEmpty()}">
+                        <div th:if="${selectedBooking == null}">
+                            <div class="form-group">
+                                <label>Chọn đặt phòng bạn muốn đánh giá:</label>
+                                <select name="bookingId" id="bookingSelect" onchange="loadBookingDetails()">
+                                    <option value="">-- Chọn một đặt phòng --</option>
+                                    <option th:each="booking : ${eligibleBookings}" 
+                                            th:value="${booking.id}"
+                                            th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + 
+                                                   ${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + ' → ' + 
+                                                   ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">
+                                        Phòng 101 - 01/01/2023 → 03/01/2023
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Display selected booking details -->
+                        <div th:if="${selectedBooking != null}" class="booking-info">
+                            <h4>Thông tin đặt phòng</h4>
+                            <div class="container-preview">
+                                <div class="preview-room">
+                                    <p><strong>Phòng:</strong> <span th:text="${selectedBooking.room.roomNumber}">101</span></p>
+                                    <p><strong>Loại phòng:</strong> <span th:text="${selectedBooking.room.roomType.displayName}">Standard</span></p>
+                                    <p><strong>Ngày nhận phòng:</strong> <span th:text="${#temporals.format(selectedBooking.checkInDate, 'dd/MM/yyyy')}">01/01/2023</span></p>
+                                </div>
+                                <div class="preview-room">
+                                    <p><strong>Ngày trả phòng:</strong> <span th:text="${#temporals.format(selectedBooking.checkOutDate, 'dd/MM/yyyy')}">03/01/2023</span></p>
+                                    <p><strong>Số đêm:</strong> <span th:text="${selectedBooking.numberOfNights}">2</span></p>
+                                    <p><strong>Giá:</strong> <span th:text="${#numbers.formatDecimal(selectedBooking.totalPrice, 0, 'COMMA', 0, 'POINT')}">1,000,000</span> VNĐ</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Review Form for Selected Booking -->
+                        <div th:if="${selectedBooking != null}">
+                            <form th:action="@{/review/create}" method="post">
+                                <input type="hidden" name="bookingId" th:value="${selectedBooking.id}">
+
+                                <div class="rating-container">
+                                    <h4>⭐ Đánh giá của bạn</h4>
+                                    <div th:replace="~{fragments/rating-stars :: ratingForm(name='rating', value=null, required=true)}"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Bình luận</label>
+                                    <textarea name="comment" placeholder="Nhập bình luận về trải nghiệm của bạn..." required></textarea>
+                                </div>
+
+                                <div class="checkbox-group">
+                                    <input type="checkbox" name="anonymous" id="anonymous">
+                                    <label for="anonymous">Đánh giá ẩn danh</label>
+                                </div>
+
+                                <button type="submit" class="btn-submit">📝 Gửi đánh giá</button>
+                                <a href="/my-bookings" class="btn-cancel">← Quay lại</a>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        // Function to reload page with selected booking details
+        function loadBookingDetails() {
+            const bookingSelect = document.getElementById('bookingSelect');
+            const bookingId = bookingSelect.value;
+            
+            if (bookingId) {
+                window.location.href = '/review/new?bookingId=' + bookingId;
+            }
+        }
+        
+        // Auto-select first eligible booking if none is selected
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookingSelect = document.getElementById('bookingSelect');
+            if (bookingSelect && bookingSelect.options.length > 1 && !bookingSelect.value) {
+                // Auto-select first booking if eligible
+                bookingSelect.selectedIndex = 1;
+                loadBookingDetails();
+            }
+        });
+    </script>
+</body>
+
+</html>

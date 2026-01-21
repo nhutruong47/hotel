@@ -318,6 +318,7 @@
         <div class="nav-links" th:if="${session.user}">
             <a href="/">Trang chủ</a>
             <a href="/my-bookings">Đặt phòng của tôi</a>
+            <a href="/my-reviews">Đánh giá của tôi</a>
             <span class="user-info">Xin chào, <span
                     th:text="${session.user.fullName ?: session.user.username}">Khách</span>!</span>
             <a href="/logout" class="logout-btn">Đăng xuất</a>
@@ -394,6 +395,15 @@
                         onsubmit="return confirm('Bạn có chắc muốn hủy đặt phòng này?');">
                         <button type="submit" class="btn-cancel">Hủy đặt phòng</button>
                     </form>
+                    <!-- Review button for COMPLETED bookings -->
+                    <div th:if="${booking.status.name() == 'COMPLETED'}">
+                        <a th:href="@{/review/new(bookingId=${booking.id})}" class="btn-pay" style="background: linear-gradient(135deg, #ffc107, #ff9800);">
+                            ⭐ Đánh giá
+                        </a>
+                        <div class="deadline-info">
+                            Chia sẻ trải nghiệm của bạn
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

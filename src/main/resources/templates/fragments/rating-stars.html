@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <title>Rating Stars Fragment</title>
+    <style>
+        .rating-stars {
+            display: inline-flex;
+            align-items: center;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+        
+        .rating-stars .star {
+            position: relative;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 1;
+        }
+        
+        .rating-stars .filled {
+            color: #ffc107;
+            text-shadow: 0 0 3px rgba(255, 193, 7, 0.6);
+        }
+        
+        .rating-stars .empty {
+            color: #ddd;
+        }
+        
+        .rating-stars .half-filled {
+            position: relative;
+            color: #ddd;
+        }
+        
+        .rating-stars .half-filled::before {
+            content: '★';
+            color: #ffc107;
+            text-shadow: 0 0 3px rgba(255, 193, 7, 0.6);
+            position: absolute;
+            left: 0;
+            top: 0;
+            overflow: hidden;
+            width: 50%;
+        }
+        
+        .rating-form {
+            display: flex;
+            gap: 5px;
+            font-size: 36px;
+            margin: 15px 0;
+            justify-content: center;
+        }
+        
+        .rating-form input {
+            display: none;
+        }
+        
+        .rating-form label {
+            cursor: pointer;
+            color: #ddd;
+            transition: all 0.2s ease;
+            margin: 0;
+            position: relative;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        .rating-form label:hover {
+            color: #ffcc33;
+            transform: scale(1.2);
+            text-shadow: 0 2px 4px rgba(255,204,51,0.3);
+        }
+        
+        .rating-form input:checked ~ label {
+            color: transparent;
+            overflow: visible;
+        }
+        
+        .rating-form input:checked + label {
+            color: #ffc107;
+            text-shadow: 0 1px 3px rgba(255,193,7,0.8);
+            transform: scale(1.1);
+        }
+        
+        .rating-form input:checked + label::before {
+            content: "★";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #ffc107;
+            text-shadow: 0 1px 3px rgba(255,193,7,0.8);
+        }
+        
+        .rating-form label:hover ~ label {
+            color: #ddd;
+        }
+        
+        .rating-form label:hover ~ label {
+            color: #ddd;
+        }
+        
+        .rating-form label:nth-child(1):hover ~ label,
+        .rating-form label:nth-child(2):hover ~ label,
+        .rating-form label:nth-child(3):hover ~ label,
+        .rating-form label:nth-child(4):hover ~ label,
+        .rating-form label:nth-child(5):hover,
+        .rating-form input:checked:nth-child(5) ~ label,
+        .rating-form input:checked:nth-child(4) ~ label,
+        .rating-form input:checked:nth-child(3) ~ label,
+        .rating-form input:checked:nth-child(2) ~ label,
+        .rating-form input:checked:nth-child(1) ~ label {
+            color: #ffc107;
+        }
+        
+        .rating-form label:nth-child(1):hover,
+        .rating-form label:nth-child(2):hover,
+        .rating-form label:nth-child(3):hover,
+        .rating-form label:nth-child(4):hover,
+        .rating-form label:nth-child(5):hover {
+            color: #ffc107;
+        }
+        
+        .rating-form label:nth-child(1):hover ~ label,
+        .rating-form label:nth-child(2):hover ~ label,
+        .rating-form label:nth-child(3):hover ~ label,
+        .rating-form label:nth-child(4):hover ~ label {
+            color: #ddd;
+        }
+        
+        .rating-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .rating-average {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .rating-numeric {
+            color: #ffc107;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .rating-review-count {
+            font-size: 14px;
+            color: #666;
+            padding: 3px 8px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Display rating stars (read-only) -->
+<div th:fragment="displayStars(rating)" class="rating-stars">
+    <span th:each="i : ${#numbers.sequence(1, 5)}" 
+          class="star"
+          th:classappend="${i <= rating} ? 'filled' : 'empty'"
+          th:text="${i <= rating} ? '★' : '☆'"></span>
+</div>
+
+<!-- Rating input form -->
+<div th:fragment="ratingForm(name, value, required)" class="rating-form">
+    <input type="radio" th:id="${name} + '-5'" th:name="${name}" value="5" 
+           th:checked="${value != null && value == 5}" th:required="${required}">
+    <label th:for="${name} + '-5'">★</label>
+    
+    <input type="radio" th:id="${name} + '-4'" th:name="${name}" value="4" 
+           th:checked="${value != null && value == 4}" th:required="${required}">
+    <label th:for="${name} + '-4'">★</label>
+    
+    <input type="radio" th:id="${name} + '-3'" th:name="${name}" value="3" 
+           th:checked="${value != null && value == 3}" th:required="${required}">
+    <label th:for="${name} + '-3'">★</label>
+    
+    <input type="radio" th:id="${name} + '-2'" th:name="${name}" value="2" 
+           th:checked="${value != null && value == 2}" th:required="${required}">
+    <label th:for="${name} + '-2'">★</label>
+    
+    <input type="radio" th:id="${name} + '-1'" th:name="${name}" value="1" 
+           th:checked="${value != null && value == 1}" th:required="${required}">
+    <label th:for="${name} + '-1'">★</label>
+</div>
+
+<!-- Rating with average and count display -->
+<div th:fragment="ratingWithAverage(avgRating, reviewCount)" class="rating-display">
+    <div class="rating-stars" 
+         th:with="roundedRating=${#numbers.formatDecimal(avgRating, 1, 0)}">
+        <span th:each="i : ${#numbers.sequence(1, 5)}" 
+              class="star"
+              th:classappend="${i <= roundedRating} ? 'filled' : 'empty'"
+              th:text="${i <= roundedRating} ? '★' : '☆'"></span>
+    </div>
+    <div class="rating-average">
+        <span class="rating-numeric" th:text="${#numbers.formatDecimal(avgRating, 1, 1)}">4.5</span>
+        <span>/5.0</span>
+    </div>
+    <span class="rating-review-count" th:text="${reviewCount} + ' đánh giá'">(12 đánh giá)</span>
+</div>
+
+</body>
+
+</html>
