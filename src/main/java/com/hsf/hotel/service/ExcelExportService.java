@@ -16,7 +16,7 @@ import java.util.List;
 public class ExcelExportService {
 
     public ByteArrayInputStream exportBookingsToExcel(List<Booking> bookings) throws IOException {
-        String[] columns = {"ID", "User", "Room", "Check-in Date", "Check-out Date", "Status"};
+        String[] columns = {"ID", "User", "Room", "Check-in Date", "Check-out Date", "Status", "Price" };
         try (
                 XSSFWorkbook workbook = new XSSFWorkbook();
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -40,6 +40,7 @@ public class ExcelExportService {
                 row.createCell(3).setCellValue(booking.getCheckInDate().toString());
                 row.createCell(4).setCellValue(booking.getCheckOutDate().toString());
                 row.createCell(5).setCellValue(booking.getStatus().toString());
+                row.createCell(6).setCellValue(booking.getTotalPrice().doubleValue());
             }
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());

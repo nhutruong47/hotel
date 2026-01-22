@@ -26,7 +26,7 @@ public class PdfExportService {
 
             document.add(new Paragraph("Booking Report"));
 
-            Table table = new Table(UnitValue.createPercentArray(new float[]{1, 3, 2, 2, 2, 2}));
+            Table table = new Table(UnitValue.createPercentArray(new float[]{1, 3, 2, 2, 2, 2, 2}));
             table.setWidth(UnitValue.createPercentValue(100));
 
             table.addHeaderCell("ID");
@@ -35,6 +35,8 @@ public class PdfExportService {
             table.addHeaderCell("Check-in Date");
             table.addHeaderCell("Check-out Date");
             table.addHeaderCell("Status");
+            table.addHeaderCell("Price");
+
 
             for (Booking booking : bookings) {
                 table.addCell(String.valueOf(booking.getId()));
@@ -43,6 +45,7 @@ public class PdfExportService {
                 table.addCell(booking.getCheckInDate().toString());
                 table.addCell(booking.getCheckOutDate().toString());
                 table.addCell(booking.getStatus().toString());
+                table.addCell(booking.getTotalPrice().toString());
             }
 
             document.add(table);
