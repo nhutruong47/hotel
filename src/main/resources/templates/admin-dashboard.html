@@ -320,6 +320,7 @@
             <a href="/admin/bookings">📋 Quản lý Booking</a>
             <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
             <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/admin/reports">📈 Báo cáo</a>
             <a href="/">🏠 Về trang chủ</a>
         </div>
     </div>
@@ -396,6 +397,34 @@
             <p th:if="${recentBookings == null or recentBookings.isEmpty()}"
                 style="color: #94a3b8; text-align: center; padding: 40px;">
                 Chưa có booking nào
+        </div>
+
+        <div class="table-section">
+            <h2>📈 Báo cáo doanh thu</h2>
+            <form th:action="@{/admin/reports/excel}" method="post" style="margin-bottom: 20px;">
+                <label for="startDate" style="color: #94a3b8;">Từ ngày:</label>
+                <input type="date" id="startDate" name="startDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <label for="endDate" style="color: #94a3b8;">Đến ngày:</label>
+                <input type="date" id="endDate" name="endDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <button type="submit"
+                    style="background: #22c55e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải Excel
+                </button>
+            </form>
+            <form th:action="@{/admin/reports/pdf}" method="post">
+                <label for="pdfStartDate" style="color: #94a3b8;">Từ ngày:</label>
+                <input type="date" id="pdfStartDate" name="startDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <label for="pdfEndDate" style="color: #94a3b8;">Đến ngày:</label>
+                <input type="date" id="pdfEndDate" name="endDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <button type="submit"
+                    style="background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải PDF
+                </button>
+            </form>
         </div>
     </div>
 

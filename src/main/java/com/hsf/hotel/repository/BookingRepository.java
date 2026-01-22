@@ -47,4 +47,6 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         @Query("SELECT b FROM Booking b WHERE b.status = 'AWAITING_PAYMENT' " +
                         "AND b.paymentDeadline IS NOT NULL AND b.paymentDeadline < :now")
         List<Booking> findExpiredPaymentBookings(@Param("now") LocalDateTime now);
+
+        List<Booking> findAllByCheckInDateBetween(LocalDate startDate, LocalDate endDate);
 }
