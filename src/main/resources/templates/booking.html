@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đặt Phòng - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar h2 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .room-preview {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 40px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .room-preview h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .room-preview .room-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .room-info {
+            margin-bottom: 15px;
+        }
+
+        .room-info label {
+            font-size: 12px;
+            opacity: 0.8;
+            display: block;
+        }
+
+        .room-info span {
+            font-size: 1.2em;
+        }
+
+        .room-price {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .room-price label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .room-price .price {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .booking-form {
+            padding: 40px;
+        }
+
+        .booking-form h3 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #060;
+            border: 1px solid #cfc;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .btn-back:hover {
+            text-decoration: underline;
+        }
+
+        .price-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .price-preview.show {
+            display: block;
+        }
+
+        .price-preview .total {
+            font-size: 1.5em;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .booking-card {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h2>🏨 Như Hotel</h2>
+        <div class="nav-links">
+            <a href="/">Trang chủ</a>
+            <a href="/my-bookings">Đặt phòng của tôi</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="booking-card">
+            <div class="room-preview">
+                <h2 th:text="${room.roomType.displayName}">Phòng Deluxe</h2>
+                <div class="room-number" th:text="${room.roomNumber}">202</div>
+
+                <div class="room-info">
+                    <label>Mô tả</label>
+                    <span th:text="${room.description ?: room.roomType.description}">Mô tả phòng</span>
+                </div>
+
+                <div class="room-price">
+                    <label>Giá mỗi đêm</label>
+                    <div class="price">
+                        <span
+                            th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">1,200,000</span>
+                        VNĐ
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-form">
+                <h3>📝 Thông tin đặt phòng</h3>
+
+                <div class="alert alert-error" th:if="${error}" th:text="${error}">Error message</div>
+                <div class="alert alert-success" th:if="${success}" th:text="${success}">Success message</div>
+
+                <form th:action="@{/booking}" method="post">
+                    <input type="hidden" name="roomId" th:value="${room.id}">
+
+                    <div class="form-group">
+                        <label>Tên khách hàng *</label>
+                        <input type="text" name="guestName" th:value="${user.fullName}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Số điện thoại</label>
+                        <input type="tel" name="guestPhone" placeholder="Nhập số điện thoại">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ngày nhận phòng *</label>
+                            <input type="date" name="checkIn" id="checkIn" th:min="${minDate}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày trả phòng *</label>
+                            <input type="date" name="checkOut" id="checkOut" th:min="${minDate}" required>
+                        </div>
+                    </div>
+
+                    <div class="price-preview" id="pricePreview">
+                        <label>Tổng tiền ước tính:</label>
+                        <div class="total" id="totalPrice">0 VNĐ</div>
+                        <small id="nightsInfo"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ghi chú</label>
+                        <textarea name="notes" rows="3" placeholder="Yêu cầu đặc biệt (nếu có)"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">✅ Xác nhận đặt phòng</button>
+                    <a href="/" class="btn-back">← Quay lại danh sách phòng</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const pricePerNight = [[${ room.pricePerNight }]];
+        const checkIn = document.getElementById('checkIn');
+        const checkOut = document.getElementById('checkOut');
+        const pricePreview = document.getElementById('pricePreview');
+        const totalPrice = document.getElementById('totalPrice');
+        const nightsInfo = document.getElementById('nightsInfo');
+
+        function calculatePrice() {
+            if (checkIn.value && checkOut.value) {
+                const start = new Date(checkIn.value);
+                const end = new Date(checkOut.value);
+                const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+                if (nights > 0) {
+                    const total = nights * pricePerNight;
+                    pricePreview.classList.add('show');
+                    totalPrice.textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+                    nightsInfo.textContent = nights + ' đêm × ' + pricePerNight.toLocaleString('vi-VN') + ' VNĐ';
+                } else {
+                    pricePreview.classList.remove('show');
+                }
+            }
+        }
+
+        checkIn.addEventListener('change', function () {
+            checkOut.min = this.value;
+            calculatePrice();
+        });
+        checkOut.addEventListener('change', calculatePrice);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Báo cáo - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-menu span {
+            color: #94a3b8;
+        }
+
+        .user-menu a {
+            background: #e94560;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .user-menu a:hover {
+            background: #c73e54;
+        }
+
+        .report-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .table-section {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        .table-section h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        td {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin">📊 Dashboard</a>
+            <a href="/admin/bookings">📋 Quản lý Booking</a>
+            <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
+            <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/admin/reports" class="active">📈 Most Booking & Rating</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📈 Báo cáo</h1>
+            <div class="user-menu">
+                <span th:if="${session.user != null}">Xin chào, <span
+                        th:text="${session.user.fullName != null ? session.user.fullName : session.user.username}">Admin</span></span>
+                <a href="/logout">Đăng xuất</a>
+            </div>
+        </div>
+
+        <div class="report-container">
+            <div class="table-section">
+                <h2>Phòng được đặt nhiều nhất</h2>
+                <table th:if="${mostBookedRooms != null and !mostBookedRooms.isEmpty()}">
+                    <thead>
+                        <tr>
+                            <th>Phòng</th>
+                            <th>Số lần đặt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="roomStat : ${mostBookedRooms}">
+                            <td th:text="${roomStat[0].roomNumber}">101</td>
+                            <td th:text="${roomStat[1]}">15</td>
+                        </tr>
+                    </tbody>
+                </table>
+                 <p th:if="${mostBookedRooms == null or mostBookedRooms.isEmpty()}"
+                    style="color: #94a3b8; text-align: center; padding: 40px;">
+                    Chưa có dữ liệu.
+                </p>
+            </div>
+
+            <div class="table-section">
+                <h2>Phòng được đánh giá cao nhất</h2>
+                <table th:if="${topRatedRooms != null and !topRatedRooms.isEmpty()}">
+                    <thead>
+                        <tr>
+                            <th>Phòng</th>
+                            <th>Đánh giá trung bình</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="roomStat : ${topRatedRooms}">
+                            <td th:text="${roomStat[0].roomNumber}">202</td>
+                            <td th:text="${#numbers.formatDecimal(roomStat[1], 1, 1)}">4.8</td>
+                        </tr>
+                    </tbody>
+                </table>
+                 <p th:if="${topRatedRooms == null or topRatedRooms.isEmpty()}"
+                    style="color: #94a3b8; text-align: center; padding: 40px;">
+                    Chưa có dữ liệu.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

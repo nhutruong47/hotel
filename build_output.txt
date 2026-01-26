@@ -1,0 +1,72 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------------< com.hsf:hotel >----------------------------
+[INFO] Building hotel 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.0:clean (default-clean) @ hotel ---
+[INFO] Deleting C:\Users\NhuTruong\Downloads\hotel-develop\target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ hotel ---
+[INFO] Copying 1 resource from src\main\resources to target\classes
+[INFO] Copying 27 resources from src\main\resources to target\classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ hotel ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 41 source files with javac [debug parameters release 21] to target\classes
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/config/DataInitializer.java:[39,67] cannot find symbol
+  symbol:   variable passwordEncoder
+  location: class com.hsf.hotel.config.DataInitializer
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/config/DataInitializer.java:[48,59] cannot find symbol
+  symbol:   variable passwordEncoder
+  location: class com.hsf.hotel.config.DataInitializer
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[29,80] cannot find symbol
+  symbol:   method getStartDate()
+  location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[29,106] cannot find symbol
+  symbol:   method getEndDate()
+  location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[43,83] cannot find symbol
+  symbol:   method getStartDate()
+  location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[43,109] cannot find symbol
+  symbol:   method getEndDate()
+  location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[INFO] 6 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.521 s
+[INFO] Finished at: 2026-01-26T18:15:08+07:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project hotel: Compilation failure: Compilation failure: 
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/config/DataInitializer.java:[39,67] cannot find symbol
+[ERROR]   symbol:   variable passwordEncoder
+[ERROR]   location: class com.hsf.hotel.config.DataInitializer
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/config/DataInitializer.java:[48,59] cannot find symbol
+[ERROR]   symbol:   variable passwordEncoder
+[ERROR]   location: class com.hsf.hotel.config.DataInitializer
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[29,80] cannot find symbol
+[ERROR]   symbol:   method getStartDate()
+[ERROR]   location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[29,106] cannot find symbol
+[ERROR]   symbol:   method getEndDate()
+[ERROR]   location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[43,83] cannot find symbol
+[ERROR]   symbol:   method getStartDate()
+[ERROR]   location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] /C:/Users/NhuTruong/Downloads/hotel-develop/src/main/java/com/hsf/hotel/controller/ReportController.java:[43,109] cannot find symbol
+[ERROR]   symbol:   method getEndDate()
+[ERROR]   location: variable reportDTO of type com.hsf.hotel.dto.ReportDTO
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

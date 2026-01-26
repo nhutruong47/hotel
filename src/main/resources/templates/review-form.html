@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Đánh giá phòng - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .review-card {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .room-info {
+            background: rgba(233, 69, 96, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .room-info img {
+            width: 120px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .room-info h3 {
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+
+        .room-info p {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .rating-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .rating-section label {
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .star-rating input {
+            display: none;
+        }
+
+        .star-rating label {
+            font-size: 40px;
+            color: #4a5568;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover~label,
+        .star-rating input:checked~label {
+            color: #fbbf24;
+        }
+
+        .star-rating {
+            flex-direction: row-reverse;
+            justify-content: center;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            color: #94a3b8;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #e94560;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 30px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="review-card">
+            <h1 th:text="${isEdit} ? '✏️ Sửa đánh giá' : '⭐ Đánh giá phòng'">Đánh giá phòng</h1>
+
+            <!-- Alerts -->
+            <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+            <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+            <!-- Room Info -->
+            <div class="room-info">
+                <img th:src="${room.imageUrl != null ? room.imageUrl : 'https://via.placeholder.com/120x80'}"
+                    alt="Room">
+                <div>
+                    <h3 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h3>
+                    <p th:text="${room.roomType.displayName}">Deluxe</p>
+                    <p th:text="'Check-in: ' + ${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + 
+                               ' - Check-out: ' + ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">
+                        Check-in/out dates
+                    </p>
+                </div>
+            </div>
+
+            <!-- Review Form -->
+            <form
+                th:action="${isEdit} ? @{/review/{id}/update(id=${review.id})} : @{/booking/{id}/review(id=${booking.id})}"
+                method="post">
+
+                <!-- Star Rating -->
+                <div class="rating-section">
+                    <label>Đánh giá của bạn</label>
+                    <div class="star-rating">
+                        <input type="radio" id="star5" name="rating" value="5"
+                            th:checked="${isEdit and review.rating == 5}">
+                        <label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="4"
+                            th:checked="${isEdit and review.rating == 4}">
+                        <label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3"
+                            th:checked="${isEdit and review.rating == 3}">
+                        <label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2"
+                            th:checked="${isEdit and review.rating == 2}">
+                        <label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1"
+                            th:checked="${isEdit and review.rating == 1}">
+                        <label for="star1">★</label>
+                    </div>
+                </div>
+
+                <!-- Comment -->
+                <div class="form-group">
+                    <label for="comment">Nhận xét của bạn (không bắt buộc)</label>
+                    <textarea id="comment" name="comment" placeholder="Chia sẻ trải nghiệm của bạn về phòng này..."
+                        th:text="${isEdit} ? ${review.comment} : ''"></textarea>
+                </div>
+
+                <!-- Buttons -->
+                <div class="btn-group">
+                    <a href="/my-bookings" class="btn btn-secondary">← Quay lại</a>
+                    <button type="submit" class="btn btn-primary">
+                        <span th:text="${isEdit} ? 'Cập nhật đánh giá' : 'Gửi đánh giá'">Gửi đánh giá</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

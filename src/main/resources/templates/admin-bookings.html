@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Booking - Admin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-bar a {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #94a3b8;
+            background: #16213e;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            transition: 0.3s;
+        }
+
+        .filter-bar a:hover,
+        .filter-bar a.active {
+            background: #e94560;
+            color: white;
+            border-color: #e94560;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #22c55e20;
+            color: #22c55e;
+            border: 1px solid #22c55e40;
+        }
+
+        .alert-error {
+            background: #ef444420;
+            color: #ef4444;
+            border: 1px solid #ef444440;
+        }
+
+        .table-section {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        td {
+            color: white;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-CONFIRMED {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+
+        .status-PENDING {
+            background: #f59e0b20;
+            color: #f59e0b;
+        }
+
+        .status-CANCELLED {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .status-COMPLETED {
+            background: #3b82f620;
+            color: #3b82f6;
+        }
+
+        .action-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-form select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #16213e;
+            color: white;
+            cursor: pointer;
+        }
+
+        .action-form button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            background: #e94560;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .action-form button:hover {
+            background: #c73e54;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin">📊 Dashboard</a>
+            <a href="/admin/bookings" class="active">📋 Quản lý Booking</a>
+            <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
+            <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📋 Quản lý Booking</h1>
+        </div>
+
+        <div class="filter-bar">
+            <a href="/admin/bookings" th:classappend="${selectedStatus == null} ? 'active' : ''">Tất cả</a>
+            <a th:each="s : ${statuses}" th:href="@{/admin/bookings(status=${s})}" th:text="${s.displayName}"
+                th:classappend="${selectedStatus == s.name()} ? 'active' : ''">Status</a>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <div class="table-section">
+            <table th:if="${bookings != null and !bookings.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Khách hàng</th>
+                        <th>SĐT</th>
+                        <th>Phòng</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="booking : ${bookings}">
+                        <td th:text="${booking.id}">1</td>
+                        <td th:text="${booking.guestName}">Nguyễn Văn A</td>
+                        <td th:text="${booking.guestPhone ?: 'N/A'}">0123456789</td>
+                        <td th:text="${booking.room.roomNumber}">101</td>
+                        <td th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01/2024</td>
+                        <td th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">05/01/2024</td>
+                        <td>
+                            <span
+                                th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')}">2,000,000</span>
+                            VNĐ
+                        </td>
+                        <td>
+                            <span class="status-badge" th:classappend="'status-' + ${booking.status}"
+                                th:text="${booking.status.displayName}">Đã xác nhận</span>
+                        </td>
+                        <td>
+                            <form class="action-form" th:action="@{/admin/booking/{id}/status(id=${booking.id})}"
+                                method="post">
+                                <select name="status">
+                                    <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.displayName}"
+                                        th:selected="${booking.status == s}">Status</option>
+                                </select>
+                                <button type="submit">Cập nhật</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div th:if="${bookings == null or bookings.isEmpty()}" class="empty-state">
+                <p>Không có booking nào</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
