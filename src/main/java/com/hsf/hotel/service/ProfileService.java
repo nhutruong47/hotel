@@ -30,9 +30,11 @@ public class ProfileService {
 
     public Optional<User> getCurrentUser() {
         var ctx = SecurityContextHolder.getContext();
-        if (ctx == null) return Optional.empty();
+        if (ctx == null)
+            return Optional.empty();
         var auth = ctx.getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) return Optional.empty();
+        if (auth == null || !auth.isAuthenticated())
+            return Optional.empty();
         Object principal = auth.getPrincipal();
         String username = null;
         if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
@@ -40,14 +42,16 @@ public class ProfileService {
         } else if (principal instanceof String) {
             username = (String) principal;
         }
-        if (username == null || "anonymousUser".equals(username)) return Optional.empty();
+        if (username == null || "anonymousUser".equals(username))
+            return Optional.empty();
         return userRepository.findByUsername(username);
     }
 
     @Transactional
     public User updateProfile(String username, ProfileDTO dto, String avatarFilename) {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("User not found"));
-        if (dto.getFullName() != null) user.setFullName(dto.getFullName());
+        if (dto.getFullName() != null)
+            user.setFullName(dto.getFullName());
         if (dto.getEmail() != null && !dto.getEmail().equals(user.getEmail())) {
             user.setEmail(dto.getEmail());
             user.setEmailVerified(false);
@@ -106,5 +110,25 @@ public class ProfileService {
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
         userRepository.save(user);
+    }
+
+    /**
+     * Tìm user theo email
+     */
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    /**
+     * Reset password trực tiếp bằng email (luồng đơn giản, không cần token)
+     * Dùng khi user xác nhận đúng email → cho reset password luôn
+     */
+    @Transactional
+    public void resetPasswordByEmail(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        System.out.println("✅ Password reset for: " + email);
     }
 }
