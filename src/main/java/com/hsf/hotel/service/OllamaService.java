@@ -86,11 +86,68 @@ public class OllamaService {
                         }
                 } catch (WebClientResponseException e) {
                         System.err.println("❌ Ollama API Error: " + e.getStatusCode() + " - " + e.getMessage());
-                        return "Lỗi API Ollama: " + e.getStatusCode();
+                        return "⚠️ Không thể kết nối đến AI. Vui lòng thử lại sau hoặc liên hệ lễ tân để được hỗ trợ.";
                 } catch (Exception e) {
                         System.err.println("❌ Error: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-                        e.printStackTrace();
-                        return "Lỗi kết nối AI: " + e.getMessage();
+                        // Return friendly fallback message instead of technical error
+                        return "⚠️ Trợ lý AI hiện không khả dụng. Dưới đây là gợi ý phòng:\n\n"
+                                        + getFallbackRecommendation(availableRooms, userRequest);
                 }
+        }
+
+        /**
+         * Fallback recommendation when Ollama is not available
+         * Uses simple keyword matching to suggest rooms
+         */
+        private String getFallbackRecommendation(List<Room> rooms, String userRequest) {
+                String request = userRequest.toLowerCase();
+                StringBuilder sb = new StringBuilder();
+
+                // Simple keyword matching
+                List<Room> suggestions;
+                if (request.contains("vip") || request.contains("sang trọng") || request.contains("cao cấp")) {
+                        suggestions = rooms.stream()
+                                        .filter(r -> r.getRoomType().name().contains("VIP")
+                                                        || r.getRoomType().name().contains("SUITE"))
+                                        .limit(2)
+                                        .toList();
+                } else if (request.contains("gia đình") || request.contains("4 người") || request.contains("nhóm")) {
+                        suggestions = rooms.stream()
+                                        .filter(r -> r.getRoomType().name().contains("FAMILY")
+                                                        || r.getRoomType().name().contains("DELUXE"))
+                                        .limit(2)
+                                        .toList();
+                } else if (request.contains("cặp đôi") || request.contains("lãng mạn") || request.contains("2 người")) {
+                        suggestions = rooms.stream()
+                                        .filter(r -> r.getRoomType().name().contains("DOUBLE")
+                                                        || r.getRoomType().name().contains("DELUXE"))
+                                        .limit(2)
+                                        .toList();
+                } else if (request.contains("rẻ") || request.contains("tiết kiệm") || request.contains("hợp lý")) {
+                        suggestions = rooms.stream()
+                                        .sorted((a, b) -> a.getPricePerNight().compareTo(b.getPricePerNight()))
+                                        .limit(2)
+                                        .toList();
+                } else {
+                        // Default: return first 2 available rooms
+                        suggestions = rooms.stream().limit(2).toList();
+                }
+
+                if (suggestions.isEmpty()) {
+                        suggestions = rooms.stream().limit(2).toList();
+                }
+
+                for (Room room : suggestions) {
+                        sb.append(String.format("🏨 **Phòng %s** (%s)\n", room.getRoomNumber(),
+                                        room.getRoomType().getDisplayName()));
+                        sb.append(String.format("   Giá: %s VNĐ/đêm\n", room.getPricePerNight().toString()));
+                        if (room.getDescription() != null && !room.getDescription().isEmpty()) {
+                                sb.append(String.format("   %s\n", room.getDescription()));
+                        }
+                        sb.append("\n");
+                }
+
+                sb.append("💡 Để được tư vấn chi tiết hơn, vui lòng liên hệ lễ tân hoặc thử lại sau!");
+                return sb.toString();
         }
 }

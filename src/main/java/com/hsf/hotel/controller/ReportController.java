@@ -8,7 +8,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,9 +22,9 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
 
-
     @PostMapping("/excel")
-    public ResponseEntity<InputStreamResource> getBookingReportExcel(@ModelAttribute ReportDTO reportDTO) throws IOException {
+    public ResponseEntity<InputStreamResource> getBookingReportExcel(@ModelAttribute ReportDTO reportDTO)
+            throws IOException {
         ByteArrayInputStream in = reportService.generateBookingReport(reportDTO.getStartDate(), reportDTO.getEndDate());
 
         HttpHeaders headers = new HttpHeaders();
@@ -34,13 +33,16 @@ public class ReportController {
         return ResponseEntity
                 .ok()
                 .headers(headers)
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .contentType(
+                        MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                 .body(new InputStreamResource(in));
     }
 
     @PostMapping("/pdf")
-    public ResponseEntity<InputStreamResource> getBookingReportPdf(@ModelAttribute ReportDTO reportDTO) throws IOException {
-        ByteArrayInputStream in = reportService.generatePdfBookingReport(reportDTO.getStartDate(), reportDTO.getEndDate());
+    public ResponseEntity<InputStreamResource> getBookingReportPdf(@ModelAttribute ReportDTO reportDTO)
+            throws IOException {
+        ByteArrayInputStream in = reportService.generatePdfBookingReport(reportDTO.getStartDate(),
+                reportDTO.getEndDate());
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Disposition", "attachment; filename=bookings.pdf");
