@@ -62,6 +62,14 @@ public class BookingService {
         return bookingRepository.countByStatus(BookingStatus.PENDING);
     }
 
+    public List<Object[]> getMostBookedRooms() {
+        return bookingRepository.findMostBookedRooms();
+    }
+
+    public List<Object[]> getMostRatingRooms() {
+        return bookingRepository.findMostratingRooms();
+    }
+
     public BigDecimal getMonthlyRevenue() {
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
         LocalDate endOfMonth = startOfMonth.plusMonths(1); // Exclude end of month for proper range
