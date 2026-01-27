@@ -54,6 +54,7 @@ public class AdminController {
         model.addAttribute("monthlyRevenue", monthlyRevenue);
         model.addAttribute("pendingCount", pendingCount);
         model.addAttribute("recentBookings", allBookings.stream().limit(5).toList());
+        model.addAttribute("allRooms", allRooms);
 
         // Reports
         model.addAttribute("mostBookedRooms", bookingService.getMostBookedRooms());
