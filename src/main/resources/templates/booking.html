@@ -3,6 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Đặt Phòng - Như Hotel</title>
     <style>
         * {
@@ -12,7 +16,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
@@ -254,6 +258,43 @@
                 <div class="room-info">
                     <label>Mô tả</label>
                     <span th:text="${room.description ?: room.roomType.description}">Mô tả phòng</span>
+                </div>
+
+                <!-- Rating & Reviews -->
+                <div class="room-info" style="margin-top: 15px;">
+                    <label>Đánh giá</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <span style="color: #fbbf24; font-size: 1.2em;">
+                            <span th:each="i : ${#numbers.sequence(1, 5)}"
+                                th:text="${i <= avgRating} ? '★' : '☆'">★</span>
+                        </span>
+                        <span th:text="${avgRating}" style="font-weight: bold;">4.5</span>
+                        <span style="opacity: 0.7; font-size: 13px;" th:text="'(' + ${reviewCount} + ' đánh giá)'"> (10
+                            đánh giá)</span>
+                    </div>
+                </div>
+
+                <!-- Recent Reviews -->
+                <div th:if="${recentReviews != null and !recentReviews.isEmpty()}"
+                    style="margin-top: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 12px;">
+                    <label style="font-size: 12px; opacity: 0.8; display: block; margin-bottom: 8px;">💬 Nhận xét gần
+                        đây</label>
+                    <div th:each="rv : ${recentReviews}"
+                        style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; font-weight: 500;"
+                                th:text="${rv.user.fullName ?: rv.user.username}">Khách</span>
+                            <span style="color: #fbbf24; font-size: 12px;" th:text="${rv.starsDisplay}">★★★★☆</span>
+                        </div>
+                        <p th:if="${rv.comment != null and !rv.comment.isEmpty()}"
+                            th:text="${rv.comment.length() > 60 ? rv.comment.substring(0, 60) + '...' : rv.comment}"
+                            style="font-size: 12px; opacity: 0.8; margin-top: 3px; line-height: 1.4;">Nhận xét...</p>
+                    </div>
+                    <a th:href="@{/room/{id}/reviews(id=${room.id})}"
+                        style="font-size: 12px; color: #fbbf24; text-decoration: none;">📝 Xem tất cả đánh giá →</a>
+                </div>
+                <div th:if="${recentReviews == null or recentReviews.isEmpty()}" style="margin-top: 10px;">
+                    <span style="font-size: 12px; opacity: 0.6;">Chưa có đánh giá nào</span>
                 </div>
 
                 <div class="room-price">

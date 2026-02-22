@@ -1,9 +1,11 @@
 package com.hsf.hotel.controller;
 
 import com.hsf.hotel.model.Booking;
+import com.hsf.hotel.model.Review;
 import com.hsf.hotel.model.Room;
 import com.hsf.hotel.model.User;
 import com.hsf.hotel.service.BookingService;
+import com.hsf.hotel.service.ReviewService;
 import com.hsf.hotel.service.RoomService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ public class BookingController {
     @Autowired
     private RoomService roomService;
 
+    @Autowired
+    private ReviewService reviewService;
+
     @GetMapping("/booking/{roomId}")
     public String bookingForm(@PathVariable Integer roomId, HttpSession session, Model model) {
         User user = (User) session.getAttribute("user");
@@ -36,6 +41,18 @@ public class BookingController {
                     model.addAttribute("room", room);
                     model.addAttribute("user", user);
                     model.addAttribute("minDate", LocalDate.now());
+
+                    // Review data
+                    Double avgRating = reviewService.getAverageRating(room);
+                    long reviewCount = reviewService.getReviewCount(room);
+                    List<Review> recentReviews = reviewService.getReviewsByRoom(room);
+                    if (recentReviews.size() > 3) {
+                        recentReviews = recentReviews.subList(0, 3);
+                    }
+                    model.addAttribute("avgRating", avgRating);
+                    model.addAttribute("reviewCount", reviewCount);
+                    model.addAttribute("recentReviews", recentReviews);
+
                     return "booking";
                 })
                 .orElse("redirect:/");
@@ -69,9 +86,9 @@ public class BookingController {
             Room room = roomService.getRoomById(roomId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
 
-            bookingService.createBooking(user, room, checkIn, checkOut, guestName, guestPhone, notes);
-            redirectAttributes.addFlashAttribute("success", "Đặt phòng thành công!");
-            return "redirect:/my-bookings";
+            Booking booking = bookingService.createBooking(user, room, checkIn, checkOut, guestName, guestPhone, notes);
+            redirectAttributes.addFlashAttribute("success", "Đặt phòng thành công! Vui lòng thanh toán để hoàn tất.");
+            return "redirect:/booking/" + booking.getId() + "/payment";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/booking/" + roomId;

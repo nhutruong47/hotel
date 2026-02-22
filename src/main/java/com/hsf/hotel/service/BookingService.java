@@ -98,8 +98,9 @@ public class BookingService {
     /**
      * WORKFLOW: Tạo booking mới
      * 1. Validate phòng available
-     * 2. Tạo booking với status PENDING
-     * 3. Gửi email thông báo Admin
+     * 2. Tạo booking với status AWAITING_PAYMENT (thanh toán ngay)
+     * 3. Set payment deadline
+     * 4. Gửi email thông báo Admin
      */
     @Transactional
     public Booking createBooking(User user, Room room, LocalDate checkIn, LocalDate checkOut,
@@ -109,7 +110,7 @@ public class BookingService {
             throw new RuntimeException("Phòng đã được đặt trong khoảng thời gian này");
         }
 
-        // Step 2: Create booking with PENDING status
+        // Step 2: Create booking with AWAITING_PAYMENT status (thanh toán ngay)
         Booking booking = new Booking();
         booking.setUser(user);
         booking.setRoom(room);
@@ -118,8 +119,9 @@ public class BookingService {
         booking.setGuestName(guestName);
         booking.setGuestPhone(guestPhone);
         booking.setNotes(notes);
-        booking.setStatus(BookingStatus.PENDING); // Changed from CONFIRMED to PENDING
+        booking.setStatus(BookingStatus.AWAITING_PAYMENT);
         booking.setTotalPrice(calculateTotalPrice(room, checkIn, checkOut));
+        booking.setPaymentDeadline(LocalDateTime.now().plusHours(paymentDeadlineHours));
 
         Booking savedBooking = bookingRepository.save(booking);
 

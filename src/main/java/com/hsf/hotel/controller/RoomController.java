@@ -1,8 +1,10 @@
 package com.hsf.hotel.controller;
 
+import com.hsf.hotel.model.Review;
 import com.hsf.hotel.model.Room;
 import com.hsf.hotel.model.RoomType;
 import com.hsf.hotel.model.User;
+import com.hsf.hotel.service.ReviewService;
 import com.hsf.hotel.service.RoomService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,9 @@ public class RoomController {
 
     @Autowired
     private RoomService roomService;
+
+    @Autowired
+    private ReviewService reviewService;
 
     @GetMapping("/")
     public String index(HttpSession session, Model model) {
@@ -61,6 +66,15 @@ public class RoomController {
         return roomService.getRoomById(id)
                 .map(room -> {
                     model.addAttribute("room", room);
+
+                    // Review data
+                    Double avgRating = reviewService.getAverageRating(room);
+                    long reviewCount = reviewService.getReviewCount(room);
+                    List<Review> reviews = reviewService.getReviewsByRoom(room);
+                    model.addAttribute("avgRating", avgRating);
+                    model.addAttribute("reviewCount", reviewCount);
+                    model.addAttribute("reviews", reviews);
+
                     return "room-detail";
                 })
                 .orElse("redirect:/");

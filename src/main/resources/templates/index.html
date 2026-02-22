@@ -3,6 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Như Hotel - Trang Chủ</title>
     <style>
         * {
@@ -12,7 +16,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
@@ -242,13 +246,17 @@
 
         <div class="room-grid" th:if="${rooms != null and !rooms.isEmpty()}">
             <div class="room-card" th:each="room : ${rooms}">
-                <div class="room-img">
-                    <img th:if="${room.imageUrl}" th:src="${room.imageUrl}" alt="Room Image">
-                    <span th:unless="${room.imageUrl}" th:text="${room.roomType.displayName}">Ảnh Phòng</span>
-                </div>
+                <a th:href="@{/rooms/{id}(id=${room.id})}" style="text-decoration: none; color: inherit;">
+                    <div class="room-img">
+                        <img th:if="${room.imageUrl}" th:src="${room.imageUrl}" alt="Room Image">
+                        <span th:unless="${room.imageUrl}" th:text="${room.roomType.displayName}">Ảnh Phòng</span>
+                    </div>
+                </a>
                 <div class="room-details">
                     <span class="room-type" th:text="${room.roomType.displayName}">Standard</span>
-                    <h4 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h4>
+                    <a th:href="@{/rooms/{id}(id=${room.id})}" style="text-decoration: none; color: inherit;">
+                        <h4 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h4>
+                    </a>
                     <p class="room-desc" th:text="${room.description ?: room.roomType.description}">Mô tả phòng</p>
                     <p class="price">
                         <span
@@ -256,6 +264,8 @@
                         VNĐ
                         <span>/ đêm</span>
                     </p>
+                    <a th:href="@{/rooms/{id}(id=${room.id})}" class="btn-booking"
+                        style="background: linear-gradient(135deg, #667eea, #764ba2);">🔍 Xem chi tiết</a>
                     <a th:href="@{/booking/{id}(id=${room.id})}" class="btn-booking">🎯 Đặt phòng ngay</a>
                     <a th:href="@{/room/{id}/reviews(id=${room.id})}"
                         style="display: block; text-align: center; color: #667eea; font-size: 13px; margin-top: 10px; text-decoration: none;">📝

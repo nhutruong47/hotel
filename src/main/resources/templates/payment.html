@@ -3,6 +3,10 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>Thanh toán - Như Hotel</title>
     <style>
         * {
@@ -12,7 +16,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
@@ -308,6 +312,25 @@
                     <div class="step"><span class="num">1</span> Chuyển khoản</div>
                     <div class="step"><span class="num">2</span> Nhập nội dung</div>
                     <div class="step"><span class="num">3</span> Xác nhận</div>
+                </div>
+
+                <!-- Room Details -->
+                <div
+                    style="background: #f0f4ff; border-radius: 12px; padding: 18px; margin-bottom: 25px; display: flex; gap: 20px; align-items: center;">
+                    <div style="font-size: 2.5em;">🛏️</div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 1.1em; font-weight: 600; color: #333; margin-bottom: 4px;"
+                            th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.displayName}">
+                            Phòng 202 - Deluxe
+                        </div>
+                        <div style="font-size: 13px; color: #666; display: flex; gap: 20px; flex-wrap: wrap;">
+                            <span>📅 Nhận: <b
+                                    th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01</b></span>
+                            <span>📅 Trả: <b
+                                    th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">03/01</b></span>
+                            <span>🌙 <b th:text="${booking.numberOfNights}">2</b> đêm</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="two-columns">
