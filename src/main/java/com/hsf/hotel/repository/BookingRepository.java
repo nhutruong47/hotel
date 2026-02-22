@@ -54,4 +54,6 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
     @Query("SELECT b.room, AVG(r.rating) as average_rating FROM Booking b JOIN Review r ON b.id = r.booking.id GROUP BY b.room ORDER BY average_rating DESC")
     List<Object[]> findMostratingRooms();
+
+    List<Booking> findAllByRoomId(Integer roomId);
 }

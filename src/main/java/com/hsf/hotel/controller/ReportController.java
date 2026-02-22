@@ -53,4 +53,35 @@ public class ReportController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(new InputStreamResource(in));
     }
+
+    @PostMapping("/excel/room")
+    public ResponseEntity<InputStreamResource> getBookingReportExcelByRoom(@ModelAttribute ReportDTO reportDTO)
+            throws IOException {
+        ByteArrayInputStream in = reportService.generateBookingReportByRoom(reportDTO.getRoomId());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=bookings_room_" + reportDTO.getRoomId() + ".xlsx");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(
+                        MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(new InputStreamResource(in));
+    }
+
+    @PostMapping("/pdf/room")
+    public ResponseEntity<InputStreamResource> getBookingReportPdfByRoom(@ModelAttribute ReportDTO reportDTO)
+            throws IOException {
+        ByteArrayInputStream in = reportService.generatePdfBookingReportByRoom(reportDTO.getRoomId());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=bookings_room_" + reportDTO.getRoomId() + ".pdf");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(new InputStreamResource(in));
+    }
 }

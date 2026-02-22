@@ -31,4 +31,14 @@ public class ReportService {
         List<Booking> bookings = bookingRepository.findAllByCheckInDateBetween(startDate, endDate);
         return pdfExportService.exportBookingsToPdf(bookings);
     }
+
+    public ByteArrayInputStream generateBookingReportByRoom(Integer roomId) throws IOException {
+        List<Booking> bookings = bookingRepository.findAllByRoomId(roomId);
+        return excelExportService.exportBookingsToExcel(bookings);
+    }
+
+    public ByteArrayInputStream generatePdfBookingReportByRoom(Integer roomId) throws IOException {
+        List<Booking> bookings = bookingRepository.findAllByRoomId(roomId);
+        return pdfExportService.exportBookingsToPdf(bookings);
+    }
 }

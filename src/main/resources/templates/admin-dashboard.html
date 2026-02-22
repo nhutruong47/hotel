@@ -412,10 +412,10 @@
                     style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
                 <button type="submit"
                     style="background: #22c55e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
-                    Tải Excel
+                    Tải Excel (Tất cả)
                 </button>
             </form>
-            <form th:action="@{/admin/reports/pdf}" method="post">
+            <form th:action="@{/admin/reports/pdf}" method="post" style="margin-bottom: 20px;">
                 <label for="pdfStartDate" style="color: #94a3b8;">Từ ngày:</label>
                 <input type="date" id="pdfStartDate" name="startDate"
                     style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
@@ -424,7 +424,31 @@
                     style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
                 <button type="submit"
                     style="background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
-                    Tải PDF
+                    Tải PDF (Tất cả)
+                </button>
+            </form>
+        </div>
+
+        <div class="table-section" style="margin-top: 30px;">
+            <h2>🏨 Báo cáo theo phòng</h2>
+            <form th:action="@{/admin/reports/excel/room}" method="post" style="margin-bottom: 20px;">
+                <label for="room-select-excel" style="color: #94a3b8;">Chọn phòng:</label>
+                <select id="room-select-excel" name="roomId" style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white; min-width: 200px;">
+                    <option th:each="room : ${allRooms}" th:value="${room.id}" th:text="${'Phòng ' + room.roomNumber + ' - ' + room.roomType.displayName}"></option>
+                </select>
+                <button type="submit"
+                    style="background: #22c55e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải Excel theo phòng
+                </button>
+            </form>
+            <form th:action="@{/admin/reports/pdf/room}" method="post">
+                 <label for="room-select-pdf" style="color: #94a3b8;">Chọn phòng:</label>
+                <select id="room-select-pdf" name="roomId" style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white; min-width: 200px;">
+                    <option th:each="room : ${allRooms}" th:value="${room.id}" th:text="${'Phòng ' + room.roomNumber + ' - ' + room.roomType.displayName}"></option>
+                </select>
+                <button type="submit"
+                    style="background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải PDF theo phòng
                 </button>
             </form>
         </div>
@@ -501,3 +525,4 @@
 </body>
 
 </html>
+

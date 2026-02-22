@@ -142,6 +142,7 @@
             color: white;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -170,49 +171,131 @@
         <div class="report-container">
             <div class="table-section">
                 <h2>Phòng được đặt nhiều nhất</h2>
-                <table th:if="${mostBookedRooms != null and !mostBookedRooms.isEmpty()}">
-                    <thead>
-                        <tr>
-                            <th>Phòng</th>
-                            <th>Số lần đặt</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="roomStat : ${mostBookedRooms}">
-                            <td th:text="${roomStat[0].roomNumber}">101</td>
-                            <td th:text="${roomStat[1]}">15</td>
-                        </tr>
-                    </tbody>
-                </table>
-                 <p th:if="${mostBookedRooms == null or mostBookedRooms.isEmpty()}"
-                    style="color: #94a3b8; text-align: center; padding: 40px;">
-                    Chưa có dữ liệu.
-                </p>
+                <canvas id="mostBookedChart" width="400" height="200"></canvas>
             </div>
 
             <div class="table-section">
                 <h2>Phòng được đánh giá cao nhất</h2>
-                <table th:if="${topRatedRooms != null and !topRatedRooms.isEmpty()}">
-                    <thead>
-                        <tr>
-                            <th>Phòng</th>
-                            <th>Đánh giá trung bình</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="roomStat : ${topRatedRooms}">
-                            <td th:text="${roomStat[0].roomNumber}">202</td>
-                            <td th:text="${#numbers.formatDecimal(roomStat[1], 1, 1)}">4.8</td>
-                        </tr>
-                    </tbody>
-                </table>
-                 <p th:if="${topRatedRooms == null or topRatedRooms.isEmpty()}"
-                    style="color: #94a3b8; text-align: center; padding: 40px;">
-                    Chưa có dữ liệu.
-                </p>
+                <canvas id="topRatedChart" width="400" height="200"></canvas>
             </div>
         </div>
     </div>
-</body>
 
-</html>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const mostBookedData = /*[[${mostBookedRooms}]]*/ null;
+        const topRatedData = /*[[${topRatedRooms}]]*/ null;
+
+        // Chart for Most Booked Rooms
+        if (mostBookedData && mostBookedData.length > 0) {
+            const mostBookedCtx = document.getElementById('mostBookedChart').getContext('2d');
+            const mostBookedLabels = mostBookedData.map(item => 'Phòng ' + item[0].roomNumber);
+            const mostBookedValues = mostBookedData.map(item => item[1]);
+
+            new Chart(mostBookedCtx, {
+                type: 'bar',
+                data: {
+                    labels: mostBookedLabels,
+                    datasets: [{
+                        label: 'Số lần đặt',
+                        data: mostBookedValues,
+                        backgroundColor: 'rgba(233, 69, 96, 0.6)',
+                        borderColor: 'rgba(233, 69, 96, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            const mostBookedCtx = document.getElementById('mostBookedChart').getContext('2d');
+            mostBookedCtx.font = "16px 'Segoe UI'";
+            mostBookedCtx.fillStyle = '#94a3b8';
+            mostBookedCtx.textAlign = 'center';
+            mostBookedCtx.fillText("Chưa có dữ liệu.", 200, 100);
+        }
+
+        // Chart for Top Rated Rooms
+        if (topRatedData && topRatedData.length > 0) {
+            const topRatedCtx = document.getElementById('topRatedChart').getContext('2d');
+            const topRatedLabels = topRatedData.map(item => 'Phòng ' + item[0].roomNumber);
+            const topRatedValues = topRatedData.map(item => item[1]);
+
+            new Chart(topRatedCtx, {
+                type: 'polarArea',
+                data: {
+                    labels: topRatedLabels,
+                    datasets: [{
+                        label: 'Đánh giá',
+                        data: topRatedValues,
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(255, 206, 86, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                            'rgba(153, 102, 255, 0.6)',
+                            'rgba(255, 159, 64, 0.6)'
+                        ]
+                    }]
+                },
+                options: {
+                     scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(255, 255, 255, 0.2)'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.2)'
+                            },
+                            pointLabels: {
+                                color: '#94a3b8'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                backdropColor: 'transparent'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            const topRatedCtx = document.getElementById('topRatedChart').getContext('2d');
+            topRatedCtx.font = "16px 'Segoe UI'";
+            topRatedCtx.fillStyle = '#94a3b8';
+            topRatedCtx.textAlign = 'center';
+            topRatedCtx.fillText("Chưa có dữ liệu.", 200, 100);
+        }
+        /*]]>*/
+    </script>

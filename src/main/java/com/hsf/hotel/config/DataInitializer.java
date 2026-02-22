@@ -8,7 +8,6 @@ import com.hsf.hotel.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import java.math.BigDecimal;
 
 @Component
@@ -20,9 +19,6 @@ public class DataInitializer implements CommandLineRunner {
         @Autowired
         private UserRepository userRepository;
 
-        @Autowired
-        private PasswordEncoder passwordEncoder;
-
         @Override
         public void run(String... args) {
                 // Create default user if not exists
@@ -30,8 +26,8 @@ public class DataInitializer implements CommandLineRunner {
                         User user = new User();
                         user.setUsername("a");
                         user.setPassword("a");
-                        user.setFullName("User");
-                        user.setRole("USER");
+                        user.setFullName("Admin User");
+                        user.setRole("ADMIN");
                         userRepository.save(user);
                         System.out.println("✅ Đã tạo user mặc định: username=a, password=a");
                 }
@@ -39,7 +35,7 @@ public class DataInitializer implements CommandLineRunner {
                 // Create or update admin account
                 userRepository.findByUsername("admin").ifPresentOrElse(
                                 existingAdmin -> {
-                                        existingAdmin.setPassword(passwordEncoder.encode("admin"));
+                                        existingAdmin.setPassword("admin");
                                         existingAdmin.setRole("ADMIN");
                                         userRepository.save(existingAdmin);
                                         System.out.println(
@@ -48,7 +44,7 @@ public class DataInitializer implements CommandLineRunner {
                                 () -> {
                                         User admin = new User();
                                         admin.setUsername("admin");
-                                        admin.setPassword(passwordEncoder.encode("admin"));
+                                        admin.setPassword("admin");
                                         admin.setFullName("Administrator");
                                         admin.setEmail("admin@hotel.com");
                                         admin.setRole("ADMIN");

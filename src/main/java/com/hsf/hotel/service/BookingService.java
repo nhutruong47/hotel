@@ -2,6 +2,7 @@ package com.hsf.hotel.service;
 
 import com.hsf.hotel.model.*;
 import com.hsf.hotel.repository.BookingRepository;
+import com.hsf.hotel.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,9 @@ public class BookingService {
 
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private RoomRepository roomRepository;
 
     @Autowired
     private EmailService emailService;
@@ -42,15 +46,8 @@ public class BookingService {
     }
 
     public List<Booking> getTodayBookings() {
-        return bookingRepository.findByCheckInDate(LocalDate.now());
-    }
-
-    public List<Object[]> getMostBookedRooms() {
-        return bookingRepository.findMostBookedRooms();
-    }
-
-    public List<Object[]> getMostRatingRooms() {
-        return bookingRepository.findMostratingRooms();
+        LocalDate today = LocalDate.now();
+        return bookingRepository.findByCheckInDate(today);
     }
 
     public List<Booking> getBookingsByStatus(BookingStatus status) {
@@ -63,6 +60,14 @@ public class BookingService {
 
     public long getPendingBookingsCount() {
         return bookingRepository.countByStatus(BookingStatus.PENDING);
+    }
+
+    public List<Object[]> getMostBookedRooms() {
+        return bookingRepository.findMostBookedRooms();
+    }
+
+    public List<Object[]> getMostRatingRooms() {
+        return bookingRepository.findMostratingRooms();
     }
 
     public BigDecimal getMonthlyRevenue() {
