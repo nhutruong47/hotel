@@ -303,6 +303,18 @@
                     </div>
 
                     <div class="form-group">
+                        <label>Mã giảm giá</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="text" id="voucherInput" placeholder="Nhập mã giảm giá">
+                            <button type="button" id="applyVoucherBtn" class="btn-submit"
+                                style="width:auto;padding:10px 14px;">Áp dụng</button>
+                        </div>
+                        <input type="hidden" name="voucherCode" id="voucherCode">
+                        <div id="voucherMessage"
+                            style="margin-top:8px;font-size:0.9em;color:#d00"></div>
+                    </div>
+
+                    <div class="form-group">
                         <label>Ghi chú</label>
                         <textarea name="notes" rows="3" placeholder="Yêu cầu đặc biệt (nếu có)"></textarea>
                     </div>
@@ -321,6 +333,19 @@
         const pricePreview = document.getElementById('pricePreview');
         const totalPrice = document.getElementById('totalPrice');
         const nightsInfo = document.getElementById('nightsInfo');
+        const voucherInput = document.getElementById('voucherInput');
+        const applyVoucherBtn = document.getElementById('applyVoucherBtn');
+        const voucherCodeHidden = document.getElementById('voucherCode');
+        const voucherMessage = document.getElementById('voucherMessage');
+
+        // current computed values
+        let currentNights = 0;
+        let currentTotal = 0;
+        let currentDiscount = 0;
+
+        function formatVND(n) {
+            return n.toLocaleString('vi-VN') + ' VNĐ';
+        }
 
         function calculatePrice() {
             if (checkIn.value && checkOut.value) {
@@ -330,14 +355,73 @@
 
                 if (nights > 0) {
                     const total = nights * pricePerNight;
+                    currentNights = nights;
+                    currentTotal = total;
                     pricePreview.classList.add('show');
-                    totalPrice.textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+                    updatePriceDisplay();
                     nightsInfo.textContent = nights + ' đêm × ' + pricePerNight.toLocaleString('vi-VN') + ' VNĐ';
                 } else {
                     pricePreview.classList.remove('show');
                 }
             }
         }
+
+        function updatePriceDisplay() {
+            const totalAfterDiscount = Math.max(0, currentTotal - currentDiscount);
+            totalPrice.textContent = formatVND(totalAfterDiscount);
+            // show discount line
+            let discountLine = document.getElementById('discountLine');
+            if (!discountLine) {
+                discountLine = document.createElement('div');
+                discountLine.id = 'discountLine';
+                discountLine.style.fontSize = '0.95em';
+                discountLine.style.color = '#666';
+                pricePreview.appendChild(discountLine);
+            }
+            if (currentDiscount > 0) {
+                discountLine.textContent = 'Giảm: ' + formatVND(currentDiscount);
+                discountLine.style.display = 'block';
+            } else {
+                discountLine.style.display = 'none';
+            }
+        }
+
+        applyVoucherBtn.addEventListener('click', async function () {
+            const code = voucherInput.value.trim();
+            voucherMessage.style.color = '#d00';
+            if (!code) { voucherMessage.textContent = 'Nhập mã giảm giá'; return; }
+            try {
+                const res = await fetch('/api/vouchers/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ code })
+                });
+                const j = await res.json();
+                if (res.ok && j.valid) {
+                    voucherMessage.style.color = 'green';
+                    const amount = parseFloat(j.amount || '0');
+                    const isPercent = j.percent === true || j.percent === 'true';
+                    voucherCodeHidden.value = code;
+                    if (isPercent) {
+                        // calculate percent on client if price available
+                        currentDiscount = Math.round((currentTotal * amount) / 100);
+                        updatePriceDisplay();
+                        voucherMessage.textContent = 'Áp dụng thành công: -' + amount + '%';
+                    } else {
+                        currentDiscount = amount;
+                        updatePriceDisplay();
+                        voucherMessage.textContent = 'Áp dụng thành công: -' + amount.toLocaleString('vi-VN') + ' VNĐ';
+                    }
+                 } else {
+                     voucherMessage.textContent = j.message || 'Mã không hợp lệ';
+                     voucherCodeHidden.value = '';
+                     currentDiscount = 0;
+                     updatePriceDisplay();
+                 }
+            } catch (e) {
+                voucherMessage.textContent = 'Lỗi kết nối';
+            }
+        });
 
         checkIn.addEventListener('change', function () {
             checkOut.min = this.value;
@@ -348,3 +432,4 @@
 </body>
 
 </html>
+

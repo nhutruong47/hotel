@@ -38,6 +38,13 @@ public class Booking {
     private String guestPhone;
     private String notes;
 
+    // Store applied voucher code (if any) and discount amount
+    @Column(name = "applied_voucher_code")
+    private String appliedVoucherCode;
+
+    @Column(name = "discount_amount", precision = 12, scale = 0)
+    private BigDecimal discountAmount = BigDecimal.ZERO;
+
     // Workflow fields
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by")
@@ -141,6 +148,23 @@ public class Booking {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    // Getter/setter for voucher fields
+    public String getAppliedVoucherCode() {
+        return appliedVoucherCode;
+    }
+
+    public void setAppliedVoucherCode(String appliedVoucherCode) {
+        this.appliedVoucherCode = appliedVoucherCode;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
     }
 
     // Helper methods

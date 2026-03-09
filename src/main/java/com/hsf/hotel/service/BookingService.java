@@ -131,6 +131,14 @@ public class BookingService {
     }
 
     /**
+     * Save booking entity (useful to persist changes like discount/voucher)
+     */
+    @Transactional
+    public Booking saveBooking(Booking booking) {
+        return bookingRepository.save(booking);
+    }
+
+    /**
      * WORKFLOW: Admin duyệt booking
      * 1. Kiểm tra booking tồn tại và đang PENDING
      * 2. Set status = AWAITING_PAYMENT
