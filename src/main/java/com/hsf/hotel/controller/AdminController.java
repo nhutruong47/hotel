@@ -2,8 +2,11 @@ package com.hsf.hotel.controller;
 
 import com.hsf.hotel.model.*;
 import com.hsf.hotel.repository.UserRepository;
+import com.hsf.hotel.repository.RoomTypeRepository;
 import com.hsf.hotel.service.BookingService;
 import com.hsf.hotel.service.RoomService;
+import com.hsf.hotel.service.RoomTypeService;
+import com.hsf.hotel.service.AmenityService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -22,6 +25,15 @@ public class AdminController {
 
     @Autowired
     private RoomService roomService;
+
+    @Autowired
+    private RoomTypeRepository roomTypeRepository;
+
+    @Autowired
+    private RoomTypeService roomTypeService;
+
+    @Autowired
+    private AmenityService amenityService;
 
     @Autowired
     private UserRepository userRepository;
@@ -45,14 +57,11 @@ public class AdminController {
         List<Booking> allBookings = bookingService.getAllBookings();
         List<Booking> todayBookings = bookingService.getTodayBookings();
         BigDecimal monthlyRevenue = bookingService.getMonthlyRevenue();
-        long pendingCount = bookingService.getPendingBookingsCount();
-
         model.addAttribute("totalRooms", allRooms.size());
         model.addAttribute("availableRooms", availableRooms.size());
         model.addAttribute("totalBookings", allBookings.size());
         model.addAttribute("todayBookings", todayBookings.size());
         model.addAttribute("monthlyRevenue", monthlyRevenue);
-        model.addAttribute("pendingCount", pendingCount);
         model.addAttribute("recentBookings", allBookings.stream().limit(5).toList());
         model.addAttribute("allRooms", allRooms);
 
@@ -103,72 +112,6 @@ public class AdminController {
         return "redirect:/admin/bookings";
     }
 
-    /**
-     * WORKFLOW: Admin duyệt booking
-     */
-    @PostMapping("/booking/{id}/approve")
-    public String approveBooking(@PathVariable Integer id,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
-        if (!isAdmin(session)) {
-            return "redirect:/login";
-        }
-
-        try {
-            User admin = (User) session.getAttribute("user");
-            bookingService.approveBooking(id, admin);
-            redirectAttributes.addFlashAttribute("success", "Đã duyệt đơn đặt phòng #" + id);
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-        }
-
-        return "redirect:/admin/bookings";
-    }
-
-    /**
-     * WORKFLOW: Admin từ chối booking
-     */
-    @PostMapping("/booking/{id}/reject")
-    public String rejectBooking(@PathVariable Integer id,
-            @RequestParam(required = false) String reason,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
-        if (!isAdmin(session)) {
-            return "redirect:/login";
-        }
-
-        try {
-            User admin = (User) session.getAttribute("user");
-            bookingService.rejectBooking(id, admin, reason);
-            redirectAttributes.addFlashAttribute("success", "Đã từ chối đơn đặt phòng #" + id);
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-        }
-
-        return "redirect:/admin/bookings";
-    }
-
-    /**
-     * WORKFLOW: Xác nhận thanh toán
-     */
-    @PostMapping("/booking/{id}/confirm-payment")
-    public String confirmPayment(@PathVariable Integer id,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
-        if (!isAdmin(session)) {
-            return "redirect:/login";
-        }
-
-        try {
-            bookingService.confirmPayment(id);
-            redirectAttributes.addFlashAttribute("success", "Đã xác nhận thanh toán cho đơn #" + id);
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-        }
-
-        return "redirect:/admin/bookings";
-    }
-
     // Room Management
     @GetMapping("/rooms")
     public String rooms(HttpSession session, Model model) {
@@ -177,7 +120,8 @@ public class AdminController {
         }
 
         model.addAttribute("rooms", roomService.getAllRooms());
-        model.addAttribute("roomTypes", RoomType.values());
+        model.addAttribute("roomTypes", roomTypeRepository.findAll());
+        model.addAttribute("amenities", amenityService.getAllAmenities());
 
         return "admin-rooms";
     }
@@ -189,7 +133,8 @@ public class AdminController {
             @RequestParam BigDecimal pricePerNight,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String imageUrl,
-            @RequestParam(required = false, defaultValue = "true") Boolean isAvailable,
+            @RequestParam(required = false, defaultValue = "false") Boolean isAvailable,
+            @RequestParam(required = false) List<Integer> amenityIds,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         if (!isAdmin(session)) {
@@ -206,11 +151,25 @@ public class AdminController {
             }
 
             room.setRoomNumber(roomNumber);
-            room.setRoomType(RoomType.valueOf(roomType));
+
+            RoomTypeEntity roomTypeEntity = roomTypeRepository.findByName(roomType)
+                    .orElseThrow(() -> new RuntimeException("Loại phòng không hợp lệ"));
+            room.setRoomType(roomTypeEntity);
+
             room.setPricePerNight(pricePerNight);
             room.setDescription(description);
             room.setImageUrl(imageUrl);
             room.setIsAvailable(isAvailable);
+
+            if (amenityIds != null) {
+                List<Amenity> selectedAmenities = amenityIds.stream()
+                        .map(aId -> amenityService.getAmenityById(aId).orElse(null))
+                        .filter(a -> a != null)
+                        .toList();
+                room.setAmenities(selectedAmenities);
+            } else {
+                room.setAmenities(List.of());
+            }
 
             roomService.saveRoom(room);
             redirectAttributes.addFlashAttribute("success",
@@ -306,5 +265,107 @@ public class AdminController {
         model.addAttribute("topRatedRooms", bookingService.getMostRatingRooms());
 
         return "admin-mostbookingandrating";
+    }
+
+    // Room Type Management
+    @GetMapping("/room-types")
+    public String roomTypes(HttpSession session, Model model) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+        model.addAttribute("roomTypes", roomTypeService.getAllRoomTypes());
+        return "admin-room-types";
+    }
+
+    @PostMapping("/room-type")
+    public String saveRoomType(@RequestParam(required = false) Integer id,
+            @RequestParam String name,
+            @RequestParam(required = false) String description,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+        try {
+            RoomTypeEntity rt;
+            if (id != null) {
+                rt = roomTypeService.getRoomTypeById(id)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy Loại phòng"));
+            } else {
+                rt = new RoomTypeEntity();
+            }
+            rt.setName(name);
+            rt.setDescription(description);
+            roomTypeService.saveRoomType(rt);
+            redirectAttributes.addFlashAttribute("success", "Lưu Loại phòng thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/room-types";
+    }
+
+    @PostMapping("/room-type/{id}/delete")
+    public String deleteRoomType(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+        try {
+            roomTypeService.deleteRoomType(id);
+            redirectAttributes.addFlashAttribute("success", "Xóa Loại phòng thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Không thể xóa Loại phòng đang được sử dụng!");
+        }
+        return "redirect:/admin/room-types";
+    }
+
+    // Amenity Management
+    @GetMapping("/amenities")
+    public String amenities(HttpSession session, Model model) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+        model.addAttribute("amenities", amenityService.getAllAmenities());
+        return "admin-amenities";
+    }
+
+    @PostMapping("/amenity")
+    public String saveAmenity(@RequestParam(required = false) Integer id,
+            @RequestParam String name,
+            @RequestParam(required = false) String iconCode,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+        try {
+            Amenity amenity;
+            if (id != null) {
+                amenity = amenityService.getAmenityById(id)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy Tiện ích"));
+            } else {
+                amenity = new Amenity();
+            }
+            amenity.setName(name);
+            amenity.setIconCode(iconCode);
+            amenityService.saveAmenity(amenity);
+            redirectAttributes.addFlashAttribute("success", "Lưu Tiện ích thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/admin/amenities";
+    }
+
+    @PostMapping("/amenity/{id}/delete")
+    public String deleteAmenity(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+        try {
+            amenityService.deleteAmenity(id);
+            redirectAttributes.addFlashAttribute("success", "Xóa Tiện ích thành công!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Không thể xóa Tiện ích đang được sử dụng!");
+        }
+        return "redirect:/admin/amenities";
     }
 }

@@ -4,18 +4,21 @@ import com.hsf.hotel.model.Booking;
 import com.hsf.hotel.model.Review;
 import com.hsf.hotel.model.Room;
 import com.hsf.hotel.model.User;
+import com.hsf.hotel.repository.BookingRepository;
 import com.hsf.hotel.service.BookingService;
 import com.hsf.hotel.service.ReviewService;
 import com.hsf.hotel.service.RoomService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 public class BookingController {
@@ -28,6 +31,9 @@ public class BookingController {
 
     @Autowired
     private ReviewService reviewService;
+
+    @Autowired
+    private BookingRepository bookingRepository;
 
     @GetMapping("/booking/{roomId}")
     public String bookingForm(@PathVariable Integer roomId, HttpSession session, Model model) {
@@ -58,6 +64,21 @@ public class BookingController {
                 .orElse("redirect:/");
     }
 
+    // API: Get booked dates for a room (used by JavaScript on booking page)
+    @GetMapping("/api/rooms/{roomId}/booked-dates")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, String>>> getBookedDates(@PathVariable Integer roomId) {
+        List<Booking> activeBookings = bookingRepository.findActiveBookingsByRoomId(roomId);
+        List<Map<String, String>> bookedRanges = activeBookings.stream().map(b -> {
+            Map<String, String> range = new HashMap<>();
+            range.put("checkIn", b.getCheckInDate().toString());
+            range.put("checkOut", b.getCheckOutDate().toString());
+            range.put("status", b.getStatus().name());
+            return range;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(bookedRanges);
+    }
+
     @PostMapping("/booking")
     public String createBooking(@RequestParam Integer roomId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
@@ -77,8 +98,8 @@ public class BookingController {
             redirectAttributes.addFlashAttribute("error", "Ngày check-in không được trước hôm nay");
             return "redirect:/booking/" + roomId;
         }
-        if (checkOut.isBefore(checkIn) || checkOut.equals(checkIn)) {
-            redirectAttributes.addFlashAttribute("error", "Ngày check-out phải sau ngày check-in");
+        if (checkOut.isBefore(checkIn)) {
+            redirectAttributes.addFlashAttribute("error", "Ngày trả phòng phải bằng hoặc sau ngày nhận phòng");
             return "redirect:/booking/" + roomId;
         }
 
@@ -86,9 +107,9 @@ public class BookingController {
             Room room = roomService.getRoomById(roomId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
 
-            Booking booking = bookingService.createBooking(user, room, checkIn, checkOut, guestName, guestPhone, notes);
-            redirectAttributes.addFlashAttribute("success", "Đặt phòng thành công! Vui lòng thanh toán để hoàn tất.");
-            return "redirect:/booking/" + booking.getId() + "/payment";
+            bookingService.createBooking(user, room, checkIn, checkOut, guestName, guestPhone, notes);
+            redirectAttributes.addFlashAttribute("success", "Đặt phòng thành công!");
+            return "redirect:/my-bookings";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/booking/" + roomId;
@@ -125,71 +146,4 @@ public class BookingController {
         return "redirect:/my-bookings";
     }
 
-    /**
-     * WORKFLOW: User thanh toán booking
-     * Giả lập thanh toán - trong thực tế sẽ tích hợp VNPay/Momo
-     */
-    @GetMapping("/booking/{id}/payment")
-    public String paymentPage(@PathVariable Integer id,
-            HttpSession session,
-            Model model,
-            RedirectAttributes redirectAttributes) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            return "redirect:/login";
-        }
-
-        try {
-            Booking booking = bookingService.getBookingById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
-
-            // Check ownership
-            if (!booking.getUser().getId().equals(user.getId())) {
-                redirectAttributes.addFlashAttribute("error", "Bạn không có quyền thanh toán đơn này");
-                return "redirect:/my-bookings";
-            }
-
-            // Check status
-            if (!booking.getStatus().name().equals("AWAITING_PAYMENT")) {
-                redirectAttributes.addFlashAttribute("error", "Đơn này không ở trạng thái chờ thanh toán");
-                return "redirect:/my-bookings";
-            }
-
-            model.addAttribute("booking", booking);
-            return "payment";
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-            return "redirect:/my-bookings";
-        }
-    }
-
-    /**
-     * WORKFLOW: Xác nhận thanh toán (giả lập)
-     */
-    @PostMapping("/booking/{id}/pay")
-    public String processPayment(@PathVariable Integer id,
-            HttpSession session,
-            RedirectAttributes redirectAttributes) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            return "redirect:/login";
-        }
-
-        try {
-            Booking booking = bookingService.getBookingById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
-
-            // Check ownership
-            if (!booking.getUser().getId().equals(user.getId())) {
-                throw new RuntimeException("Bạn không có quyền thanh toán đơn này");
-            }
-
-            // Process payment (simulated)
-            bookingService.confirmPayment(id);
-            redirectAttributes.addFlashAttribute("success", "Thanh toán thành công! Đặt phòng đã được xác nhận.");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
-        }
-        return "redirect:/my-bookings";
-    }
 }

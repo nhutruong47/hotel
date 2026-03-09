@@ -112,6 +112,55 @@
             color: #667eea;
         }
 
+        .search-form {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-form .form-group {
+            flex: 1;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-form label {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .search-form input,
+        .search-form select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-family: inherit;
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+            height: 40px;
+        }
+
+        .btn-search:hover {
+            opacity: 0.9;
+        }
+
         .room-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -223,41 +272,84 @@
     <div class="navbar">
         <h2>🏨 Như Hotel</h2>
         <div class="nav-links" th:if="${session.user}">
-            <a href="/">Trang chủ</a>
-            <a href="/my-bookings">Đặt phòng của tôi</a>
-            <a href="/my-reviews">⭐ Đánh giá</a>
-            <a href="/ai-recommend">🤖 Trợ lý AI</a>
+            <a href="/" th:text="#{nav.home}">Trang chủ</a>
+            <a href="/my-bookings" th:text="#{nav.myBookings}">Đặt phòng của tôi</a>
+            <a href="/my-reviews">⭐ <span th:text="#{nav.reviews}">Đánh giá</span></a>
+            <a href="/ai-recommend">🤖 <span th:text="#{nav.aiAssistant}">Trợ lý AI</span></a>
             <a href="/admin" th:if="${session.user.role == 'ADMIN'}" style="color: #f1c40f;">⚙️ Admin</a>
-            <span class="user-info">Xin chào, <span
-                    th:text="${session.user.fullName ?: session.user.username}">Khách</span>!</span>
-            <a href="/logout" class="logout-btn">Đăng xuất</a>
+
+            <!-- Language Switcher -->
+            <div style="margin: 0 10px; display: inline-flex; gap: 5px; align-items: center;">
+                <a href="?lang=vi"
+                    style="color: white; padding: 2px 6px; border: 1px solid rgba(255,255,255,0.5); font-size: 12px; text-decoration: none; border-radius: 4px;">VI</a>
+                <a href="?lang=en"
+                    style="color: white; padding: 2px 6px; border: 1px solid rgba(255,255,255,0.5); font-size: 12px; text-decoration: none; border-radius: 4px;">EN</a>
+            </div>
+
+            <span class="user-info">
+                <span th:text="#{nav.hello}">Xin chào</span>,
+                <span th:text="${session.user.fullName ?: session.user.username}">Khách</span>!
+            </span>
+            <a href="/logout" class="logout-btn" th:text="#{nav.logout}">Đăng xuất</a>
         </div>
     </div>
 
     <div class="container">
         <div class="page-header">
-            <h3>🛏️ Danh sách phòng trống</h3>
-            <div class="filter-bar">
-                <a href="/" th:classappend="${selectedType == null} ? 'active' : ''">Tất cả</a>
-                <a th:each="type : ${roomTypes}" th:href="@{/rooms(type=${type})}" th:text="${type.displayName}"
-                    th:classappend="${selectedType == type} ? 'active' : ''">Type</a>
-            </div>
+            <h3>🛏️ <span th:text="#{home.title}">Danh sách phòng trống</span></h3>
         </div>
+
+        <form action="/rooms" method="get" class="search-form">
+            <div class="form-group">
+                <label th:text="#{home.checkIn}">Ngày nhận phòng</label>
+                <input type="date" name="checkIn" th:value="${checkIn}">
+            </div>
+            <div class="form-group">
+                <label th:text="#{home.checkOut}">Ngày trả phòng</label>
+                <input type="date" name="checkOut" th:value="${checkOut}">
+            </div>
+            <div class="form-group">
+                <label th:text="#{home.minPrice}">Giá tối thiểu</label>
+                <input type="number" name="minPrice" placeholder="VD: 500000" th:value="${minPrice}">
+            </div>
+            <div class="form-group">
+                <label th:text="#{home.maxPrice}">Giá tối đa</label>
+                <input type="number" name="maxPrice" placeholder="VD: 2000000" th:value="${maxPrice}">
+            </div>
+            <div class="form-group">
+                <label th:text="#{home.roomType}">Loại phòng</label>
+                <select name="roomTypeId">
+                    <option value="" th:text="#{home.allTypes}">-- Tất cả --</option>
+                    <option th:each="type : ${roomTypes}" th:value="${type.id}" th:text="${type.name}"
+                        th:selected="${type.id == selectedTypeId}"></option>
+                </select>
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button type="submit" class="btn-search">🔍 <span th:text="#{home.search}">Tìm kiếm</span></button>
+            </div>
+        </form>
 
         <div class="room-grid" th:if="${rooms != null and !rooms.isEmpty()}">
             <div class="room-card" th:each="room : ${rooms}">
                 <a th:href="@{/rooms/{id}(id=${room.id})}" style="text-decoration: none; color: inherit;">
                     <div class="room-img">
                         <img th:if="${room.imageUrl}" th:src="${room.imageUrl}" alt="Room Image">
-                        <span th:unless="${room.imageUrl}" th:text="${room.roomType.displayName}">Ảnh Phòng</span>
+                        <span th:unless="${room.imageUrl}" th:text="${room.roomType.name}">Ảnh Phòng</span>
                     </div>
                 </a>
                 <div class="room-details">
-                    <span class="room-type" th:text="${room.roomType.displayName}">Standard</span>
+                    <span class="room-type" th:text="${room.roomType.name}">Standard</span>
                     <a th:href="@{/rooms/{id}(id=${room.id})}" style="text-decoration: none; color: inherit;">
                         <h4 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h4>
                     </a>
                     <p class="room-desc" th:text="${room.description ?: room.roomType.description}">Mô tả phòng</p>
+
+                    <div style="margin-bottom: 12px; font-size: 13px; color: #666;"
+                        th:if="${room.amenities != null and !room.amenities.isEmpty()}">
+                        <strong>Tiện ích:</strong>
+                        <span th:each="am, stat : ${room.amenities}"
+                            th:text="!${stat.last} ? ${am.name} + ', ' : ${am.name}">Wi-Fi, Hồ bơi</span>
+                    </div>
                     <p class="price">
                         <span
                             th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">500,000</span>

@@ -1,7 +1,7 @@
 package com.hsf.hotel.service;
 
 import com.hsf.hotel.model.Room;
-import com.hsf.hotel.model.RoomType;
+import com.hsf.hotel.model.RoomTypeEntity;
 import com.hsf.hotel.repository.BookingRepository;
 import com.hsf.hotel.repository.RoomRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +28,13 @@ public class RoomService {
         return roomRepository.findByIsAvailableTrue();
     }
 
-    public List<Room> getRoomsByType(RoomType roomType) {
+    public List<Room> getRoomsByType(RoomTypeEntity roomType) {
         return roomRepository.findByRoomType(roomType);
+    }
+
+    public List<Room> searchRooms(LocalDate checkIn, LocalDate checkOut, java.math.BigDecimal minPrice,
+            java.math.BigDecimal maxPrice, Integer roomTypeId) {
+        return roomRepository.findAvailableRooms(checkIn, checkOut, minPrice, maxPrice, roomTypeId);
     }
 
     public Optional<Room> getRoomById(Integer id) {
@@ -51,6 +56,16 @@ public class RoomService {
     public void deleteRoom(Integer id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
+
+        // Check if room has any bookings (past, present, or future)
+        // Note: we just need to know if any bookings exist, so checking if the list is
+        // not empty
+        var bookings = bookingRepository.findAllByRoomId(id);
+        if (bookings != null && !bookings.isEmpty()) {
+            throw new RuntimeException(
+                    "Phòng này đã có lịch sử đặt phòng, không thể xóa. Vui lòng tắt trạng thái 'Còn trống' để ẩn phòng.");
+        }
+
         roomRepository.delete(room);
     }
 

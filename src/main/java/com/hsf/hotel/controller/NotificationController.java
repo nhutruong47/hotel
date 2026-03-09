@@ -40,16 +40,13 @@ public class NotificationController {
         emitter.onTimeout(() -> emitters.remove(emitter));
         emitter.onError(e -> emitters.remove(emitter));
 
-        // Gửi initial data
         try {
-            long pendingCount = bookingRepository.countByStatus(BookingStatus.PENDING);
-            long awaitingPaymentCount = bookingRepository.countByStatus(BookingStatus.AWAITING_PAYMENT);
+            long confirmedCount = bookingRepository.countByStatus(BookingStatus.CONFIRMED);
 
             emitter.send(SseEmitter.event()
                     .name("init")
                     .data(Map.of(
-                            "pendingCount", pendingCount,
-                            "awaitingPaymentCount", awaitingPaymentCount,
+                            "confirmedCount", confirmedCount,
                             "time", LocalDateTime.now().toString())));
         } catch (IOException e) {
             emitter.completeWithError(e);
@@ -103,13 +100,9 @@ public class NotificationController {
      */
     @GetMapping("/poll")
     public Map<String, Object> pollNotifications() {
-        long pendingCount = bookingRepository.countByStatus(BookingStatus.PENDING);
-        long awaitingPaymentCount = bookingRepository.countByStatus(BookingStatus.AWAITING_PAYMENT);
         long confirmedCount = bookingRepository.countByStatus(BookingStatus.CONFIRMED);
 
         return Map.of(
-                "pendingCount", pendingCount,
-                "awaitingPaymentCount", awaitingPaymentCount,
                 "confirmedCount", confirmedCount,
                 "time", LocalDateTime.now().toString());
     }

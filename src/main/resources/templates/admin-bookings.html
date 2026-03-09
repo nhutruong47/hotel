@@ -160,11 +160,6 @@
             color: #22c55e;
         }
 
-        .status-PENDING {
-            background: #f59e0b20;
-            color: #f59e0b;
-        }
-
         .status-CANCELLED {
             background: #ef444420;
             color: #ef4444;
@@ -266,6 +261,14 @@
                             <span
                                 th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')}">2,000,000</span>
                             VNĐ
+
+                            <div th:if="${booking.status.name() == 'CANCELLED' and booking.refundAmount != null}"
+                                style="font-size: 11px; color: #ef4444; margin-top: 5px;">
+                                Hoàn: <span
+                                    th:text="${#numbers.formatDecimal(booking.refundAmount, 0, 'COMMA', 0, 'POINT')}">1,000,000</span>
+                                VNĐ
+                                <span th:text="'(' + ${booking.refundPercentage} + '%)'"></span>
+                            </div>
                         </td>
                         <td>
                             <span class="status-badge" th:classappend="'status-' + ${booking.status}"

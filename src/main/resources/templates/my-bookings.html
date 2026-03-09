@@ -342,10 +342,7 @@
             <div class="booking-card" th:each="booking : ${bookings}">
                 <div class="booking-status" th:classappend="${booking.status}">
                     <span class="icon" th:switch="${booking.status.name()}">
-                        <span th:case="'PENDING'">⏳</span>
-                        <span th:case="'AWAITING_PAYMENT'">💳</span>
                         <span th:case="'CONFIRMED'">✅</span>
-                        <span th:case="'REJECTED'">🚫</span>
                         <span th:case="'CANCELLED'">❌</span>
                         <span th:case="'COMPLETED'">🏆</span>
                     </span>
@@ -385,14 +382,15 @@
                         đ
                         <br><small>Tổng tiền</small>
                     </div>
-                    <!-- Payment button for AWAITING_PAYMENT -->
-                    <div th:if="${booking.status.name() == 'AWAITING_PAYMENT'}">
-                        <a th:href="@{/booking/{id}/payment(id=${booking.id})}" class="btn-pay">💳 Thanh toán ngay</a>
-                        <div class="deadline-info" th:if="${booking.paymentDeadline}">
-                            Hạn: <span th:text="${#temporals.format(booking.paymentDeadline, 'dd/MM HH:mm')}">01/02
-                                12:00</span>
-                        </div>
+
+                    <div class="booking-price"
+                        th:if="${booking.status.name() == 'CANCELLED' and booking.refundAmount != null}">
+                        <span th:text="${#numbers.formatDecimal(booking.refundAmount, 0, 'COMMA', 0, 'POINT')}"
+                            style="color: #ef4444;">1,200,000</span>
+                        đ
+                        <br><small th:text="'Được hoàn trả (' + ${booking.refundPercentage} + '%)'">Hoàn tiền</small>
                     </div>
+
                     <!-- Review button for CONFIRMED/COMPLETED -->
                     <div th:if="${booking.status.name() == 'CONFIRMED' or booking.status.name() == 'COMPLETED'}">
                         <a th:href="@{/booking/{id}/review(id=${booking.id})}" class="btn-pay"
@@ -400,8 +398,8 @@
                             ⭐ Đánh giá
                         </a>
                     </div>
-                    <!-- Cancel button for PENDING/CONFIRMED -->
-                    <form th:if="${booking.status.name() == 'CONFIRMED' or booking.status.name() == 'PENDING'}"
+                    <!-- Cancel button for CONFIRMED -->
+                    <form th:if="${booking.status.name() == 'CONFIRMED'}"
                         th:action="@{/booking/{id}/cancel(id=${booking.id})}" method="post" style="display:inline;"
                         onsubmit="return confirm('Bạn có chắc muốn hủy đặt phòng này?');">
                         <button type="submit" class="btn-cancel">Hủy đặt phòng</button>

@@ -337,6 +337,22 @@
                         </div>
                     </div>
 
+                    <!-- Booked dates display -->
+                    <div id="bookedDatesPanel"
+                        style="background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 10px; padding: 14px; margin-bottom: 15px; display: none;">
+                        <div style="font-weight: 600; color: #f59e0b; margin-bottom: 8px; font-size: 14px;">📅 Lịch đặt
+                            phòng hiện tại</div>
+                        <div id="bookedDatesList" style="font-size: 13px; color: #555;"></div>
+                        <div style="font-size: 11px; color: #999; margin-top: 6px;">⚠️ Vui lòng chọn ngày không trùng
+                            với các khoảng trên</div>
+                    </div>
+
+                    <!-- Date conflict warning -->
+                    <div id="dateConflictWarning"
+                        style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 12px; margin-bottom: 15px; display: none; color: #dc2626; font-size: 13px; font-weight: 500;">
+                        ❌ <span id="conflictMessage">Ngày bạn chọn đã có người đặt. Vui lòng chọn ngày khác.</span>
+                    </div>
+
                     <div class="price-preview" id="pricePreview">
                         <label>Tổng tiền ước tính:</label>
                         <div class="total" id="totalPrice">0 VNĐ</div>
@@ -357,11 +373,71 @@
 
     <script th:inline="javascript">
         const pricePerNight = [[${ room.pricePerNight }]];
+        const roomId = [[${ room.id }]];
         const checkIn = document.getElementById('checkIn');
         const checkOut = document.getElementById('checkOut');
         const pricePreview = document.getElementById('pricePreview');
         const totalPrice = document.getElementById('totalPrice');
         const nightsInfo = document.getElementById('nightsInfo');
+        const submitBtn = document.querySelector('.btn-submit');
+
+        let bookedRanges = [];
+
+        // Fetch booked dates on page load
+        fetch('/api/rooms/' + roomId + '/booked-dates')
+            .then(res => res.json())
+            .then(data => {
+                bookedRanges = data;
+                displayBookedDates(data);
+            })
+            .catch(err => console.log('Could not load booked dates'));
+
+        function displayBookedDates(ranges) {
+            const panel = document.getElementById('bookedDatesPanel');
+            const list = document.getElementById('bookedDatesList');
+            if (ranges.length === 0) {
+                panel.style.display = 'none';
+                return;
+            }
+            panel.style.display = 'block';
+            list.innerHTML = ranges.map(r => {
+                const statusLabel = r.status === 'CONFIRMED' ? '✅ Đã xác nhận' : '📋 ' + r.status;
+                const cin = new Date(r.checkIn).toLocaleDateString('vi-VN');
+                const cout = new Date(r.checkOut).toLocaleDateString('vi-VN');
+                return '<div style="padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;">' +
+                    '<span>🛏️ ' + cin + ' → ' + cout + '</span>' +
+                    '<span style="font-size: 11px; opacity: 0.7;">' + statusLabel + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function checkDateConflict() {
+            if (!checkIn.value || !checkOut.value) return false;
+            const selIn = new Date(checkIn.value);
+            const selOut = new Date(checkOut.value);
+            const warning = document.getElementById('dateConflictWarning');
+            const msg = document.getElementById('conflictMessage');
+
+            for (const r of bookedRanges) {
+                const bIn = new Date(r.checkIn);
+                const bOut = new Date(r.checkOut);
+                if (selIn < bOut && selOut > bIn) {
+                    const cin = bIn.toLocaleDateString('vi-VN');
+                    const cout = bOut.toLocaleDateString('vi-VN');
+                    msg.textContent = 'Ngày bạn chọn trùng với đặt phòng ' + cin + ' → ' + cout + '. Vui lòng chọn ngày khác.';
+                    warning.style.display = 'block';
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                    submitBtn.style.cursor = 'not-allowed';
+                    return true;
+                }
+            }
+            warning.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+            return false;
+        }
 
         function calculatePrice() {
             if (checkIn.value && checkOut.value) {
@@ -369,7 +445,12 @@
                 const end = new Date(checkOut.value);
                 const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
 
-                if (nights > 0) {
+                if (nights === 0) {
+                    const total = pricePerNight * 0.5;
+                    pricePreview.classList.add('show');
+                    totalPrice.textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+                    nightsInfo.textContent = 'Thuê trong ngày (50% giá phòng)';
+                } else if (nights > 0) {
                     const total = nights * pricePerNight;
                     pricePreview.classList.add('show');
                     totalPrice.textContent = total.toLocaleString('vi-VN') + ' VNĐ';
@@ -378,6 +459,7 @@
                     pricePreview.classList.remove('show');
                 }
             }
+            checkDateConflict();
         }
 
         checkIn.addEventListener('change', function () {

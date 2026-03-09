@@ -55,7 +55,11 @@ class ReviewServiceTest {
         testRoom = new Room();
         testRoom.setId(1);
         testRoom.setRoomNumber("101");
-        testRoom.setRoomType(RoomType.DELUXE);
+
+        RoomTypeEntity testType = new RoomTypeEntity("DELUXE", "Phòng Deluxe");
+        testType.setId(1);
+        testRoom.setRoomType(testType);
+
         testRoom.setPricePerNight(new BigDecimal("500000"));
 
         // Setup test booking
@@ -127,7 +131,7 @@ class ReviewServiceTest {
     @Test
     void createReview_InvalidBookingStatus() {
         // Arrange
-        testBooking.setStatus(BookingStatus.PENDING);
+        testBooking.setStatus(BookingStatus.CONFIRMED);
         when(bookingRepository.findById(1)).thenReturn(Optional.of(testBooking));
 
         // Act & Assert

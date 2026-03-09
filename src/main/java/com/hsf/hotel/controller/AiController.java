@@ -3,7 +3,7 @@ package com.hsf.hotel.controller;
 import com.hsf.hotel.model.ChatMessage;
 import com.hsf.hotel.model.User;
 import com.hsf.hotel.repository.ChatMessageRepository;
-import com.hsf.hotel.service.OllamaService;
+import com.hsf.hotel.service.GeminiService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -18,7 +18,7 @@ import java.util.Map;
 public class AiController {
 
     @Autowired
-    private OllamaService ollamaService;
+    private GeminiService geminiService;
 
     @Autowired
     private ChatMessageRepository chatMessageRepository;
@@ -54,7 +54,7 @@ public class AiController {
         }
 
         // Get AI response
-        String aiResponse = ollamaService.getAiRecommendation(userMessage);
+        String aiResponse = geminiService.getAiRecommendation(userMessage);
 
         // Save to database
         try {

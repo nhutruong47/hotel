@@ -29,10 +29,16 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BookingStatus status = BookingStatus.PENDING;
+    private BookingStatus status = BookingStatus.CONFIRMED;
 
     @Column(nullable = false, precision = 12, scale = 0)
     private BigDecimal totalPrice;
+
+    @Column(precision = 12, scale = 0)
+    private BigDecimal refundAmount;
+
+    @Column
+    private Integer refundPercentage;
 
     private String guestName;
     private String guestPhone;
@@ -133,6 +139,22 @@ public class Booking {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public BigDecimal getRefundAmount() {
+        return refundAmount;
+    }
+
+    public void setRefundAmount(BigDecimal refundAmount) {
+        this.refundAmount = refundAmount;
+    }
+
+    public Integer getRefundPercentage() {
+        return refundPercentage;
+    }
+
+    public void setRefundPercentage(Integer refundPercentage) {
+        this.refundPercentage = refundPercentage;
     }
 
     public LocalDateTime getCreatedAt() {
