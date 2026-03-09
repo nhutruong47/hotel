@@ -372,9 +372,13 @@
 
                         <div class="amount-highlight">
                             <div class="label">Số tiền cần thanh toán</div>
-                            <div class="amount"
-                                th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'">
-                                2,000,000 đ</div>
+                            <!-- Show original total, discount (if any), and final amount -->
+                            <div style="font-size:0.95em;color:#666;margin-bottom:8px;" th:if="${booking.discountAmount != null and booking.discountAmount.doubleValue() > 0}">
+                                Tổng ban đầu: <span th:text="${#numbers.formatDecimal(booking.totalPrice + booking.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                <br />
+                                Giảm (mã <span th:text="${booking.appliedVoucherCode}"></span>): -<span th:text="${#numbers.formatDecimal(booking.discountAmount, 0, 'COMMA', 0, 'POINT')}"></span> đ
+                            </div>
+                            <div class="amount" th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'">2,000,000 đ</div>
                         </div>
                     </div>
 

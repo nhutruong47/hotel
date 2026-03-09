@@ -8,6 +8,9 @@ import com.hsf.hotel.repository.BookingRepository;
 import com.hsf.hotel.service.BookingService;
 import com.hsf.hotel.service.ReviewService;
 import com.hsf.hotel.service.RoomService;
+import com.hsf.hotel.service.VoucherService;
+import com.hsf.hotel.model.Voucher;
+import java.math.BigDecimal;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -34,6 +37,9 @@ public class BookingController {
 
     @Autowired
     private BookingRepository bookingRepository;
+
+    @Autowired
+    private VoucherService voucherService;
 
     @GetMapping("/booking/{roomId}")
     public String bookingForm(@PathVariable Integer roomId, HttpSession session, Model model) {
@@ -79,6 +85,19 @@ public class BookingController {
         return ResponseEntity.ok(bookedRanges);
     }
 
+    // AJAX endpoint to validate voucher codes
+    @ResponseBody
+    @PostMapping("/api/vouchers/validate")
+    public java.util.Map<String, Object> validateVoucher(@RequestParam String code) {
+        VoucherService.VoucherValidationResult res = voucherService.validateVoucher(code);
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        map.put("valid", res.valid);
+        map.put("message", res.message);
+        map.put("amount", res.amount != null ? res.amount.toString() : "0");
+        map.put("percent", res.voucher != null && res.voucher.getPercent() != null ? res.voucher.getPercent() : false);
+        return map;
+    }
+
     @PostMapping("/booking")
     public String createBooking(@RequestParam Integer roomId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
@@ -86,6 +105,7 @@ public class BookingController {
             @RequestParam String guestName,
             @RequestParam(required = false) String guestPhone,
             @RequestParam(required = false) String notes,
+            @RequestParam(required = false) String voucherCode,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         User user = (User) session.getAttribute("user");
@@ -107,7 +127,41 @@ public class BookingController {
             Room room = roomService.getRoomById(roomId)
                     .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
 
-            bookingService.createBooking(user, room, checkIn, checkOut, guestName, guestPhone, notes);
+            Booking booking = bookingService.createBooking(user, room, checkIn, checkOut, guestName, guestPhone, notes);
+
+            // If voucherCode provided and valid, validate and apply discount to booking
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                VoucherService.VoucherValidationResult vres = voucherService.validateVoucher(voucherCode);
+                if (vres.valid && vres.voucher != null) {
+                    BigDecimal discount = BigDecimal.ZERO;
+                    if (vres.voucher.getPercent() != null && vres.voucher.getPercent()) {
+                        // percent stored in vres.amount (e.g., 10 for 10%)
+                        discount = booking.getTotalPrice().multiply(vres.amount).divide(BigDecimal.valueOf(100));
+                    } else {
+                        discount = vres.amount != null ? vres.amount : BigDecimal.ZERO;
+                    }
+                    BigDecimal newTotal = booking.getTotalPrice().subtract(discount);
+                    if (newTotal.compareTo(BigDecimal.ZERO) < 0)
+                        newTotal = BigDecimal.ZERO;
+
+                    booking.setTotalPrice(newTotal);
+                    booking.setAppliedVoucherCode(vres.voucher.getCode());
+                    booking.setDiscountAmount(discount);
+
+                    // Persist booking changes
+                    bookingService.saveBooking(booking);
+
+                    // consume voucher (decrement quantity)
+                    voucherService.consumeVoucher(vres.voucher);
+
+                    redirectAttributes.addFlashAttribute("success",
+                            "Áp dụng mã giảm giá thành công: " + discount.toString() + " VNĐ");
+                } else {
+                    redirectAttributes.addFlashAttribute("error", vres.message);
+                    return "redirect:/booking/" + roomId;
+                }
+            }
+
             redirectAttributes.addFlashAttribute("success", "Đặt phòng thành công!");
             return "redirect:/my-bookings";
         } catch (Exception e) {

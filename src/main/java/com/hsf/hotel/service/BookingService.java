@@ -133,6 +133,111 @@ public class BookingService {
         return savedBooking;
     }
 
+    /**
+     * Save booking entity (useful to persist changes like discount/voucher)
+     */
+    @Transactional
+    public Booking saveBooking(Booking booking) {
+        return bookingRepository.save(booking);
+    }
+
+    /**
+     * WORKFLOW: Admin duyệt booking
+     * 1. Kiểm tra booking tồn tại và đang PENDING
+     * 2. Set status = AWAITING_PAYMENT
+     * 3. Set payment deadline
+     * 4. Gửi email thông báo user
+     */
+    @Transactional
+    public Booking approveBooking(Integer bookingId, User adminUser) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể duyệt đơn đang chờ xác nhận");
+        }
+
+        // Update booking
+        booking.setStatus(BookingStatus.AWAITING_PAYMENT);
+        booking.setApprovedBy(adminUser);
+        booking.setApprovedAt(LocalDateTime.now());
+        booking.setPaymentDeadline(LocalDateTime.now().plusHours(paymentDeadlineHours));
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Send email to user
+        System.out.println("✅ Booking #" + bookingId + " approved by " + adminUser.getUsername());
+        emailService.sendBookingApprovedEmail(savedBooking);
+
+        return savedBooking;
+    }
+
+    /**
+     * WORKFLOW: Admin từ chối booking
+     * 1. Kiểm tra booking tồn tại và đang PENDING
+     * 2. Set status = REJECTED
+     * 3. Lưu lý do từ chối
+     * 4. Gửi email thông báo user
+     */
+    @Transactional
+    public Booking rejectBooking(Integer bookingId, User adminUser, String reason) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+
+        if (booking.getStatus() != BookingStatus.PENDING) {
+            throw new RuntimeException("Chỉ có thể từ chối đơn đang chờ xác nhận");
+        }
+
+        // Update booking
+        booking.setStatus(BookingStatus.REJECTED);
+        booking.setApprovedBy(adminUser);
+        booking.setApprovedAt(LocalDateTime.now());
+        booking.setRejectionReason(reason != null ? reason : "Không đủ điều kiện");
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Send email to user
+        System.out.println("❌ Booking #" + bookingId + " rejected by " + adminUser.getUsername());
+        emailService.sendBookingRejectedEmail(savedBooking);
+
+        return savedBooking;
+    }
+
+    /**
+     * WORKFLOW: Xác nhận thanh toán
+     * 1. Update status = CONFIRMED
+     * 2. Set paidAt timestamp
+     * 3. Gửi email thông báo Admin
+     */
+    @Transactional
+    public Booking confirmPayment(Integer bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+
+        if (booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
+            throw new RuntimeException("Đơn không ở trạng thái chờ thanh toán");
+        }
+
+        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setPaidAt(LocalDateTime.now());
+
+        Booking savedBooking = bookingRepository.save(booking);
+
+        System.out.println("💰 Payment confirmed for booking #" + bookingId + " at " + booking.getPaidAt());
+
+        // Notify admin about payment
+        emailService.sendPaymentReceivedNotificationToAdmin(savedBooking, adminEmail);
+
+        return savedBooking;
+    }
+
+    /**
+     * Lấy các booking quá hạn thanh toán (dùng cho scheduler)
+     */
+    public List<Booking> getExpiredPaymentBookings() {
+        return bookingRepository.findExpiredPaymentBookings(LocalDateTime.now());
+    }
+
     @Transactional
     public Booking cancelBooking(Integer bookingId, User user) {
         Booking booking = bookingRepository.findById(bookingId)

@@ -3,6 +3,7 @@ package com.hsf.hotel.controller;
 import com.hsf.hotel.model.*;
 import com.hsf.hotel.repository.UserRepository;
 import com.hsf.hotel.repository.RoomTypeRepository;
+import com.hsf.hotel.repository.VoucherRepository;
 import com.hsf.hotel.service.BookingService;
 import com.hsf.hotel.service.RoomService;
 import com.hsf.hotel.service.RoomTypeService;
@@ -14,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -37,6 +39,9 @@ public class AdminController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private VoucherRepository voucherRepository;
 
     // Check if user is admin
     private boolean isAdmin(HttpSession session) {
@@ -197,6 +202,86 @@ public class AdminController {
         }
 
         return "redirect:/admin/rooms";
+    }
+
+    // Voucher Management
+    @GetMapping("/vouchers")
+    public String vouchers(HttpSession session, Model model) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+
+        try {
+            model.addAttribute("vouchers", voucherRepository.findAll());
+            return "admin-vouchers";
+        } catch (Exception e) {
+            // Log for debugging and show a user-friendly message on the same page
+            System.err.println("Error loading vouchers: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("vouchers", java.util.Collections.emptyList());
+            model.addAttribute("error", "Không thể tải danh sách voucher: " + e.getMessage());
+            return "admin-vouchers";
+        }
+    }
+
+    @PostMapping("/voucher")
+    public String saveVoucher(@RequestParam(required = false) Integer id,
+            @RequestParam String code,
+            @RequestParam BigDecimal amount,
+            @RequestParam(required = false) String expiryDate,
+            @RequestParam(required = false, defaultValue = "1") Integer quantity,
+            @RequestParam(required = false, defaultValue = "false") Boolean percent,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+
+        try {
+            Voucher v;
+            if (id != null) {
+                v = voucherRepository.findById(id).orElse(new Voucher());
+            } else {
+                v = new Voucher();
+            }
+
+            v.setCode(code.trim());
+            v.setAmount(amount);
+            if (expiryDate != null && !expiryDate.isBlank()) {
+                v.setExpiryDate(LocalDate.parse(expiryDate));
+            } else {
+                v.setExpiryDate(null);
+            }
+            v.setQuantity(quantity != null ? quantity : 1);
+            v.setPercent(percent != null ? percent : false);
+
+            voucherRepository.save(v);
+
+            redirectAttributes.addFlashAttribute("success",
+                    id != null ? "Cập nhật voucher thành công" : "Tạo voucher thành công");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/vouchers";
+    }
+
+    @PostMapping("/voucher/{id}/delete")
+    public String deleteVoucher(@PathVariable Integer id,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
+        if (!isAdmin(session)) {
+            return "redirect:/login";
+        }
+
+        try {
+            voucherRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("success", "Xóa voucher thành công");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
+        return "redirect:/admin/vouchers";
     }
 
     // User Management
