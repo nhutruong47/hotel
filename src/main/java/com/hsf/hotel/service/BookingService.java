@@ -101,7 +101,7 @@ public class BookingService {
     /**
      * WORKFLOW: Tạo booking mới
      * 1. Validate phòng available
-     * 2. Tạo booking với status CONFIRMED
+     * 2. Tạo booking với status AWAITING_PAYMENT và set payment deadline
      * 3. Gửi email thông báo Admin
      */
     @Transactional
@@ -112,7 +112,7 @@ public class BookingService {
             throw new RuntimeException("Room is already booked during this time");
         }
 
-        // Step 2: Create booking with CONFIRMED status
+        // Step 2: Create booking with AWAITING_PAYMENT status
         Booking booking = new Booking();
         booking.setUser(user);
         booking.setRoom(room);
@@ -121,7 +121,8 @@ public class BookingService {
         booking.setGuestName(guestName);
         booking.setGuestPhone(guestPhone);
         booking.setNotes(notes);
-        booking.setStatus(BookingStatus.CONFIRMED);
+        booking.setStatus(BookingStatus.AWAITING_PAYMENT);
+        booking.setPaymentDeadline(LocalDateTime.now().plusHours(paymentDeadlineHours));
         booking.setTotalPrice(calculateTotalPrice(room, checkIn, checkOut));
 
         Booking savedBooking = bookingRepository.save(booking);

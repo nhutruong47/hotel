@@ -161,8 +161,8 @@ public class BookingController {
                 }
             }
 
-            redirectAttributes.addFlashAttribute("success", "Booking successful!");
-            return "redirect:/my-bookings";
+            redirectAttributes.addFlashAttribute("success", "Booking successful! Please complete the payment.");
+            return "redirect:/booking/" + booking.getId() + "/payment";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             return "redirect:/booking/" + roomId;
@@ -196,6 +196,52 @@ public class BookingController {
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
+        return "redirect:/my-bookings";
+    }
+
+    @GetMapping("/booking/{id}/payment")
+    public String paymentPage(@PathVariable Integer id, HttpSession session, Model model) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        Booking booking = bookingService.getBookingById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!booking.getUser().getId().equals(user.getId())) {
+            return "redirect:/my-bookings";
+        }
+
+        if (booking.getStatus() != com.hsf.hotel.model.BookingStatus.AWAITING_PAYMENT) {
+            return "redirect:/my-bookings";
+        }
+
+        model.addAttribute("booking", booking);
+        return "payment";
+    }
+
+    @PostMapping("/booking/{id}/pay")
+    public String confirmPayment(@PathVariable Integer id, HttpSession session, RedirectAttributes redirectAttributes) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            return "redirect:/login";
+        }
+
+        Booking booking = bookingService.getBookingById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!booking.getUser().getId().equals(user.getId())) {
+            return "redirect:/my-bookings";
+        }
+
+        try {
+            bookingService.confirmPayment(id);
+            redirectAttributes.addFlashAttribute("success", "Payment confirmed successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+
         return "redirect:/my-bookings";
     }
 
