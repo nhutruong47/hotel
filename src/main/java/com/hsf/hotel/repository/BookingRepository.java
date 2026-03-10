@@ -58,4 +58,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
                         "AND b.checkOutDate >= CURRENT_DATE " +
                         "ORDER BY b.checkInDate ASC")
         List<Booking> findActiveBookingsByRoomId(@Param("roomId") Integer roomId);
+
+        @Query("SELECT b FROM Booking b WHERE b.status = 'AWAITING_PAYMENT' AND b.paymentDeadline IS NOT NULL AND b.paymentDeadline < :now")
+        List<Booking> findExpiredPaymentBookings(@Param("now") java.time.LocalDateTime now);
 }

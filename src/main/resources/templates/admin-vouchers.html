@@ -5,42 +5,118 @@
     <meta charset="UTF-8">
     <title>Quản lý Voucher - Admin</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background:#0f1724; color:#cbd5e1; }
-        .container { max-width:1100px; margin:30px auto; background:#071029; padding:20px; border-radius:8px; }
-        h1 { color:#fff; }
-        table { width:100%; border-collapse:collapse; margin-top:20px; }
-        th, td { padding:10px; border-bottom:1px solid #0b1b2e; }
-        th { text-align:left; color:#94a3b8; }
-        .form-row { display:flex; gap:10px; align-items:center; }
-        .form-row input, .form-row select { padding:8px; border-radius:6px; border:1px solid #123; background:#071029; color:#fff; }
-        .btn { background:linear-gradient(135deg,#0ea5a7,#0284c7); color:#fff; padding:8px 12px; border-radius:6px; text-decoration:none; border:none; cursor:pointer; }
-        .danger { background:#e11d48; }
-        .small { font-size:0.9em; color:#94a3b8; }
-        .alert { padding:10px 14px; border-radius:6px; margin-top:12px; }
-        .alert-success { background:#063; color:#b6f0d6; }
-        .alert-error { background:#300; color:#f8c6c6; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f1724;
+            color: #cbd5e1;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            background: #071029;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #0b1b2e;
+        }
+
+        th {
+            text-align: left;
+            color: #94a3b8;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .form-row input,
+        .form-row select {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #123;
+            background: #071029;
+            color: #fff;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #0ea5a7, #0284c7);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .danger {
+            background: #e11d48;
+        }
+
+        .small {
+            font-size: 0.9em;
+            color: #94a3b8;
+        }
+
+        .alert {
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+
+        .alert-success {
+            background: #063;
+            color: #b6f0d6;
+        }
+
+        .alert-error {
+            background: #300;
+            color: #f8c6c6;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <h1>🧾 Quản lý Voucher</h1>
-        <a href="/admin" class="btn" style="margin-left:12px;background:linear-gradient(135deg,#64748b,#475569);padding:8px 12px;border-radius:6px;">← Quay về Admin</a>
+        <a href="/admin" class="btn"
+            style="margin-left:12px;background:linear-gradient(135deg,#64748b,#475569);padding:8px 12px;border-radius:6px;">←
+            Quay về Admin</a>
 
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
         <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
 
         <div>
             <form th:action="@{/admin/voucher}" method="post" class="form-row">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                <label class="small">Mã: <input type="text" name="code" placeholder="Mã voucher (VD: PROMO10)" required></label>
-                <label class="small">Amount: <input type="number" name="amount" placeholder="Amount (if percent set %)" required></label>
+
+                <label class="small">Mã: <input type="text" name="code" placeholder="Mã voucher (VD: PROMO10)"
+                        required></label>
+                <label class="small">Amount: <input type="number" name="amount" placeholder="Amount (if percent set %)"
+                        required></label>
                 <label class="small">Expiry: <input type="date" name="expiryDate"></label>
-                <label class="small">Số lượt: <input type="number" name="quantity" placeholder="Số lượt" value="1" min="1"></label>
+                <label class="small">Số lượt: <input type="number" name="quantity" placeholder="Số lượt" value="1"
+                        min="1"></label>
                 <label class="small"><input type="checkbox" name="percent" value="true"> Phần trăm</label>
                 <button type="submit" class="btn">Tạo/ Cập nhật</button>
             </form>
-            <p class="small">Lưu ý: nếu <strong>Phần trăm</strong> được chọn thì <em>Amount</em> được hiểu là % (ví dụ 10 = 10%).</p>
+            <p class="small">Lưu ý: nếu <strong>Phần trăm</strong> được chọn thì <em>Amount</em> được hiểu là % (ví dụ
+                10 = 10%).</p>
         </div>
 
         <table>
@@ -64,8 +140,9 @@
                     <td th:text="${v.expiryDate}"></td>
                     <td th:text="${v.quantity}"></td>
                     <td>
-                        <form th:action="@{/admin/voucher/{id}/delete(id=${v.id})}" method="post" style="display:inline">
-                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                        <form th:action="@{/admin/voucher/{id}/delete(id=${v.id})}" method="post"
+                            style="display:inline">
+
                             <button type="submit" class="btn danger">Xóa</button>
                         </form>
                     </td>
