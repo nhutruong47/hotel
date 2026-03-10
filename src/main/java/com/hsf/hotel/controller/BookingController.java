@@ -154,14 +154,14 @@ public class BookingController {
                     voucherService.consumeVoucher(vres.voucher);
 
                     redirectAttributes.addFlashAttribute("success",
-                            "Áp dụng mã giảm giá thành công: " + discount.toString() + " VNĐ");
+                            "Discount code applied successfully: " + discount.toString() + " VND");
                 } else {
                     redirectAttributes.addFlashAttribute("error", vres.message);
                     return "redirect:/booking/" + roomId;
                 }
             }
 
-            redirectAttributes.addFlashAttribute("success", "Đặt phòng thành công!");
+            redirectAttributes.addFlashAttribute("success", "Booking successful!");
             return "redirect:/my-bookings";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -192,7 +192,7 @@ public class BookingController {
 
         try {
             bookingService.cancelBooking(id, user);
-            redirectAttributes.addFlashAttribute("success", "Đã hủy đặt phòng thành công");
+            redirectAttributes.addFlashAttribute("success", "Booking cancelled successfully");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }

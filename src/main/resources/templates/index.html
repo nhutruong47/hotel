@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>Như Hotel - Trang Chủ</title>
+    <title>Nhu Hotel - Home</title>
     <style>
         * {
             box-sizing: border-box;
@@ -270,12 +270,12 @@
 
 <body>
     <div class="navbar">
-        <h2>🏨 Như Hotel</h2>
+        <h2>🏨 Nhu Hotel</h2>
         <div class="nav-links" th:if="${session.user}">
-            <a href="/" th:text="#{nav.home}">Trang chủ</a>
-            <a href="/my-bookings" th:text="#{nav.myBookings}">Đặt phòng của tôi</a>
-            <a href="/my-reviews">⭐ <span th:text="#{nav.reviews}">Đánh giá</span></a>
-            <a href="/ai-recommend">🤖 <span th:text="#{nav.aiAssistant}">Trợ lý AI</span></a>
+            <a href="/" th:text="#{nav.home}">Home</a>
+            <a href="/my-bookings" th:text="#{nav.myBookings}">My Bookings</a>
+            <a href="/my-reviews">⭐ <span th:text="#{nav.reviews}">Reviews</span></a>
+            <a href="/ai-recommend">🤖 <span th:text="#{nav.aiAssistant}">AI Assistant</span></a>
             <a href="/admin" th:if="${session.user.role == 'ADMIN'}" style="color: #f1c40f;">⚙️ Admin</a>
 
             <!-- Language Switcher -->
@@ -287,10 +287,10 @@
             </div>
 
             <span class="user-info">
-                <span th:text="#{nav.hello}">Xin chào</span>,
-                <span th:text="${session.user.fullName ?: session.user.username}">Khách</span>!
+                <span th:text="#{nav.hello}">Hello</span>,
+                <span th:text="${session.user.fullName ?: session.user.username}">Guest</span>!
             </span>
-            <a href="/logout" class="logout-btn" th:text="#{nav.logout}">Đăng xuất</a>
+            <a href="/logout" class="logout-btn" th:text="#{nav.logout}">Logout</a>
         </div>
         <div class="nav-links">
             <a href="/profile">Profile</a>
@@ -299,36 +299,36 @@
 
     <div class="container">
         <div class="page-header">
-            <h3>🛏️ <span th:text="#{home.title}">Danh sách phòng trống</span></h3>
+            <h3>🛏️ <span th:text="#{home.title}">Available Rooms</span></h3>
         </div>
 
         <form action="/rooms" method="get" class="search-form">
             <div class="form-group">
-                <label th:text="#{home.checkIn}">Ngày nhận phòng</label>
+                <label th:text="#{home.checkIn}">Check-in Date</label>
                 <input type="date" name="checkIn" th:value="${checkIn}">
             </div>
             <div class="form-group">
-                <label th:text="#{home.checkOut}">Ngày trả phòng</label>
+                <label th:text="#{home.checkOut}">Check-out Date</label>
                 <input type="date" name="checkOut" th:value="${checkOut}">
             </div>
             <div class="form-group">
-                <label th:text="#{home.minPrice}">Giá tối thiểu</label>
-                <input type="number" name="minPrice" placeholder="VD: 500000" th:value="${minPrice}">
+                <label th:text="#{home.minPrice}">Min Price</label>
+                <input type="number" name="minPrice" placeholder="e.g. 500000" th:value="${minPrice}">
             </div>
             <div class="form-group">
-                <label th:text="#{home.maxPrice}">Giá tối đa</label>
-                <input type="number" name="maxPrice" placeholder="VD: 2000000" th:value="${maxPrice}">
+                <label th:text="#{home.maxPrice}">Max Price</label>
+                <input type="number" name="maxPrice" placeholder="e.g. 2000000" th:value="${maxPrice}">
             </div>
             <div class="form-group">
-                <label th:text="#{home.roomType}">Loại phòng</label>
+                <label th:text="#{home.roomType}">Room Type</label>
                 <select name="roomTypeId">
-                    <option value="" th:text="#{home.allTypes}">-- Tất cả --</option>
+                    <option value="" th:text="#{home.allTypes}">-- All Types --</option>
                     <option th:each="type : ${roomTypes}" th:value="${type.id}" th:text="${type.name}"
                         th:selected="${type.id == selectedTypeId}"></option>
                 </select>
             </div>
             <div class="form-group" style="display: flex; align-items: flex-end;">
-                <button type="submit" class="btn-search">🔍 <span th:text="#{home.search}">Tìm kiếm</span></button>
+                <button type="submit" class="btn-search">🔍 <span th:text="#{home.search}">Search</span></button>
             </div>
         </form>
 
@@ -337,41 +337,41 @@
                 <a th:href="@{/rooms/{id}(id=${room.id})}" style="text-decoration: none; color: inherit;">
                     <div class="room-img">
                         <img th:if="${room.imageUrl}" th:src="${room.imageUrl}" alt="Room Image">
-                        <span th:unless="${room.imageUrl}" th:text="${room.roomType.name}">Ảnh Phòng</span>
+                        <span th:unless="${room.imageUrl}" th:text="${room.roomType.name}">Room Image</span>
                     </div>
                 </a>
                 <div class="room-details">
                     <span class="room-type" th:text="${room.roomType.name}">Standard</span>
                     <a th:href="@{/rooms/{id}(id=${room.id})}" style="text-decoration: none; color: inherit;">
-                        <h4 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h4>
+                        <h4 th:text="'Room ' + ${room.roomNumber}">Room 101</h4>
                     </a>
-                    <p class="room-desc" th:text="${room.description ?: room.roomType.description}">Mô tả phòng</p>
+                    <p class="room-desc" th:text="${room.description ?: room.roomType.description}">Room description</p>
 
                     <div style="margin-bottom: 12px; font-size: 13px; color: #666;"
                         th:if="${room.amenities != null and !room.amenities.isEmpty()}">
-                        <strong>Tiện ích:</strong>
+                        <strong>Amenities:</strong>
                         <span th:each="am, stat : ${room.amenities}"
-                            th:text="!${stat.last} ? ${am.name} + ', ' : ${am.name}">Wi-Fi, Hồ bơi</span>
+                            th:text="!${stat.last} ? ${am.name} + ', ' : ${am.name}">Wi-Fi, Pool</span>
                     </div>
                     <p class="price">
                         <span
                             th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">500,000</span>
-                        VNĐ
-                        <span>/ đêm</span>
+                        VND
+                        <span>/ night</span>
                     </p>
                     <a th:href="@{/rooms/{id}(id=${room.id})}" class="btn-booking"
-                        style="background: linear-gradient(135deg, #667eea, #764ba2);">🔍 Xem chi tiết</a>
-                    <a th:href="@{/booking/{id}(id=${room.id})}" class="btn-booking">🎯 Đặt phòng ngay</a>
+                        style="background: linear-gradient(135deg, #667eea, #764ba2);">🔍 View Details</a>
+                    <a th:href="@{/booking/{id}(id=${room.id})}" class="btn-booking">🎯 Book Now</a>
                     <a th:href="@{/room/{id}/reviews(id=${room.id})}"
                         style="display: block; text-align: center; color: #667eea; font-size: 13px; margin-top: 10px; text-decoration: none;">📝
-                        Xem đánh giá</a>
+                        Read Reviews</a>
                 </div>
             </div>
         </div>
 
         <div class="empty-state" th:if="${rooms == null or rooms.isEmpty()}">
-            <h3>😔 Hiện tại không có phòng nào trống</h3>
-            <p>Vui lòng quay lại sau hoặc liên hệ lễ tân để biết thêm thông tin.</p>
+            <h3>😔 No rooms are currently available</h3>
+            <p>Please check back later or contact the front desk for more information.</p>
         </div>
     </div>
 </body>

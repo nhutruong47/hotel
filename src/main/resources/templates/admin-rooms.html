@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý Phòng - Admin</title>
+    <title>Manage Rooms - Admin</title>
     <style>
         * {
             box-sizing: border-box;
@@ -344,20 +344,20 @@
         <div class="sidebar-menu">
             <a href="/admin">📊 Dashboard</a>
             <a href="/admin/reports">📈 Most Booking & Rating</a>
-            <a href="/admin/bookings">📋 Quản lý Booking</a>
-            <a href="/admin/rooms" class="active">🛏️ Quản lý Phòng</a>
-            <a href="/admin/room-types">🏷️ Quản lý Loại Phòng</a>
-            <a href="/admin/amenities">✨ Quản lý Tiện Ích</a>
-            <a href="/admin/users">👥 Quản lý Users</a>
-            <a href="/admin/vouchers">🎟️ Quản lý Voucher</a>
-            <a href="/">🏠 Về trang chủ</a>
+            <a href="/admin/bookings">📋 Manage Bookings</a>
+            <a href="/admin/rooms" class="active">🛏️ Manage Rooms</a>
+            <a href="/admin/room-types">🏷️ Manage Room Types</a>
+            <a href="/admin/amenities">✨ Manage Amenities</a>
+            <a href="/admin/users">👥 Manage Users</a>
+            <a href="/admin/vouchers">🎟️ Manage Vouchers</a>
+            <a href="/">🏠 Go to Homepage</a>
         </div>
     </div>
 
     <div class="main-content">
         <div class="header">
-            <h1>🛏️ Quản lý Phòng</h1>
-            <button class="btn-add" onclick="openModal()">➕ Thêm phòng mới</button>
+            <h1>🛏️ Manage Rooms</h1>
+            <button class="btn-add" onclick="openModal()">➕ Add New Room</button>
         </div>
 
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
@@ -371,26 +371,26 @@
                 </div>
                 <div class="room-info">
                     <span class="room-type-badge" th:text="${room.roomType.displayName}">Standard</span>
-                    <h3 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h3>
+                    <h3 th:text="'Room ' + ${room.roomNumber}">Room 101</h3>
                     <p class="room-price">
                         <span
                             th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">500,000</span>
-                        VNĐ/đêm
+                        VND/night
                     </p>
-                    <p class="room-desc" th:text="${room.description ?: 'Không có mô tả'}">Mô tả phòng</p>
+                    <p class="room-desc" th:text="${room.description ?: 'No description'}">Room description</p>
                     <span class="room-status"
                         th:classappend="${room.isAvailable} ? 'status-available' : 'status-unavailable'"
-                        th:text="${room.isAvailable} ? 'Còn trống' : 'Đã đặt'">Còn trống</span>
+                        th:text="${room.isAvailable} ? 'Available' : 'Booked'">Available</span>
                     <div class="room-actions">
                         <button class="btn-edit" th:data-id="${room.id}" th:data-number="${room.roomNumber}"
                             th:data-type="${room.roomType.name}" th:data-price="${room.pricePerNight}"
                             th:data-desc="${room.description}" th:data-img="${room.imageUrl}"
                             th:data-available="${room.isAvailable}"
                             th:data-amenities="${#strings.listJoin(room.amenityIds, ',')}" onclick="editRoom(this)">✏️
-                            Sửa</button>
+                            Edit</button>
                         <form th:action="@{/admin/room/{id}/delete(id=${room.id})}" method="post" style="flex: 1;"
-                            onsubmit="return confirm('Bạn có chắc muốn xóa phòng này?')">
-                            <button type="submit" class="btn-delete" style="width: 100%;">🗑️ Xóa</button>
+                            onsubmit="return confirm('Are you sure you want to delete this room?')">
+                            <button type="submit" class="btn-delete" style="width: 100%;">🗑️ Delete</button>
                         </form>
                     </div>
                 </div>
@@ -398,42 +398,42 @@
         </div>
     </div>
 
-    <!-- Modal Thêm/Sửa Phòng -->
+    <!-- Add/Edit Room Modal -->
     <div class="modal" id="roomModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 id="modalTitle">Thêm phòng mới</h2>
+                <h2 id="modalTitle">Add New Room</h2>
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <form action="/admin/room" method="post">
                 <input type="hidden" name="id" id="roomId">
                 <div class="form-group">
-                    <label>Số phòng</label>
+                    <label>Room Number</label>
                     <input type="text" name="roomNumber" id="roomNumber" required>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Loại phòng</label>
+                        <label>Room Type</label>
                         <select name="roomType" id="roomType" required>
                             <option th:each="type : ${roomTypes}" th:value="${type.name}" th:text="${type.name}">Type
                             </option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Giá/đêm (VNĐ)</label>
+                        <label>Price/night (VND)</label>
                         <input type="number" name="pricePerNight" id="pricePerNight" required>
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>Mô tả</label>
+                    <label>Description</label>
                     <textarea name="description" id="roomDescription"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>URL Hình ảnh</label>
+                    <label>Image URL</label>
                     <input type="text" name="imageUrl" id="roomImageUrl">
                 </div>
                 <div class="form-group">
-                    <label>Tiện ích phòng</label>
+                    <label>Room Amenities</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <label th:each="amenity : ${amenities}"
                             style="color: white; font-weight: normal; margin: 0; display: flex; align-items: center; gap: 8px;">
@@ -444,9 +444,9 @@
                 </div>
                 <div class="form-group checkbox-group">
                     <input type="checkbox" name="isAvailable" id="roomAvailable" value="true" checked>
-                    <label for="roomAvailable" style="margin-bottom: 0;">Phòng còn trống</label>
+                    <label for="roomAvailable" style="margin-bottom: 0;">Room Available</label>
                 </div>
-                <button type="submit" class="btn-submit">💾 Lưu phòng</button>
+                <button type="submit" class="btn-submit">💾 Save Room</button>
             </form>
         </div>
     </div>
@@ -454,7 +454,7 @@
     <script>
         function openModal() {
             document.getElementById('roomModal').classList.add('active');
-            document.getElementById('modalTitle').innerText = 'Thêm phòng mới';
+            document.getElementById('modalTitle').innerText = 'Add New Room';
             document.getElementById('roomId').value = '';
             document.getElementById('roomId').disabled = true; // Prevent sending empty string for Integer
             document.getElementById('roomNumber').value = '';
@@ -468,7 +468,7 @@
 
         function editRoom(btn) {
             document.getElementById('roomModal').classList.add('active');
-            document.getElementById('modalTitle').innerText = 'Sửa phòng ' + btn.getAttribute('data-number');
+            document.getElementById('modalTitle').innerText = 'Edit Room ' + btn.getAttribute('data-number');
             document.getElementById('roomId').value = btn.getAttribute('data-id');
             document.getElementById('roomId').disabled = false; // Enable for edit
             document.getElementById('roomNumber').value = btn.getAttribute('data-number');
@@ -500,4 +500,3 @@
 </body>
 
 </html>
-

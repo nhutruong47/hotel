@@ -49,7 +49,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/verification-email", context);
 
-            sendHtmlEmail(user.getEmail(), "Xác thực tài khoản - Như Hotel", htmlContent);
+            sendHtmlEmail(user.getEmail(), "Account Verification - Nhu Hotel", htmlContent);
             System.out.println("✅ Verification email sent to: " + user.getEmail());
         } catch (Exception e) {
             System.err.println("❌ Failed to send verification email: " + e.getMessage());
@@ -76,7 +76,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/new-booking-admin", context);
 
-            sendHtmlEmail(adminEmail, "Booking mới cần duyệt #" + booking.getId(), htmlContent);
+            sendHtmlEmail(adminEmail, "New booking requires approval #" + booking.getId(), htmlContent);
             System.out.println("✅ Admin notification sent for booking: " + booking.getId());
         } catch (Exception e) {
             System.err.println("❌ Failed to send admin notification: " + e.getMessage());
@@ -109,7 +109,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/booking-approved", context);
 
-            sendHtmlEmail(userEmail, "Đặt phòng đã được duyệt #" + booking.getId(), htmlContent);
+            sendHtmlEmail(userEmail, "Booking approved #" + booking.getId(), htmlContent);
             System.out.println("✅ Booking approved email sent to: " + userEmail);
         } catch (Exception e) {
             System.err.println("❌ Failed to send approval email: " + e.getMessage());
@@ -140,7 +140,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/booking-rejected", context);
 
-            sendHtmlEmail(userEmail, "Đặt phòng bị từ chối #" + booking.getId(), htmlContent);
+            sendHtmlEmail(userEmail, "Booking rejected #" + booking.getId(), htmlContent);
             System.out.println("✅ Booking rejected email sent to: " + userEmail);
         } catch (Exception e) {
             System.err.println("❌ Failed to send rejection email: " + e.getMessage());
@@ -169,7 +169,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/booking-cancelled", context);
 
-            sendHtmlEmail(userEmail, "Đặt phòng đã bị hủy #" + booking.getId(), htmlContent);
+            sendHtmlEmail(userEmail, "Booking cancelled #" + booking.getId(), htmlContent);
             System.out.println("✅ Booking cancelled email sent to: " + userEmail);
         } catch (Exception e) {
             System.err.println("❌ Failed to send cancellation email: " + e.getMessage());
@@ -197,7 +197,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/payment-received-admin", context);
 
-            sendHtmlEmail(adminEmail, "💰 Thanh toán thành công #" + booking.getId(), htmlContent);
+            sendHtmlEmail(adminEmail, "💰 Payment successful #" + booking.getId(), htmlContent);
             System.out.println("✅ Payment notification sent to admin: " + adminEmail);
         } catch (Exception e) {
             System.err.println("❌ Failed to send payment notification: " + e.getMessage());
@@ -221,7 +221,7 @@ public class EmailService {
 
             String htmlContent = templateEngine.process("email/reset-password-email", context);
 
-            sendHtmlEmail(user.getEmail(), "Yêu cầu đặt lại mật khẩu - Như Hotel", htmlContent);
+            sendHtmlEmail(user.getEmail(), "Password reset request - Nhu Hotel", htmlContent);
             System.out.println("✅ Password reset email sent to: " + user.getEmail());
         } catch (Exception e) {
             System.err.println("❌ Failed to send password reset email: " + e.getMessage());

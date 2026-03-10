@@ -109,7 +109,7 @@ public class AdminController {
 
         try {
             bookingService.updateBookingStatus(id, BookingStatus.valueOf(status));
-            redirectAttributes.addFlashAttribute("success", "Cập nhật trạng thái thành công!");
+            redirectAttributes.addFlashAttribute("success", "Status updated successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -150,7 +150,7 @@ public class AdminController {
             Room room;
             if (id != null) {
                 room = roomService.getRoomById(id)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
+                        .orElseThrow(() -> new RuntimeException("Room not found"));
             } else {
                 room = new Room();
             }
@@ -158,7 +158,7 @@ public class AdminController {
             room.setRoomNumber(roomNumber);
 
             RoomTypeEntity roomTypeEntity = roomTypeRepository.findByName(roomType)
-                    .orElseThrow(() -> new RuntimeException("Loại phòng không hợp lệ"));
+                    .orElseThrow(() -> new RuntimeException("Invalid room type"));
             room.setRoomType(roomTypeEntity);
 
             room.setPricePerNight(pricePerNight);
@@ -178,7 +178,7 @@ public class AdminController {
 
             roomService.saveRoom(room);
             redirectAttributes.addFlashAttribute("success",
-                    id != null ? "Cập nhật phòng thành công!" : "Thêm phòng mới thành công!");
+                    id != null ? "Room updated successfully!" : "New room added successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -196,7 +196,7 @@ public class AdminController {
 
         try {
             roomService.deleteRoom(id);
-            redirectAttributes.addFlashAttribute("success", "Xóa phòng thành công!");
+            redirectAttributes.addFlashAttribute("success", "Room deleted successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -219,7 +219,7 @@ public class AdminController {
             System.err.println("Error loading vouchers: " + e.getMessage());
             e.printStackTrace();
             model.addAttribute("vouchers", java.util.Collections.emptyList());
-            model.addAttribute("error", "Không thể tải danh sách voucher: " + e.getMessage());
+            model.addAttribute("error", "Cannot load voucher list: " + e.getMessage());
             return "admin-vouchers";
         }
     }
@@ -258,7 +258,7 @@ public class AdminController {
             voucherRepository.save(v);
 
             redirectAttributes.addFlashAttribute("success",
-                    id != null ? "Cập nhật voucher thành công" : "Tạo voucher thành công");
+                    id != null ? "Voucher updated successfully" : "Voucher created successfully");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -276,7 +276,7 @@ public class AdminController {
 
         try {
             voucherRepository.deleteById(id);
-            redirectAttributes.addFlashAttribute("success", "Xóa voucher thành công");
+            redirectAttributes.addFlashAttribute("success", "Voucher deleted successfully");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -307,10 +307,10 @@ public class AdminController {
 
         try {
             User user = userRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Không tìm thấy user"));
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             user.setRole(role);
             userRepository.save(user);
-            redirectAttributes.addFlashAttribute("success", "Cập nhật quyền thành công!");
+            redirectAttributes.addFlashAttribute("success", "Role updated successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -329,10 +329,10 @@ public class AdminController {
         try {
             User currentUser = (User) session.getAttribute("user");
             if (currentUser.getId().equals(id)) {
-                throw new RuntimeException("Không thể xóa chính mình!");
+                throw new RuntimeException("Cannot delete yourself!");
             }
             userRepository.deleteById(id);
-            redirectAttributes.addFlashAttribute("success", "Xóa user thành công!");
+            redirectAttributes.addFlashAttribute("success", "User deleted successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -375,14 +375,14 @@ public class AdminController {
             RoomTypeEntity rt;
             if (id != null) {
                 rt = roomTypeService.getRoomTypeById(id)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy Loại phòng"));
+                        .orElseThrow(() -> new RuntimeException("Room type not found"));
             } else {
                 rt = new RoomTypeEntity();
             }
             rt.setName(name);
             rt.setDescription(description);
             roomTypeService.saveRoomType(rt);
-            redirectAttributes.addFlashAttribute("success", "Lưu Loại phòng thành công!");
+            redirectAttributes.addFlashAttribute("success", "Room type saved successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -396,9 +396,9 @@ public class AdminController {
         }
         try {
             roomTypeService.deleteRoomType(id);
-            redirectAttributes.addFlashAttribute("success", "Xóa Loại phòng thành công!");
+            redirectAttributes.addFlashAttribute("success", "Room type deleted successfully!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Không thể xóa Loại phòng đang được sử dụng!");
+            redirectAttributes.addFlashAttribute("error", "Cannot delete room type currently in use!");
         }
         return "redirect:/admin/room-types";
     }
@@ -426,14 +426,14 @@ public class AdminController {
             Amenity amenity;
             if (id != null) {
                 amenity = amenityService.getAmenityById(id)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy Tiện ích"));
+                        .orElseThrow(() -> new RuntimeException("Amenity not found"));
             } else {
                 amenity = new Amenity();
             }
             amenity.setName(name);
             amenity.setIconCode(iconCode);
             amenityService.saveAmenity(amenity);
-            redirectAttributes.addFlashAttribute("success", "Lưu Tiện ích thành công!");
+            redirectAttributes.addFlashAttribute("success", "Amenity saved successfully!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -447,9 +447,9 @@ public class AdminController {
         }
         try {
             amenityService.deleteAmenity(id);
-            redirectAttributes.addFlashAttribute("success", "Xóa Tiện ích thành công!");
+            redirectAttributes.addFlashAttribute("success", "Amenity deleted successfully!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Không thể xóa Tiện ích đang được sử dụng!");
+            redirectAttributes.addFlashAttribute("error", "Cannot delete amenity currently in use!");
         }
         return "redirect:/admin/amenities";
     }

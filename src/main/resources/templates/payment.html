@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>Thanh toán - Như Hotel</title>
+    <title>Payment - Nhu Hotel</title>
     <style>
         * {
             box-sizing: border-box;
@@ -288,19 +288,19 @@
 
 <body>
     <div class="navbar">
-        <h2>🏨 Như Hotel</h2>
+        <h2>🏨 Nhu Hotel</h2>
         <div class="nav-links">
-            <a href="/">Trang chủ</a>
-            <a href="/my-bookings">Đặt phòng của tôi</a>
+            <a href="/">Home</a>
+            <a href="/my-bookings">My Bookings</a>
         </div>
     </div>
 
     <div class="container">
         <div class="payment-card">
             <div class="payment-header">
-                <h2>🏦 Thanh Toán Chuyển Khoản</h2>
+                <h2>🏦 Bank Transfer Payment</h2>
                 <div class="deadline" th:if="${booking.paymentDeadline}">
-                    ⏰ Hạn thanh toán: <span
+                    ⏰ Payment deadline: <span
                         th:text="${#temporals.format(booking.paymentDeadline, 'dd/MM/yyyy HH:mm')}">01/02/2026
                         12:00</span>
                 </div>
@@ -309,9 +309,9 @@
             <div class="payment-body">
                 <!-- Steps -->
                 <div class="steps">
-                    <div class="step"><span class="num">1</span> Chuyển khoản</div>
-                    <div class="step"><span class="num">2</span> Nhập nội dung</div>
-                    <div class="step"><span class="num">3</span> Xác nhận</div>
+                    <div class="step"><span class="num">1</span> Transfer</div>
+                    <div class="step"><span class="num">2</span> Enter details</div>
+                    <div class="step"><span class="num">3</span> Confirm</div>
                 </div>
 
                 <!-- Room Details -->
@@ -320,15 +320,15 @@
                     <div style="font-size: 2.5em;">🛏️</div>
                     <div style="flex: 1;">
                         <div style="font-size: 1.1em; font-weight: 600; color: #333; margin-bottom: 4px;"
-                            th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.displayName}">
-                            Phòng 202 - Deluxe
+                            Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.displayName}">
+                            Room 202 - Deluxe
                         </div>
                         <div style="font-size: 13px; color: #666; display: flex; gap: 20px; flex-wrap: wrap;">
-                            <span>📅 Nhận: <b
-                                    th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01</b></span>
-                            <span>📅 Trả: <b
+                            <span>📅 Check-in: <b
+                                    th:text="${#temporals.format(booking.checkInDate, ' dd/MM/yyyy')}">01/01</b></span>
+                            <span>📅 Check-out: <b
                                     th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">03/01</b></span>
-                            <span>🌙 <b th:text="${booking.numberOfNights}">2</b> đêm</span>
+                            <span>🌙 <b th:text="${booking.numberOfNights}">2</b> night(s)</span>
                         </div>
                     </div>
                 </div>
@@ -340,12 +340,13 @@
                             <div class="icon">🏦</div>
                             <div>
                                 <div class="name">Vietcombank</div>
-                                <div style="font-size: 12px; opacity: 0.7;">Ngân hàng TMCP Ngoại thương</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Joint Stock Commercial Bank for Foreign
+                                    Trade</div>
                             </div>
                         </div>
 
                         <div class="bank-detail">
-                            <label>Số tài khoản</label>
+                            <label>Account Number</label>
                             <div class="value">
                                 <span id="account-number">1234567890123</span>
                                 <button class="copy-btn" onclick="copyText('account-number')">📋 Copy</button>
@@ -353,17 +354,17 @@
                         </div>
 
                         <div class="bank-detail">
-                            <label>Chủ tài khoản</label>
+                            <label>Account Holder</label>
                             <div class="value">NHU HOTEL COMPANY</div>
                         </div>
 
                         <div class="bank-detail">
-                            <label>Chi nhánh</label>
-                            <div class="value">Hồ Chí Minh</div>
+                            <label>Branch</label>
+                            <div class="value">Ho Chi Minh City</div>
                         </div>
 
                         <div class="bank-detail">
-                            <label>Nội dung chuyển khoản</label>
+                            <label>Transfer Description</label>
                             <div class="value">
                                 <span id="transfer-content" th:text="'BOOKING' + ${booking.id}">BOOKING123</span>
                                 <button class="copy-btn" onclick="copyText('transfer-content')">📋 Copy</button>
@@ -371,14 +372,20 @@
                         </div>
 
                         <div class="amount-highlight">
-                            <div class="label">Số tiền cần thanh toán</div>
+                            <div class="label">Amount Due</div>
                             <!-- Show original total, discount (if any), and final amount -->
-                            <div style="font-size:0.95em;color:#666;margin-bottom:8px;" th:if="${booking.discountAmount != null and booking.discountAmount.doubleValue() > 0}">
-                                Tổng ban đầu: <span th:text="${#numbers.formatDecimal(booking.totalPrice + booking.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                            <div style="font-size:0.95em;color:#666;margin-bottom:8px;"
+                                th:if="${booking.discountAmount != null and booking.discountAmount.doubleValue() > 0}">
+                                Original total: <span
+                                    th:text="${#numbers.formatDecimal(booking.totalPrice + booking.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' VND'"></span>
                                 <br />
-                                Giảm (mã <span th:text="${booking.appliedVoucherCode}"></span>): -<span th:text="${#numbers.formatDecimal(booking.discountAmount, 0, 'COMMA', 0, 'POINT')}"></span> đ
+                                Discount (code <span th:text="${booking.appliedVoucherCode}"></span>): -<span
+                                    th:text="${#numbers.formatDecimal(booking.discountAmount, 0, 'COMMA', 0, 'POINT')}"></span>
+                                VND
                             </div>
-                            <div class="amount" th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'">2,000,000 đ</div>
+                            <div class="amount"
+                                th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VND'">
+                                2,000,000 VND</div>
                         </div>
                     </div>
 
@@ -412,31 +419,30 @@
                                 </g>
                             </svg>
                         </div>
-                        <div class="qr-note">Quét mã QR bằng ứng dụng ngân hàng để thanh toán nhanh</div>
+                        <div class="qr-note">Scan the QR code with your banking app for quick payment</div>
 
                         <div class="booking-ref">
-                            <label>Mã đặt phòng</label>
+                            <label>Booking Reference</label>
                             <div class="ref-code" th:text="'#' + ${booking.id}">#123</div>
                             <div style="font-size: 12px; color: #666; margin-top: 5px;">
-                                Phòng <span th:text="${booking.room.roomNumber}">P01</span> •
-                                <span th:text="${booking.numberOfNights}">2</span> đêm
+                                Room <span th:text="${booking.room.roomNumber}">P01</span> •
+                                <span th:text="${booking.numberOfNights}">2</span> night(s)
                             </div>
                         </div>
 
                         <div class="confirm-section">
-                            <h4>✅ Đã chuyển khoản xong?</h4>
-                            <p>Sau khi chuyển khoản thành công, nhấn nút bên dưới để xác nhận.
-                                Chúng tôi sẽ kiểm tra và xác nhận đặt phòng của bạn.</p>
+                            <h4>✅ Done with the transfer?</h4>
+                            <p>After successfully transferring, click the button below to confirm.
+                                We will verify and confirm your booking.</p>
 
                             <form th:action="@{/booking/{id}/pay(id=${booking.id})}" method="post">
                                 <button type="submit" class="btn-confirm"
-                                    onclick="return confirm('Bạn xác nhận đã chuyển khoản thành công?')">
-                                    ✅ Tôi đã thanh toán
+                                    onclick="return confirm('Do you confirm that you have completed the transfer?')">
+                                    ✅ I Have Paid
                                 </button>
                             </form>
                         </div>
 
-                        <a href="/my-bookings" class="btn-cancel">← Thanh toán sau</a>
                     </div>
                 </div>
             </div>
@@ -447,7 +453,7 @@
         function copyText(elementId) {
             const text = document.getElementById(elementId).innerText;
             navigator.clipboard.writeText(text).then(() => {
-                alert('Đã copy: ' + text);
+                alert('Copied: ' + text);
             });
         }
     </script>

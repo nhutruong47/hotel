@@ -41,7 +41,7 @@ public class DataInitializer implements CommandLineRunner {
                         user.setFullName("Admin User");
                         user.setRole("ADMIN");
                         userRepository.save(user);
-                        System.out.println("✅ Đã tạo user mặc định: username=a, password=a");
+                        System.out.println("✅ Default user created: username=a, password=a");
                 }
 
                 // Create or update admin account
@@ -51,7 +51,7 @@ public class DataInitializer implements CommandLineRunner {
                                         existingAdmin.setRole("ADMIN");
                                         userRepository.save(existingAdmin);
                                         System.out.println(
-                                                        "✅ Đã cập nhật tài khoản admin: username=admin, password=admin");
+                                                        "✅ Admin account updated: username=admin, password=admin");
                                 },
                                 () -> {
                                         User admin = new User();
@@ -61,7 +61,7 @@ public class DataInitializer implements CommandLineRunner {
                                         admin.setEmail("admin@hotel.com");
                                         admin.setRole("ADMIN");
                                         userRepository.save(admin);
-                                        System.out.println("✅ Đã tạo tài khoản admin: username=admin, password=admin");
+                                        System.out.println("✅ Admin account created: username=admin, password=admin");
                                 });
 
                 // Always ensure default room types exist
@@ -78,16 +78,16 @@ public class DataInitializer implements CommandLineRunner {
 
         private void ensureRoomTypesExist() {
                 String[][] defaultTypes = {
-                                { "STANDARD", "Phòng tiêu chuẩn" },
-                                { "DELUXE", "Phòng cao cấp" },
-                                { "SUITE", "Phòng suite" },
-                                { "VIP", "Phòng VIP" }
+                                { "STANDARD", "Standard Room" },
+                                { "DELUXE", "Deluxe Room" },
+                                { "SUITE", "Suite Room" },
+                                { "VIP", "VIP Room" }
                 };
 
                 for (String[] type : defaultTypes) {
                         roomTypeRepository.findByName(type[0]).orElseGet(() -> {
                                 RoomTypeEntity newType = new RoomTypeEntity(type[0], type[1]);
-                                System.out.println("✅ Đã tạo loại phòng: " + type[0]);
+                                System.out.println("✅ Created room type: " + type[0]);
                                 return roomTypeRepository.save(newType);
                         });
                 }
@@ -107,50 +107,50 @@ public class DataInitializer implements CommandLineRunner {
                                 defaultType.getId());
 
                 if (updated > 0) {
-                        System.out.println("⚠️ Đã sửa " + updated + " phòng có loại phòng không hợp lệ → STANDARD");
+                        System.out.println("⚠️ Fixed " + updated + " rooms with invalid room types → STANDARD");
                 }
         }
 
         private void initializeRooms() {
                 // Standard Rooms
                 createRoom("101", "STANDARD", new BigDecimal("500000"),
-                                "Phòng đơn yên tĩnh, đầy đủ tiện nghi cơ bản. Thích hợp cho khách đi công tác.",
+                                "Quiet single room with basic amenities. Ideal for business travelers.",
                                 "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400");
                 createRoom("102", "STANDARD", new BigDecimal("500000"),
-                                "Phòng đơn view sân vườn, không gian thoáng mát.",
+                                "Single room with garden view, airy space.",
                                 "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400");
                 createRoom("103", "STANDARD", new BigDecimal("550000"),
-                                "Phòng đôi tiêu chuẩn, phù hợp cho cặp đôi.",
+                                "Standard double room, suitable for couples.",
                                 "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400");
 
                 // Deluxe Rooms
                 createRoom("201", "DELUXE", new BigDecimal("1200000"),
-                                "Phòng Deluxe view biển, có ban công riêng và bồn tắm.",
+                                "Deluxe room with sea view, private balcony, and bathtub.",
                                 "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400");
                 createRoom("202", "DELUXE", new BigDecimal("1200000"),
-                                "Phòng Deluxe cao cấp với nội thất sang trọng, view thành phố.",
+                                "Premium Deluxe room with luxurious interior, city view.",
                                 "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400");
                 createRoom("203", "DELUXE", new BigDecimal("1350000"),
-                                "Phòng Deluxe Family, rộng rãi cho gia đình 4 người.",
+                                "Deluxe Family room, spacious for a family of 4.",
                                 "https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400");
 
                 // Suite Rooms
                 createRoom("301", "SUITE", new BigDecimal("2500000"),
-                                "Suite sang trọng với phòng khách riêng, jacuzzi và minibar.",
+                                "Luxury Suite with private living room, jacuzzi, and minibar.",
                                 "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=400");
                 createRoom("302", "SUITE", new BigDecimal("2800000"),
-                                "Suite Executive với không gian làm việc riêng và view panorama.",
+                                "Executive Suite with private workspace and panoramic view.",
                                 "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=400");
 
                 // VIP Rooms
                 createRoom("P01", "VIP", new BigDecimal("5000000"),
-                                "Penthouse VIP với sân thượng riêng, bể bơi mini và dịch vụ butler 24/7.",
+                                "VIP Penthouse with private terrace, mini-pool, and 24/7 butler service.",
                                 "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400");
                 createRoom("P02", "VIP", new BigDecimal("6500000"),
-                                "Royal Suite - Căn hộ cao cấp nhất với 2 phòng ngủ, phòng khách rộng và tầm nhìn 360 độ.",
+                                "Royal Suite - The most premium apartment with 2 bedrooms, spacious living room, and 360-degree view.",
                                 "https://images.unsplash.com/photo-1602002418816-5c0aeef426aa?w=400");
 
-                System.out.println("✅ Đã khởi tạo " + roomRepository.count() + " phòng mẫu!");
+                System.out.println("✅ Initialized " + roomRepository.count() + " sample rooms!");
         }
 
         private void createRoom(String roomNumber, String typeName, BigDecimal price, String description,

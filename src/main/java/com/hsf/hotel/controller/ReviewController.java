@@ -111,7 +111,7 @@ public class ReviewController {
 
         try {
             reviewService.updateReview(user, reviewId, rating, comment);
-            redirectAttributes.addFlashAttribute("success", "Đã cập nhật đánh giá!");
+            redirectAttributes.addFlashAttribute("success", "Review updated!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
@@ -133,7 +133,7 @@ public class ReviewController {
 
         try {
             reviewService.deleteReview(user, reviewId);
-            redirectAttributes.addFlashAttribute("success", "Đã xóa đánh giá!");
+            redirectAttributes.addFlashAttribute("success", "Review deleted!");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }

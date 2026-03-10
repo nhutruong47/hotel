@@ -43,23 +43,23 @@ public class UserService {
     public User registerUser(String username, String password, String email, String fullName) {
         // Step 1: Validate username unique
         if (userRepository.findByUsername(username).isPresent()) {
-            throw new RuntimeException("Tên đăng nhập đã tồn tại");
+            throw new RuntimeException("Username already exists");
         }
 
         // Step 2: Validate email format
         if (email == null || email.isEmpty()) {
-            throw new RuntimeException("Email là bắt buộc");
+            throw new RuntimeException("Email is mandatory");
         }
         if (!EMAIL_PATTERN.matcher(email).matches()) {
-            throw new RuntimeException("Email không hợp lệ");
+            throw new RuntimeException("Invalid email format");
         }
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("Email đã được sử dụng");
+            throw new RuntimeException("Email is already in use");
         }
 
         // Step 3: Validate password strength
         if (password == null || password.length() < 6) {
-            throw new RuntimeException("Mật khẩu phải có ít nhất 6 ký tự");
+            throw new RuntimeException("Password must be at least 6 characters");
         }
 
         // Step 4: Generate verification token
@@ -121,10 +121,10 @@ public class UserService {
     @Transactional
     public void resendVerificationEmail(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
+                .orElseThrow(() -> new RuntimeException("Account not found with this email"));
 
         if (Boolean.TRUE.equals(user.getEmailVerified())) {
-            throw new RuntimeException("Email đã được xác thực");
+            throw new RuntimeException("Email is already verified");
         }
 
         // Generate new token

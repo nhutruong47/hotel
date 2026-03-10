@@ -77,7 +77,7 @@ public class AiController {
 
         try {
             chatMessageRepository.deleteByUser(user);
-            return Map.of("success", "Đã xóa lịch sử chat");
+            return Map.of("success", "Chat history cleared");
         } catch (Exception e) {
             return Map.of("error", "Không thể xóa lịch sử: " + e.getMessage());
         }

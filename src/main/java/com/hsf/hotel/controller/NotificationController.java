@@ -69,7 +69,7 @@ public class NotificationController {
                                 "guestName", booking.getGuestName(),
                                 "amount", booking.getTotalPrice().toString(),
                                 "paidAt", booking.getPaidAt().toString(),
-                                "message", "Booking #" + booking.getId() + " đã thanh toán!")));
+                                "message", "Booking #" + booking.getId() + " is paid!")));
             } catch (IOException e) {
                 emitters.remove(emitter);
             }
@@ -88,7 +88,7 @@ public class NotificationController {
                                 "bookingId", booking.getId(),
                                 "roomNumber", booking.getRoom().getRoomNumber(),
                                 "guestName", booking.getGuestName(),
-                                "message", "Booking mới #" + booking.getId() + " cần duyệt!")));
+                                "message", "New booking #" + booking.getId() + " requires approval!")));
             } catch (IOException e) {
                 emitters.remove(emitter);
             }

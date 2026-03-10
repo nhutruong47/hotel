@@ -34,7 +34,7 @@ public class WebController {
         try {
             userService.registerUser(username, password, email, fullName);
             redirectAttributes.addFlashAttribute("success",
-                    "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.");
+                    "Registration successful! Please check your email to verify your account.");
             return "redirect:/login";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -75,12 +75,13 @@ public class WebController {
         return "redirect:/login";
     }
 
-    // NOTE: Authentication is handled manually via this POST when Spring Security is disabled.
+    // NOTE: Authentication is handled manually via this POST when Spring Security
+    // is disabled.
     @PostMapping("/login")
     public String loginUser(@RequestParam String username,
-                            @RequestParam String password,
-                            HttpSession session,
-                            RedirectAttributes redirectAttributes) {
+            @RequestParam String password,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         return userService.login(username, password)
                 .map(user -> {
                     session.setAttribute("user", user);

@@ -170,12 +170,12 @@ public class ProfileController {
             // Kiểm tra email có tồn tại không
             Optional<User> userOpt = profileService.findByEmail(email);
             if (userOpt.isEmpty()) {
-                redirectAttributes.addFlashAttribute("error", "Email không tồn tại trong hệ thống.");
+                redirectAttributes.addFlashAttribute("error", "Email not found in the system.");
                 return "redirect:/forgot-password";
             }
             // Email đúng → chuyển thẳng đến form reset password
             redirectAttributes.addFlashAttribute("email", email);
-            redirectAttributes.addFlashAttribute("success", "Đã xác nhận email. Vui lòng nhập mật khẩu mới.");
+            redirectAttributes.addFlashAttribute("success", "Email verified. Please enter a new password.");
             return "redirect:/reset-password";
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -202,7 +202,7 @@ public class ProfileController {
             model.addAttribute("token", token);
             return "reset-password";
         }
-        redirectAttributes.addFlashAttribute("error", "Vui lòng nhập email trước.");
+        redirectAttributes.addFlashAttribute("error", "Please enter your email first.");
         return "redirect:/forgot-password";
     }
 
@@ -214,17 +214,17 @@ public class ProfileController {
             RedirectAttributes redirectAttributes) {
         try {
             if (newPassword == null || newPassword.length() < 6) {
-                throw new RuntimeException("Mật khẩu phải có ít nhất 6 ký tự");
+                throw new RuntimeException("Password must be at least 6 characters");
             }
             if (!newPassword.equals(confirmPassword)) {
-                throw new RuntimeException("Mật khẩu xác nhận không khớp");
+                throw new RuntimeException("Passwords do not match");
             }
 
             // Reset bằng email (luồng mới - đơn giản)
             if (email != null && !email.isEmpty()) {
                 profileService.resetPasswordByEmail(email, newPassword);
                 redirectAttributes.addFlashAttribute("success",
-                        "Đã đặt lại mật khẩu thành công. Bạn có thể đăng nhập với mật khẩu mới.");
+                        "Password reset successful. You can log in with your new password.");
                 return "redirect:/login";
             }
 
@@ -232,11 +232,11 @@ public class ProfileController {
             if (token != null && !token.isEmpty()) {
                 profileService.resetPassword(token, newPassword);
                 redirectAttributes.addFlashAttribute("success",
-                        "Đã đặt lại mật khẩu thành công. Bạn có thể đăng nhập với mật khẩu mới.");
+                        "Password reset successful. You can log in with your new password.");
                 return "redirect:/login";
             }
 
-            throw new RuntimeException("Thiếu thông tin email hoặc token");
+            throw new RuntimeException("Missing email or token info");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
             if (email != null && !email.isEmpty()) {

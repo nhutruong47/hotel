@@ -71,7 +71,7 @@ public class BookingService {
     @Transactional
     public Booking updateBookingStatus(Integer bookingId, BookingStatus newStatus) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
         booking.setStatus(newStatus);
 
         if (newStatus == BookingStatus.CANCELLED) {
@@ -109,7 +109,7 @@ public class BookingService {
             String guestName, String guestPhone, String notes) {
         // Step 1: Check availability
         if (!isRoomAvailable(room, checkIn, checkOut)) {
-            throw new RuntimeException("Phòng đã được đặt trong khoảng thời gian này");
+            throw new RuntimeException("Room is already booked during this time");
         }
 
         // Step 2: Create booking with CONFIRMED status
@@ -151,10 +151,10 @@ public class BookingService {
     @Transactional
     public Booking approveBooking(Integer bookingId, User adminUser) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Chỉ có thể duyệt đơn đang chờ xác nhận");
+            throw new RuntimeException("Only pending bookings can be approved");
         }
 
         // Update booking
@@ -182,17 +182,17 @@ public class BookingService {
     @Transactional
     public Booking rejectBooking(Integer bookingId, User adminUser, String reason) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         if (booking.getStatus() != BookingStatus.PENDING) {
-            throw new RuntimeException("Chỉ có thể từ chối đơn đang chờ xác nhận");
+            throw new RuntimeException("Only pending bookings can be rejected");
         }
 
         // Update booking
         booking.setStatus(BookingStatus.REJECTED);
         booking.setApprovedBy(adminUser);
         booking.setApprovedAt(LocalDateTime.now());
-        booking.setRejectionReason(reason != null ? reason : "Không đủ điều kiện");
+        booking.setRejectionReason(reason != null ? reason : "Not qualified");
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -212,10 +212,10 @@ public class BookingService {
     @Transactional
     public Booking confirmPayment(Integer bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         if (booking.getStatus() != BookingStatus.AWAITING_PAYMENT) {
-            throw new RuntimeException("Đơn không ở trạng thái chờ thanh toán");
+            throw new RuntimeException("Booking is not in awaiting payment status");
         }
 
         booking.setStatus(BookingStatus.CONFIRMED);
@@ -241,19 +241,19 @@ public class BookingService {
     @Transactional
     public Booking cancelBooking(Integer bookingId, User user) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         // Check ownership
         if (!booking.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Bạn không có quyền hủy đơn này");
+            throw new RuntimeException("You do not have permission to cancel this booking");
         }
 
         // Check if can cancel
         if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new RuntimeException("Đơn đặt phòng đã được hủy trước đó");
+            throw new RuntimeException("Booking has already been cancelled");
         }
         if (booking.getStatus() == BookingStatus.COMPLETED) {
-            throw new RuntimeException("Không thể hủy đơn đã hoàn thành");
+            throw new RuntimeException("Cannot cancel a completed booking");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);

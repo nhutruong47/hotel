@@ -42,12 +42,12 @@ public class GeminiService {
                 System.out.println("📋 Found " + availableRooms.size() + " available rooms");
 
                 if (availableRooms.isEmpty()) {
-                        return "Hiện tại không có phòng trống. Vui lòng quay lại sau!";
+                        return "No rooms are currently available. Please come back later!";
                 }
 
                 String roomsContext = availableRooms.stream()
                                 .map(room -> String.format(
-                                                "- Phòng %s (%s): %s - Giá: %s VNĐ/đêm",
+                                                "- Room %s (%s): %s - Price: %s VND/night",
                                                 room.getRoomNumber(),
                                                 room.getRoomType().getDisplayName(),
                                                 room.getDescription() != null ? room.getDescription() : "",
@@ -55,14 +55,14 @@ public class GeminiService {
                                 .collect(Collectors.joining("\n"));
 
                 String prompt = String.format("""
-                                Bạn là trợ lý AI của khách sạn Như Hotel. Giúp khách chọn phòng phù hợp.
+                                You are an AI assistant of Nhu Hotel. Help guests choose a suitable room.
 
-                                PHÒNG TRỐNG:
+                                AVAILABLE ROOMS:
                                 %s
 
-                                KHÁCH CẦN: %s
+                                GUEST NEEDS: %s
 
-                                Gợi ý 1-2 phòng phù hợp nhất, giải thích ngắn gọn. Trả lời tiếng Việt.
+                                Suggest 1-2 most suitable rooms, explain briefly. Answer in English.
                                 """, roomsContext, userRequest);
 
                 // Retry up to 3 times with backoff for rate limit errors
@@ -79,7 +79,7 @@ public class GeminiService {
                                 }
 
                                 System.out.println("❌ No response from Gemini");
-                                return "Không nhận được phản hồi từ AI. Vui lòng thử lại.";
+                                return "No response received from AI. Please try again.";
 
                         } catch (WebClientResponseException e) {
                                 String responseBody = e.getResponseBodyAsString();
@@ -102,20 +102,20 @@ public class GeminiService {
                                                 continue;
                                         }
                                         // All retries exhausted
-                                        return "⏳ AI đang bận do giới hạn số lượng yêu cầu. Vui lòng đợi 1 phút rồi thử lại!\n\n"
-                                                        + "Dưới đây là gợi ý phòng tự động:\n\n"
+                                        return "⏳ AI is busy due to request limits. Please wait 1 minute and try again!\n\n"
+                                                        + "Here are automatic room suggestions:\n\n"
                                                         + getFallbackRecommendation(availableRooms, userRequest);
                                 }
 
                                 // Other API errors - don't retry
-                                return "⚠️ Không thể kết nối đến AI. Vui lòng thử lại sau hoặc liên hệ lễ tân để được hỗ trợ.";
+                                return "⚠️ Cannot connect to AI. Please try again later or contact the receptionist for support.";
 
                         } catch (Exception e) {
                                 System.err.println("❌ Error (attempt " + attempt + "): "
                                                 + e.getClass().getSimpleName() + " - " + e.getMessage());
 
                                 if (attempt >= maxRetries) {
-                                        return "⚠️ Trợ lý AI hiện không khả dụng. Dưới đây là gợi ý phòng:\n\n"
+                                        return "⚠️ AI assistant is currently unavailable. Here are some room suggestions:\n\n"
                                                         + getFallbackRecommendation(availableRooms, userRequest);
                                 }
 
@@ -129,7 +129,7 @@ public class GeminiService {
                         }
                 }
 
-                return "⚠️ Trợ lý AI hiện không khả dụng. Dưới đây là gợi ý phòng:\n\n"
+                return "⚠️ AI assistant is currently unavailable. Here are some room suggestions:\n\n"
                                 + getFallbackRecommendation(availableRooms, userRequest);
         }
 
@@ -222,16 +222,16 @@ public class GeminiService {
                 }
 
                 for (Room room : suggestions) {
-                        sb.append(String.format("🏨 Phòng %s (%s)\n", room.getRoomNumber(),
+                        sb.append(String.format("🏨 Room %s (%s)\n", room.getRoomNumber(),
                                         room.getRoomType().getDisplayName()));
-                        sb.append(String.format("   Giá: %s VNĐ/đêm\n", room.getPricePerNight().toString()));
+                        sb.append(String.format("   Price: %s VND/night\n", room.getPricePerNight().toString()));
                         if (room.getDescription() != null && !room.getDescription().isEmpty()) {
                                 sb.append(String.format("   %s\n", room.getDescription()));
                         }
                         sb.append("\n");
                 }
 
-                sb.append("💡 Để được tư vấn chi tiết hơn, vui lòng liên hệ lễ tân hoặc thử lại sau!");
+                sb.append("💡 For more detailed advice, please contact the receptionist or try again later!");
                 return sb.toString();
         }
 }

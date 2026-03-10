@@ -55,7 +55,7 @@ public class RoomService {
     @Transactional
     public void deleteRoom(Integer id) {
         Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
+                .orElseThrow(() -> new RuntimeException("Room not found"));
 
         // Check if room has any bookings (past, present, or future)
         // Note: we just need to know if any bookings exist, so checking if the list is
@@ -63,7 +63,7 @@ public class RoomService {
         var bookings = bookingRepository.findAllByRoomId(id);
         if (bookings != null && !bookings.isEmpty()) {
             throw new RuntimeException(
-                    "Phòng này đã có lịch sử đặt phòng, không thể xóa. Vui lòng tắt trạng thái 'Còn trống' để ẩn phòng.");
+                    "This room has booking history and cannot be deleted. Please toggle 'Available' status to hide it.");
         }
 
         roomRepository.delete(room);

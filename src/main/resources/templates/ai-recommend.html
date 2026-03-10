@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>Gợi ý phòng - Như Hotel</title>
+    <title>Room Suggestions - Nhu Hotel</title>
     <style>
         * {
             box-sizing: border-box;
@@ -302,11 +302,11 @@
 
 <body>
     <div class="navbar">
-        <h2>🏨 Như Hotel</h2>
+        <h2>🏨 Nhu Hotel</h2>
         <div class="nav-links">
-            <a href="/">Trang chủ</a>
-            <a href="/my-bookings">Đặt phòng của tôi</a>
-            <a href="/ai-recommend" style="background: rgba(255,255,255,0.2);">🤖 Trợ lý AI</a>
+            <a href="/">Home</a>
+            <a href="/my-bookings">My Bookings</a>
+            <a href="/ai-recommend" style="background: rgba(255,255,255,0.2);">🤖 AI Assistant</a>
         </div>
     </div>
 
@@ -314,23 +314,23 @@
         <div class="chat-card">
             <div class="chat-header">
                 <div class="chat-header-text">
-                    <h3>🤖 Trợ Lý AI Thông Minh</h3>
-                    <p>Mô tả nhu cầu của bạn, AI sẽ gợi ý phòng phù hợp nhất!</p>
+                    <h3>🤖 Smart AI Assistant</h3>
+                    <p>Describe your needs and AI will suggest the best rooms for you!</p>
                 </div>
-                <button class="btn-clear" onclick="clearHistory()">🗑️ Xóa lịch sử</button>
+                <button class="btn-clear" onclick="clearHistory()">🗑️ Clear History</button>
             </div>
 
             <div class="chat-messages" id="chatMessages">
                 <!-- Welcome message -->
                 <div class="message ai">
                     <div class="message-avatar">🤖</div>
-                    <div class="message-content">Xin chào! Tôi là trợ lý AI của Như Hotel. Hãy cho tôi biết nhu cầu của
-                        bạn!</div>
+                    <div class="message-content">Hello! I'm the AI assistant of Nhu Hotel. Let me know what you need!
+                    </div>
                 </div>
 
                 <!-- Load history from server -->
                 <th:block th:if="${chatHistory != null and !chatHistory.isEmpty()}">
-                    <div class="history-divider">📜 Lịch sử trò chuyện</div>
+                    <div class="history-divider">📜 Chat History</div>
                     <th:block th:each="msg : ${chatHistory}">
                         <div class="message user">
                             <div class="message-avatar">👤</div>
@@ -354,19 +354,19 @@
             </div>
 
             <div class="suggestions">
-                <p>💡 Gợi ý câu hỏi:</p>
+                <p>💡 Suggested Questions:</p>
                 <div class="suggestion-chips">
-                    <span class="suggestion-chip" onclick="useSuggestion(this)">Phòng cho cặp đôi, lãng mạn</span>
-                    <span class="suggestion-chip" onclick="useSuggestion(this)">Gia đình 4 người, giá hợp lý</span>
-                    <span class="suggestion-chip" onclick="useSuggestion(this)">Phòng VIP sang trọng nhất</span>
-                    <span class="suggestion-chip" onclick="useSuggestion(this)">Đi công tác, cần yên tĩnh</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Room for couples, romantic</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Family of 4, affordable</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Most luxurious VIP room</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Business trip, need quiet</span>
                 </div>
             </div>
 
             <div class="chat-input">
-                <input type="text" id="userInput" placeholder="Nhập nhu cầu của bạn..."
+                <input type="text" id="userInput" placeholder="Describe what you need..."
                     onkeypress="if(event.key==='Enter') sendMessage()">
-                <button onclick="sendMessage()" id="sendBtn">Gửi 🚀</button>
+                <button onclick="sendMessage()" id="sendBtn">Send 🚀</button>
             </div>
         </div>
     </div>
@@ -423,20 +423,20 @@
                 }
             } catch (error) {
                 typingIndicator.classList.remove('show');
-                addMessage('❌ Lỗi kết nối. Vui lòng thử lại.', false);
+                addMessage('❌ Connection error. Please try again.', false);
             }
 
             sendBtn.disabled = false;
         }
 
         async function clearHistory() {
-            if (!confirm('Xóa toàn bộ lịch sử chat?')) return;
+            if (!confirm('Clear all chat history?')) return;
 
             try {
                 await fetch('/ai-recommend/clear', { method: 'POST' });
                 location.reload();
             } catch (error) {
-                alert('Không thể xóa lịch sử');
+                alert('Could not clear history');
             }
         }
     </script>

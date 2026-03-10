@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Như Hotel - Auth</title>
+    <title>Nhu Hotel - Auth</title>
     <style>
         body {
             font-family: sans-serif;
@@ -112,51 +112,51 @@
 
 <body>
     <div class="box">
-        <div class="logo">🏨 Như Hotel</div>
+        <div class="logo">🏨 Nhu Hotel</div>
 
         <!-- Success/Error Messages -->
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
         <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
-        
+
         <!-- Spring Security Messages -->
         <div th:if="${param.error}" class="alert alert-error">
-            Tên đăng nhập hoặc mật khẩu không đúng!
+            Invalid username or password!
         </div>
         <div th:if="${param.logout}" class="alert alert-success">
-            Đăng xuất thành công!
+            Logged out successfully!
         </div>
         <div th:if="${param.expired}" class="alert alert-error">
-            Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.
+            Your session has expired. Please log in again.
         </div>
 
         <div id="login-form" th:classappend="${param.register != null ? 'hidden' : ''}">
-            <h2>Đăng Nhập</h2>
+            <h2>Login</h2>
             <form th:action="@{/login}" method="post">
-                <input type="text" name="username" placeholder="Tên đăng nhập" required>
-                <input type="password" name="password" placeholder="Mật khẩu" required>
+                <input type="text" name="username" placeholder="Username" required>
+                <input type="password" name="password" placeholder="Password" required>
                 <div style="text-align: right; margin-top: 6px;">
                     <a th:href="@{/forgot-password}" class="link"
-                        style="display:inline-block; text-decoration: none;">Quên mật khẩu?</a>
+                        style="display:inline-block; text-decoration: none;">Forgot password?</a>
                 </div>
-                <button type="submit" class="btn">Đăng Nhập</button>
+                <button type="submit" class="btn">Login</button>
             </form>
-            <div class="link" onclick="toggle()">Chưa có tài khoản? Đăng ký ngay</div>
+            <div class="link" onclick="toggle()">Don't have an account? Register now</div>
         </div>
 
         <div id="reg-form" th:classappend="${param.register != null ? '' : 'hidden'}">
-            <h2>Đăng Ký Tài Khoản</h2>
+            <h2>Create Account</h2>
             <form th:action="@{/register}" method="post">
-                <input type="text" name="username" placeholder="Tên đăng nhập *" required>
+                <input type="text" name="username" placeholder="Username *" required>
                 <input type="email" name="email" placeholder="Email *" required>
-                <input type="password" name="password" placeholder="Mật khẩu (ít nhất 6 ký tự) *" required
+                <input type="password" name="password" placeholder="Password (at least 6 characters) *" required
                     minlength="6">
-                <input type="text" name="fullName" placeholder="Họ và tên">
-                <button type="submit" class="btn btn-register">Tạo tài khoản</button>
+                <input type="text" name="fullName" placeholder="Full Name">
+                <button type="submit" class="btn btn-register">Create Account</button>
             </form>
             <p style="font-size: 12px; color: #666; text-align: center; margin-top: 10px;">
-                📧 Bạn sẽ nhận email xác thực sau khi đăng ký
+                📧 You will receive a verification email after registration
             </p>
-            <div class="link" onclick="toggle()">Đã có tài khoản? Đăng nhập</div>
+            <div class="link" onclick="toggle()">Already have an account? Login</div>
         </div>
     </div>
     <script>

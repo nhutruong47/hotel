@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Quản lý Voucher - Admin</title>
+    <title>Manage Vouchers - Admin</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -94,10 +94,10 @@
 
 <body>
     <div class="container">
-        <h1>🧾 Quản lý Voucher</h1>
+        <h1>🧾 Manage Vouchers</h1>
         <a href="/admin" class="btn"
             style="margin-left:12px;background:linear-gradient(135deg,#64748b,#475569);padding:8px 12px;border-radius:6px;">←
-            Quay về Admin</a>
+            Back to Admin</a>
 
         <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
         <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
@@ -105,17 +105,18 @@
         <div>
             <form th:action="@{/admin/voucher}" method="post" class="form-row">
 
-                <label class="small">Mã: <input type="text" name="code" placeholder="Mã voucher (VD: PROMO10)"
+                <label class="small">Code: <input type="text" name="code" placeholder="Voucher code (e.g. PROMO10)"
                         required></label>
                 <label class="small">Amount: <input type="number" name="amount" placeholder="Amount (if percent set %)"
                         required></label>
                 <label class="small">Expiry: <input type="date" name="expiryDate"></label>
-                <label class="small">Số lượt: <input type="number" name="quantity" placeholder="Số lượt" value="1"
+                <label class="small">Uses: <input type="number" name="quantity" placeholder="Uses" value="1"
                         min="1"></label>
-                <label class="small"><input type="checkbox" name="percent" value="true"> Phần trăm</label>
-                <button type="submit" class="btn">Tạo/ Cập nhật</button>
+                <label class="small"><input type="checkbox" name="percent" value="true"> Percentage</label>
+                <button type="submit" class="btn">Create / Update</button>
             </form>
-            <p class="small">Lưu ý: nếu <strong>Phần trăm</strong> được chọn thì <em>Amount</em> được hiểu là % (ví dụ
+            <p class="small">Note: if <strong>Percentage</strong> is checked, <em>Amount</em> is treated as % (e.g. 10 =
+                10%).
                 10 = 10%).</p>
         </div>
 
@@ -128,7 +129,7 @@
                     <th>Percent</th>
                     <th>Expiry</th>
                     <th>Quantity</th>
-                    <th>Hành động</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -143,7 +144,7 @@
                         <form th:action="@{/admin/voucher/{id}/delete(id=${v.id})}" method="post"
                             style="display:inline">
 
-                            <button type="submit" class="btn danger">Xóa</button>
+                            <button type="submit" class="btn danger">Delete</button>
                         </form>
                     </td>
                 </tr>

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Đặt phòng đã bị hủy - Như Hotel</title>
+    <title>Booking Cancelled - Nhu Hotel</title>
 </head>
 
 <body style="font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
@@ -11,8 +11,8 @@
         style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
         <!-- Header -->
         <div style="background: linear-gradient(135deg, #6c757d, #495057); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 28px;">🏨 Như Hotel</h1>
-            <p style="color: rgba(255,255,255,0.9); margin-top: 10px;">Thông báo đặt phòng</p>
+            <h1 style="color: white; margin: 0; font-size: 28px;">🏨 Nhu Hotel</h1>
+            <p style="color: rgba(255,255,255,0.9); margin-top: 10px;">Booking Notification</p>
         </div>
 
         <!-- Content -->
@@ -20,36 +20,37 @@
             <div style="text-align: center; margin-bottom: 20px;">
                 <span
                     style="display: inline-block; background: #e2e3e5; color: #383d41; padding: 10px 20px; border-radius: 20px; font-weight: 600;">
-                    ⚠️ Đã hủy
+                    ⚠️ Cancelled
                 </span>
             </div>
 
-            <h2 style="color: #333; margin-top: 0;">Đặt phòng của bạn đã bị hủy</h2>
+            <h2 style="color: #333; margin-top: 0;">Your booking has been cancelled</h2>
 
             <p style="color: #666; line-height: 1.6;">
-                Xin chào <strong
-                    th:text="${booking.user.fullName != null ? booking.user.fullName : booking.user.username}">Khách</strong>,
-                đặt phòng <strong th:text="'#' + ${booking.id}">#123</strong> của bạn đã bị hủy do quá hạn thanh toán.
+                Hello <strong
+                    th:text="${booking.user.fullName != null ? booking.user.fullName : booking.user.username}">Guest</strong>,
+                your booking <strong th:text="'#' + ${booking.id}">#123</strong> has been cancelled due to an expired
+                payment deadline.
             </p>
 
             <!-- Info Box -->
             <div style="background: #e2e3e5; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 0; color: #383d41;">
-                    📋 <strong>Chi tiết:</strong><br>
-                    • Phòng: <span th:text="${booking.room.roomNumber}">101</span><br>
-                    • Ngày đặt: <span
+                    📋 <strong>Details:</strong><br>
+                    • Room: <span th:text="${booking.room.roomNumber}">101</span><br>
+                    • Booking Date: <span
                         th:text="${#temporals.format(booking.createdAt, 'dd/MM/yyyy HH:mm')}">01/02/2026</span>
                 </p>
             </div>
 
             <p style="color: #666; line-height: 1.6;">
-                Bạn có thể đặt phòng mới bất cứ lúc nào. Chúng tôi luôn sẵn sàng phục vụ!
+                You can make a new booking at any time. We are always ready to serve you!
             </p>
 
             <div style="text-align: center; margin: 30px 0;">
                 <a th:href="${roomsLink}"
                     style="display: inline-block; padding: 15px 40px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                    Đặt phòng mới
+                    Book Again
                 </a>
             </div>
         </div>
@@ -57,8 +58,8 @@
         <!-- Footer -->
         <div style="background: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
             <p style="color: #999; margin: 0; font-size: 12px;">
-                Cảm ơn bạn đã quan tâm đến Như Hotel!<br>
-                Liên hệ: hotel@nhuhotel.com | 0123-456-789
+                Thank you for your interest in Nhu Hotel!<br>
+                Contact: hotel@nhuhotel.com | 0123-456-789
             </p>
         </div>
     </div>

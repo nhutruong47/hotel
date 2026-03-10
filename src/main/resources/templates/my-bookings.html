@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>Đặt Phòng Của Tôi - Như Hotel</title>
+    <title>My Bookings - Nhu Hotel</title>
     <style>
         * {
             box-sizing: border-box;
@@ -318,31 +318,50 @@
 
 <body>
     <div class="navbar">
-        <h2>🏨 Như Hotel</h2>
+        <h2>🏨 Nhu Hotel</h2>
         <div class="nav-links" th:if="${session.user}">
-            <a href="/">Trang chủ</a>
-            <a href="/my-bookings">Đặt phòng của tôi</a>
-            <a href="/my-reviews">⭐ Đánh giá của tôi</a>
-            <span class="user-info">Xin chào, <span
-                    th:text="${session.user.fullName ?: session.user.username}">Khách</span>!</span>
-            <a href="/logout" class="logout-btn">Đăng xuất</a>
+            <a href="/">Home</a>
+            <a href="/my-bookings" style="background: rgba(255,255,255,0.2);">My Bookings</a>
+            <a href="/my-reviews">⭐ My Reviews</a>
+            <span class="user-info">Hello, <span
+                    th:text="${session.user.fullName ?: session.user.username}">Guest</span>!</span>
+            <a href="/logout" class="logout-btn">Logout</a>
         </div>
     </div>
 
     <div class="container">
         <div class="page-header">
-            <h3>📋 Đặt phòng của tôi</h3>
-            <a href="/" class="btn-new">+ Đặt phòng mới</a>
+            <h3>📋 My Bookings</h3>
+            <a href="/" class="btn-new">+ New Booking</a>
         </div>
 
         <div class="alert alert-error" th:if="${error}" th:text="${error}">Error</div>
         <div class="alert alert-success" th:if="${success}" th:text="${success}">Success</div>
 
+        <div class="booking-filters" style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <a href="/my-bookings" th:classappend="${status == null ? 'active' : ''}" class="btn-filter">All</a>
+            <a href="/my-bookings?status=PENDING" th:classappend="${status == 'PENDING' ? 'active' : ''}"
+                class="btn-filter">Pending</a>
+            <a href="/my-bookings?status=AWAITING_PAYMENT"
+                th:classappend="${status == 'AWAITING_PAYMENT' ? 'active' : ''}" class="btn-filter">Awaiting Payment</a>
+            <a href="/my-bookings?status=CONFIRMED" th:classappend="${status == 'CONFIRMED' ? 'active' : ''}"
+                class="btn-filter">Confirmed</a>
+            <a href="/my-bookings?status=COMPLETED" th:classappend="${status == 'COMPLETED' ? 'active' : ''}"
+                class="btn-filter">Completed</a>
+            <a href="/my-bookings?status=CANCELLED" th:classappend="${status == 'CANCELLED' ? 'active' : ''}"
+                class="btn-filter">Cancelled</a>
+            <a href="/my-bookings?status=REJECTED" th:classappend="${status == 'REJECTED' ? 'active' : ''}"
+                class="btn-filter">Rejected</a>
+        </div>
+
         <div class="booking-list" th:if="${bookings != null and !bookings.isEmpty()}">
             <div class="booking-card" th:each="booking : ${bookings}">
                 <div class="booking-status" th:classappend="${booking.status}">
                     <span class="icon" th:switch="${booking.status.name()}">
+                        <span th:case="'PENDING'">⏳</span>
+                        <span th:case="'AWAITING_PAYMENT'">💳</span>
                         <span th:case="'CONFIRMED'">✅</span>
+                        <span th:case="'REJECTED'">🚫</span>
                         <span th:case="'CANCELLED'">❌</span>
                         <span th:case="'COMPLETED'">🏆</span>
                     </span>
@@ -350,28 +369,30 @@
                 </div>
 
                 <div class="booking-info">
-                    <div class="booking-room" th:text="'Phòng ' + ${booking.room.roomNumber}">Phòng 202</div>
+                    <div class="booking-room" th:text="'Room ' + ${booking.room.roomNumber}">Room 202</div>
                     <span class="booking-type" th:text="${booking.room.roomType.displayName}">Deluxe</span>
 
                     <div class="booking-dates">
                         <div class="date-item">
-                            <label>Nhận phòng</label>
+                            <label>Check-in</label>
                             <span th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01/2026</span>
                         </div>
                         <div class="date-item">
-                            <label>Trả phòng</label>
+                            <label>Check-out</label>
                             <span th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">03/01/2026</span>
                         </div>
                         <div class="date-item">
-                            <label>Số đêm</label>
-                            <span th:text="${booking.numberOfNights} + ' đêm'">2 đêm</span>
+                            <label>Nights</label>
+                            <span th:text="${booking.numberOfNights} + ' night(s)'">2 night(s)</span>
                         </div>
                     </div>
 
                     <div class="booking-meta">
-                        Đặt lúc: <span th:text="${#temporals.format(booking.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026
+                        Booked at: <span
+                            th:text="${#temporals.format(booking.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2026
                             10:00</span>
-                        <span th:if="${booking.guestPhone}"> • SĐT: <span th:text="${booking.guestPhone}"></span></span>
+                        <span th:if="${booking.guestPhone}"> • Phone: <span
+                                th:text="${booking.guestPhone}"></span></span>
                     </div>
                 </div>
 
@@ -380,7 +401,7 @@
                         <span
                             th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')}">2,400,000</span>
                         đ
-                        <br><small>Tổng tiền</small>
+                        <br><small>Total</small>
                     </div>
 
                     <div class="booking-price"
@@ -388,29 +409,29 @@
                         <span th:text="${#numbers.formatDecimal(booking.refundAmount, 0, 'COMMA', 0, 'POINT')}"
                             style="color: #ef4444;">1,200,000</span>
                         đ
-                        <br><small th:text="'Được hoàn trả (' + ${booking.refundPercentage} + '%)'">Hoàn tiền</small>
+                        <br><small th:text="'Refunded (' + ${booking.refundPercentage} + '%)'">Refunded</small>
                     </div>
 
                     <!-- Review button for CONFIRMED/COMPLETED -->
                     <div th:if="${booking.status.name() == 'CONFIRMED' or booking.status.name() == 'COMPLETED'}">
                         <a th:href="@{/booking/{id}/review(id=${booking.id})}" class="btn-pay"
                             style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">
-                            ⭐ Đánh giá
+                            ⭐ Review
                         </a>
                     </div>
                     <!-- Cancel button for CONFIRMED -->
                     <form th:if="${booking.status.name() == 'CONFIRMED'}"
                         th:action="@{/booking/{id}/cancel(id=${booking.id})}" method="post" style="display:inline;"
-                        onsubmit="return confirm('Bạn có chắc muốn hủy đặt phòng này?');">
-                        <button type="submit" class="btn-cancel">Hủy đặt phòng</button>
+                        onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                        <button type="submit" class="btn-cancel">Cancel Booking</button>
                     </form>
                 </div>
             </div>
         </div>
 
         <div class="empty-state" th:if="${bookings == null or bookings.isEmpty()}">
-            <h3>📭 Bạn chưa có đặt phòng nào</h3>
-            <p>Hãy <a href="/">khám phá các phòng</a> và đặt phòng ngay!</p>
+            <h3>📭 You have no bookings yet</h3>
+            <p><a href="/">Browse rooms</a> and book now!</p>
         </div>
     </div>
 </body>

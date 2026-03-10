@@ -109,7 +109,7 @@ class ReviewServiceTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             reviewService.createReview(testUser, 99, 5, "Good");
         });
-        assertEquals("Không tìm thấy đơn đặt phòng", exception.getMessage());
+        assertEquals("Booking not found", exception.getMessage());
     }
 
     @Test
@@ -125,20 +125,20 @@ class ReviewServiceTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             reviewService.createReview(anotherUser, 1, 5, "Good");
         });
-        assertEquals("Bạn không có quyền đánh giá đơn này", exception.getMessage());
+        assertEquals("You do not have permission to review this booking", exception.getMessage());
     }
 
     @Test
     void createReview_InvalidBookingStatus() {
         // Arrange
-        testBooking.setStatus(BookingStatus.CONFIRMED);
+        testBooking.setStatus(BookingStatus.PENDING);
         when(bookingRepository.findById(1)).thenReturn(Optional.of(testBooking));
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             reviewService.createReview(testUser, 1, 5, "Good");
         });
-        assertEquals("Chỉ có thể đánh giá đơn đã xác nhận hoặc hoàn thành", exception.getMessage());
+        assertEquals("Only confirmed or completed bookings can be reviewed", exception.getMessage());
     }
 
     @Test
@@ -151,7 +151,7 @@ class ReviewServiceTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             reviewService.createReview(testUser, 1, 5, "Good");
         });
-        assertEquals("Bạn đã đánh giá đơn này rồi", exception.getMessage());
+        assertEquals("You have already reviewed this booking", exception.getMessage());
     }
 
     @Test
@@ -182,7 +182,7 @@ class ReviewServiceTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             reviewService.updateReview(anotherUser, 1, 4, "Updated");
         });
-        assertEquals("Bạn không có quyền sửa đánh giá này", exception.getMessage());
+        assertEquals("You do not have permission to edit this review", exception.getMessage());
     }
 
     @Test

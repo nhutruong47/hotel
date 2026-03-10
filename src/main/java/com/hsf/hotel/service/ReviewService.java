@@ -31,22 +31,22 @@ public class ReviewService {
     public Review createReview(User user, Integer bookingId, Integer rating, String comment) {
         // Validate booking exists
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đặt phòng"));
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         // Check ownership
         if (!booking.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Bạn không có quyền đánh giá đơn này");
+            throw new RuntimeException("You do not have permission to review this booking");
         }
 
         // Check booking status (must be CONFIRMED or COMPLETED)
         if (booking.getStatus() != BookingStatus.CONFIRMED &&
                 booking.getStatus() != BookingStatus.COMPLETED) {
-            throw new RuntimeException("Chỉ có thể đánh giá đơn đã xác nhận hoặc hoàn thành");
+            throw new RuntimeException("Only confirmed or completed bookings can be reviewed");
         }
 
         // Check if already reviewed
         if (reviewRepository.existsByBooking(booking)) {
-            throw new RuntimeException("Bạn đã đánh giá đơn này rồi");
+            throw new RuntimeException("You have already reviewed this booking");
         }
 
         // Create review
@@ -67,11 +67,11 @@ public class ReviewService {
     @Transactional
     public Review updateReview(User user, Integer reviewId, Integer rating, String comment) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
+                .orElseThrow(() -> new RuntimeException("Review not found"));
 
         // Check ownership
         if (!review.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Bạn không có quyền sửa đánh giá này");
+            throw new RuntimeException("You do not have permission to edit this review");
         }
 
         review.setRating(rating);
@@ -87,11 +87,11 @@ public class ReviewService {
     @Transactional
     public void deleteReview(User user, Integer reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đánh giá"));
+                .orElseThrow(() -> new RuntimeException("Review not found"));
 
         // Check ownership (or admin can delete)
         if (!review.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
-            throw new RuntimeException("Bạn không có quyền xóa đánh giá này");
+            throw new RuntimeException("You do not have permission to delete this review");
         }
 
         reviewRepository.delete(review);
@@ -109,7 +109,7 @@ public class ReviewService {
      */
     public List<Review> getReviewsByRoomId(Integer roomId) {
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy phòng"));
+                .orElseThrow(() -> new RuntimeException("Room not found"));
         return reviewRepository.findByRoomOrderByCreatedAtDesc(room);
     }
 

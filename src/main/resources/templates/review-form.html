@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <title>Đánh giá phòng - Như Hotel</title>
+    <title>Review Room - Nhu Hotel</title>
     <style>
         * {
             box-sizing: border-box;
@@ -191,7 +191,7 @@
 <body>
     <div class="container">
         <div class="review-card">
-            <h1 th:text="${isEdit} ? '✏️ Sửa đánh giá' : '⭐ Đánh giá phòng'">Đánh giá phòng</h1>
+            <h1 th:text="${isEdit} ? '✏️ Edit Review' : '⭐ Review Room'">Review Room</h1>
 
             <!-- Alerts -->
             <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
@@ -202,7 +202,7 @@
                 <img th:src="${room.imageUrl != null ? room.imageUrl : 'https://via.placeholder.com/120x80'}"
                     alt="Room">
                 <div>
-                    <h3 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h3>
+                    <h3 th:text="'Room ' + ${room.roomNumber}">Room 101</h3>
                     <p th:text="${room.roomType.displayName}">Deluxe</p>
                     <p th:text="'Check-in: ' + ${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')} + 
                                ' - Check-out: ' + ${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">
@@ -218,7 +218,7 @@
 
                 <!-- Star Rating -->
                 <div class="rating-section">
-                    <label>Đánh giá của bạn</label>
+                    <label>Your Rating</label>
                     <div class="star-rating">
                         <input type="radio" id="star5" name="rating" value="5"
                             th:checked="${isEdit and review.rating == 5}">
@@ -240,16 +240,16 @@
 
                 <!-- Comment -->
                 <div class="form-group">
-                    <label for="comment">Nhận xét của bạn (không bắt buộc)</label>
-                    <textarea id="comment" name="comment" placeholder="Chia sẻ trải nghiệm của bạn về phòng này..."
+                    <label for="comment">Your Review (optional)</label>
+                    <textarea id="comment" name="comment" placeholder="Share your experience about this room..."
                         th:text="${isEdit} ? ${review.comment} : ''"></textarea>
                 </div>
 
                 <!-- Buttons -->
                 <div class="btn-group">
-                    <a href="/my-bookings" class="btn btn-secondary">← Quay lại</a>
+                    <a href="/my-bookings" class="btn btn-secondary">← Go Back</a>
                     <button type="submit" class="btn btn-primary">
-                        <span th:text="${isEdit} ? 'Cập nhật đánh giá' : 'Gửi đánh giá'">Gửi đánh giá</span>
+                        <span th:text="${isEdit} ? 'Update Review' : 'Submit Review'">Submit Review</span>
                     </button>
                 </div>
             </form>

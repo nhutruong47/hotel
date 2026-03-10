@@ -126,7 +126,7 @@ public class ProfileService {
     @Transactional
     public void resetPasswordByEmail(String email, String newPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản với email này"));
+                .orElseThrow(() -> new RuntimeException("Account not found with this email"));
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         System.out.println("✅ Password reset for: " + email);

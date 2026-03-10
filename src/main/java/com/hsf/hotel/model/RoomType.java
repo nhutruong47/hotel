@@ -1,10 +1,10 @@
 package com.hsf.hotel.model;
 
 public enum RoomType {
-    STANDARD("Phòng Standard", "Phòng đơn tiêu chuẩn, đầy đủ tiện nghi cơ bản"),
-    DELUXE("Phòng Deluxe", "Phòng cao cấp với view đẹp và tiện nghi hiện đại"),
-    SUITE("Phòng Suite", "Phòng suite rộng rãi với phòng khách riêng"),
-    VIP("Phòng VIP", "Phòng VIP sang trọng nhất với dịch vụ đặc biệt");
+    STANDARD("Standard Room", "Standard single room with basic amenities"),
+    DELUXE("Deluxe Room", "Premium room with beautiful view and modern amenities"),
+    SUITE("Suite Room", "Spacious suite with a private living room"),
+    VIP("VIP Room", "The most luxurious VIP room with exclusive services");
 
     private final String displayName;
     private final String description;
