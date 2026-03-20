@@ -1,5 +1,6 @@
 package com.hsf.hotel.model;
 
+import org.hibernate.annotations.Nationalized;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -14,10 +15,12 @@ public class ChatMessage {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(nullable = false, length = 2000)
+    @Nationalized
+    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String userMessage;
 
-    @Column(nullable = false, length = 5000)
+    @Nationalized
+    @Column(nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String aiResponse;
 
     @Column(nullable = false)

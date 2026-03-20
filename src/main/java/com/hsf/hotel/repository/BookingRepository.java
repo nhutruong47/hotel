@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
+import java.time.LocalDateTime; // Added import for LocalDateTime
 import java.util.List;
 
 @Repository
@@ -52,6 +53,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         List<Object[]> findMostratingRooms();
 
         List<Booking> findAllByRoomId(Integer roomId);
+
+        List<Booking> findByUserId(Integer userId); // Added this method
+
+        @Query("SELECT b FROM Booking b WHERE b.status = 'AWAITING_PAYMENT' AND b.paymentDeadline < :now")
+        List<Booking> findExpiredPaymentBookings(@Param("now") LocalDateTime now); // Added this method
 
         @Query("SELECT b FROM Booking b WHERE b.room.id = :roomId " +
                         "AND b.status NOT IN ('CANCELLED') " +
