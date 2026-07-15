@@ -1,33 +1,116 @@
-# Node
+# =========================
+# Operating System
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# Node.js / React / Vite
+# =========================
 node_modules/
 dist/
 build/
+.vite/
+.cache/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# Java
+# =========================
+# Java / Maven / Spring Boot
+# =========================
 target/
 *.class
 *.jar
+*.war
+*.ear
 
+# Maven Wrapper cache
+.mvn/timing.properties
+
+# =========================
 # Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
 venv/
 .venv/
-__pycache__/
-*.pyc
+env/
 
-# IDE
-.vscode/
-.idea/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Logs
-*.log
-compile.log*
-compile_output*
-
+# =========================
 # Environment
+# =========================
 .env
-.env.*
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# Cho phép commit file mẫu
 !.env.example
 
-# OS
-.DS_Store
-Thumbs.db
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+build_output.txt
+compile_log.txt
+compile_log2.txt
+run_output.txt
+diff_output.txt
+
+# =========================
+# Temporary / Backup
+# =========================
+temp/
+tmp/
+temp_ui_backup/
+backup/
+*.bak
+*.tmp
+
+# =========================
+# AI / Generated
+# =========================
+gemini_test.json
+
+# =========================
+# IntelliJ
+# =========================
+out/
+
+# =========================
+# Mac
+# =========================
+.AppleDouble
+.LSOverride
+
+# =========================
+# Windows
+# =========================
+ehthumbs.db
+
+# =========================
+# Misc
+# =========================
+*.swp
+*.swo
