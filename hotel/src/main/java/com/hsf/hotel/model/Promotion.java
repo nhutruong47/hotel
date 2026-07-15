@@ -1,5 +1,6 @@
 package com.hsf.hotel.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "promotions", indexes = {
     @Index(name = "idx_promotion_active", columnList = "isActive"),
     @Index(name = "idx_promotion_start", columnList = "startDate"),

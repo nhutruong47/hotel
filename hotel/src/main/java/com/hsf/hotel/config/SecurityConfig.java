@@ -94,7 +94,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         // Public static resources (images, CSS, JS, uploaded files)
                         .requestMatchers("/images/**", "/assets/**", "/static/**", "/uploads/**", "/*.html", "/*.js", "/*.css", "/*.ico", "/*.png", "/*.jpg", "/*.webp", "/*.woff*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/rooms", "/api/v1/rooms/**", "/api/v1/reviews/room/**", "/api/v1/blogs", "/api/v1/blogs/**", "/api/v1/info/**", "/api/v1/health", "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/vouchers/validate", "/api/v1/promotions/validate", "/api/v1/promotions/preview").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/rooms", "/api/v1/rooms/**", "/api/v1/reviews/room/**", "/api/v1/blogs", "/api/v1/blogs/**", "/api/v1/info/**", "/api/v1/health", "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/vouchers/validate", "/api/v1/promotions/**", "/api/v1/faqs/**").permitAll()
                         // Public Auth endpoints
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/verify", "/api/v1/auth/resend-verification", "/api/v1/auth/session", "/api/v1/auth/logout").permitAll()
                         // Public voucher preview/validate as POST too (used by booking page)
