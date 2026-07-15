@@ -1,14 +1,28 @@
 {
-  "..\\node_modules\\next\\dist\\client\\components\\react-dev-overlay\\internal\\helpers\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts": {
-    "id": "..\\node_modules\\next\\dist\\client\\components\\react-dev-overlay\\internal\\helpers\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts",
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 5203,
     "files": [
-      "static/chunks/_app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js"
+      "static/chunks/5203.f4b97ab553880bca.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 6218,
+    "files": [
+      "static/chunks/6218.ba8ff6176d4fd6f6.js"
     ]
   },
   "features\\home\\HomePage.tsx -> ../villas/villasApi": {
-    "id": "features\\home\\HomePage.tsx -> ../villas/villasApi",
+    "id": 7243,
     "files": [
-      "static/chunks/_app-pages-browser_src_features_villas_villasApi_ts.js"
+      "static/chunks/7243.0e1c2a679b945f99.js"
+    ]
+  },
+  "features\\villas\\VillaDetailPage.tsx -> ./components/InteractiveMap": {
+    "id": 8163,
+    "files": [
+      "static/css/857aa62baa17c894.css",
+      "static/chunks/d0deef33.84a0ce786aefbddf.js",
+      "static/chunks/544.26429c61a372887c.js"
     ]
   }
 }

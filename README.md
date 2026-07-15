@@ -41,6 +41,15 @@ two tightly coupled deliverables:
 
 ## 2. Repository Layout
 
+### `docs/`
+Contains all architectural, business, and enterprise documentation (e.g., `ARCHITECTURE.md`, `MASTER_PROJECT_PLAN.md`).
+
+### `database/`
+Contains SQL migration scripts and constraints.
+
+### `tools/`
+Contains utility scripts used for refactoring and maintenance.
+
 ### `frontend/` (TypeScript / React)
 ```
 src/

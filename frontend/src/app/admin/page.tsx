@@ -4,10 +4,10 @@ import { RequireAuth } from '../../shared/auth/RequireAuth';
 
 export default function Page() {
   return (
-    
-    <RequireAuth>
-      <AdminDashboardPage />
-    </RequireAuth>
-    
+    <Suspense fallback={null}>
+      <RequireAuth>
+        <AdminDashboardPage />
+      </RequireAuth>
+    </Suspense>
   );
 }
