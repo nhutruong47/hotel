@@ -1,0 +1,15 @@
+﻿docs/project-documentation.md
+docs/work-allocation.md
+pom.xml
+src/main/java/com/hsf/hotel/config/DataInitializer.java
+src/main/java/com/hsf/hotel/controller/AdminController.java
+src/main/java/com/hsf/hotel/controller/ReportController.java
+src/main/java/com/hsf/hotel/dto/ReportDTO.java
+src/main/java/com/hsf/hotel/repository/BookingRepository.java
+src/main/java/com/hsf/hotel/service/BookingService.java
+src/main/java/com/hsf/hotel/service/ReportService.java
+src/main/resources/templates/admin-bookings.html
+src/main/resources/templates/admin-dashboard.html
+src/main/resources/templates/admin-mostbookingandrating.html
+src/main/resources/templates/admin-rooms.html
+src/main/resources/templates/admin-users.html

@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Như Hotel - Không gian nghỉ dưỡng tinh tế, đặt phòng nhanh chóng và trải nghiệm đáng nhớ.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Dancing+Script:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"
+        rel="stylesheet">
+    <title>Như Hotel — Chạm vào một kỳ nghỉ khác biệt</title>
+    <style>
+        :root {
+            --ink: #20342b;
+            --forest: #28483b;
+            --forest-deep: #19342a;
+            --sage: #87927b;
+            --sage-light: #dbe0d2;
+            --paper: #f5f0e4;
+            --paper-warm: #eee4d1;
+            --white: #fffdf8;
+            --coral: #e66a4e;
+            --gold: #c49a57;
+            --line: rgba(32, 52, 43, .16);
+            --shadow: 0 24px 70px rgba(25, 52, 42, .16);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            color: var(--ink);
+            background: var(--paper);
+            font-family: "DM Sans", sans-serif;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .32;
+            z-index: 20;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.12'/%3E%3C/svg%3E");
+            mix-blend-mode: multiply;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        img {
+            display: block;
+            max-width: 100%;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        .shell {
+            width: min(1180px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--coral);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .18em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 28px;
+            height: 1px;
+            background: currentColor;
+        }
+
+        .section-title {
+            margin-top: 14px;
+            font-family: "Playfair Display", serif;
+            font-size: clamp(38px, 5vw, 66px);
+            line-height: 1.02;
+            letter-spacing: -.035em;
+        }
+
+        .section-copy {
+            max-width: 580px;
+            color: #5d695f;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .topbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
+            color: var(--white);
+        }
+
+        .nav {
+            height: 94px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, .22);
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        .brand-mark {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .55);
+            border-radius: 50%;
+            font-family: "Playfair Display", serif;
+            font-size: 23px;
+            font-style: italic;
+        }
+
+        .brand-copy strong {
+            display: block;
+            font-family: "Playfair Display", serif;
+            font-size: 20px;
+            letter-spacing: .04em;
+        }
+
+        .brand-copy small {
+            display: block;
+            margin-top: 2px;
+            opacity: .64;
+            font-size: 9px;
+            letter-spacing: .26em;
+            text-transform: uppercase;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 28px;
+        }
+
+        .nav-links>a {
+            position: relative;
+            color: var(--white);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .nav-links>a:not(.nav-cta)::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -7px;
+            width: 100%;
+            height: 1px;
+            background: var(--white);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform .25s ease;
+        }
+
+        .nav-links>a:hover::after {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .nav-cta {
+            padding: 12px 18px;
+            border: 1px solid rgba(255, 255, 255, .65);
+            border-radius: 999px;
+            transition: .25s ease;
+        }
+
+        .nav-cta:hover {
+            color: var(--forest);
+            background: var(--white);
+        }
+
+        .language {
+            display: flex;
+            gap: 4px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, .28);
+            border-radius: 999px;
+        }
+
+        .language a {
+            padding: 4px 7px;
+            border-radius: 999px;
+            color: white;
+            font-size: 10px;
+            text-decoration: none;
+        }
+
+        .language a:first-child {
+            color: var(--forest);
+            background: var(--white);
+        }
+
+        .menu-button {
+            width: 44px;
+            height: 44px;
+            display: none;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, .5);
+            border-radius: 50%;
+            color: white;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .hero {
+            position: relative;
+            min-height: 820px;
+            display: flex;
+            align-items: center;
+            color: var(--white);
+            isolation: isolate;
+            background:
+                linear-gradient(90deg, rgba(18, 44, 34, .9) 0%, rgba(18, 44, 34, .67) 43%, rgba(18, 44, 34, .16) 72%),
+                linear-gradient(0deg, rgba(18, 44, 34, .4), transparent 50%),
+                url("https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=2000&q=88") center 55% / cover;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: 7%;
+            bottom: 5%;
+            width: 300px;
+            height: 300px;
+            border: 1px solid rgba(255, 255, 255, .2);
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .hero-content {
+            padding-top: 88px;
+            width: min(720px, 70%);
+        }
+
+        .hero-kicker {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+        }
+
+        .hero-kicker span {
+            width: 42px;
+            height: 1px;
+            background: var(--coral);
+        }
+
+        .hero h1 {
+            max-width: 690px;
+            font-family: "Playfair Display", serif;
+            font-size: clamp(56px, 7.3vw, 104px);
+            font-weight: 600;
+            line-height: .93;
+            letter-spacing: -.055em;
+        }
+
+        .hero h1 em {
+            display: block;
+            color: #e9dec5;
+            font-weight: 600;
+        }
+
+        .hero-note {
+            position: absolute;
+            top: 44%;
+            right: 5%;
+            width: 210px;
+            transform: rotate(-6deg);
+            font-family: "Caveat", cursive;
+            font-size: 27px;
+            line-height: 1.05;
+            text-align: center;
+        }
+
+        .hero-note::after {
+            content: "";
+            display: block;
+            width: 65px;
+            height: 34px;
+            margin: 8px auto 0;
+            border-bottom: 2px solid var(--white);
+            border-radius: 50%;
+            transform: rotate(-8deg);
+        }
+
+        .hero-bottom {
+            margin-top: 35px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .hero-description {
+            max-width: 450px;
+            color: rgba(255, 255, 255, .78);
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+        .round-link {
+            flex: 0 0 auto;
+            width: 86px;
+            height: 86px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: var(--forest-deep);
+            background: var(--coral);
+            text-decoration: none;
+            transition: transform .25s ease, background .25s ease;
+        }
+
+        .round-link:hover {
+            background: var(--white);
+            transform: rotate(8deg) scale(1.04);
+        }
+
+        .round-link svg {
+            width: 25px;
+        }
+
+        .search-wrap {
+            position: relative;
+            z-index: 4;
+            margin-top: -62px;
+        }
+
+        .search-card {
+            display: grid;
+            grid-template-columns: 1.1fr 1.1fr .9fr .9fr 1fr auto;
+            align-items: end;
+            gap: 0;
+            padding: 18px;
+            background: var(--white);
+            box-shadow: var(--shadow);
+        }
+
+        .field {
+            min-width: 0;
+            padding: 8px 18px;
+            border-right: 1px solid var(--line);
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 9px;
+            color: #798279;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            border: 0;
+            outline: 0;
+            color: var(--ink);
+            background: transparent;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .search-button {
+            width: 64px;
+            height: 64px;
+            display: grid;
+            place-items: center;
+            border: 0;
+            border-radius: 50%;
+            color: var(--white);
+            background: var(--forest);
+            cursor: pointer;
+            transition: transform .25s ease, background .25s ease;
+        }
+
+        .search-button:hover {
+            background: var(--coral);
+            transform: rotate(8deg);
+        }
+
+        .search-button svg {
+            width: 22px;
+        }
+
+        .intro {
+            padding: 150px 0 130px;
+        }
+
+        .intro-grid {
+            display: grid;
+            grid-template-columns: .92fr 1.08fr;
+            gap: 9vw;
+            align-items: center;
+        }
+
+        .before-card {
+            position: relative;
+            padding: 28px 28px 48px;
+            transform: rotate(-1.5deg);
+            background: #faf8f1;
+            box-shadow: 0 16px 35px rgba(53, 66, 56, .2);
+        }
+
+        .before-card::before {
+            content: "";
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            width: 100px;
+            height: 30px;
+            transform: translateX(-50%) rotate(2deg);
+            background: rgba(218, 205, 173, .74);
+        }
+
+        .before-label {
+            position: absolute;
+            top: -68px;
+            left: 0;
+            width: 100%;
+            color: var(--forest);
+            font-family: "Caveat", cursive;
+            font-size: 38px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .before-layout {
+            display: grid;
+            grid-template-columns: 1fr .9fr;
+            gap: 22px;
+            align-items: center;
+        }
+
+        .before-card h3 {
+            margin-bottom: 18px;
+            font-family: "Playfair Display", serif;
+            font-size: 23px;
+        }
+
+        .before-card ol {
+            padding-left: 18px;
+            color: #5e655f;
+            font-family: "Playfair Display", serif;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .before-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            filter: saturate(.65) sepia(.12);
+        }
+
+        .intro-copy .hand-note {
+            display: block;
+            margin: 25px 0 -5px;
+            color: var(--coral);
+            font-family: "Caveat", cursive;
+            font-size: 29px;
+            transform: rotate(-3deg);
+        }
+
+        .intro-copy .section-copy {
+            margin-top: 28px;
+        }
+
+        .signature {
+            margin-top: 32px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--forest);
+            font-family: "Caveat", cursive;
+            font-size: 28px;
+        }
+
+        .signature::before {
+            content: "";
+            width: 48px;
+            height: 1px;
+            background: var(--coral);
+        }
+
+        .after-art {
+            padding: 25px 0 145px;
+        }
+
+        .after-caption {
+            margin-bottom: 26px;
+            color: var(--forest);
+            font-family: "Caveat", cursive;
+            font-size: clamp(40px, 6vw, 66px);
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .art-poster {
+            position: relative;
+            min-height: 570px;
+            display: grid;
+            grid-template-columns: 1.03fr .97fr;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(173, 79, 48, .13) 0 2px, transparent 3px),
+                radial-gradient(circle at 28% 75%, rgba(173, 79, 48, .11) 0 2px, transparent 3px),
+                linear-gradient(105deg, #efe5ce 0%, #f7efd9 54%, #dce2d4 54%);
+            box-shadow: 0 28px 70px rgba(41, 58, 47, .19);
+            isolation: isolate;
+        }
+
+        .art-poster::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            background:
+                linear-gradient(90deg, rgba(99, 65, 39, .07) 1px, transparent 1px),
+                linear-gradient(rgba(99, 65, 39, .04) 1px, transparent 1px);
+            background-size: 4px 4px;
+            mix-blend-mode: multiply;
+            opacity: .25;
+        }
+
+        .poster-copy {
+            position: relative;
+            z-index: 4;
+            padding: 72px 30px 60px 72px;
+        }
+
+        .poster-bird {
+            position: absolute;
+            top: 37px;
+            left: 35px;
+            color: var(--coral);
+            font-family: "Caveat", cursive;
+            font-size: 30px;
+            transform: rotate(-18deg);
+        }
+
+        .poster-kicker {
+            display: block;
+            color: #5e4f3d;
+            font-family: "Caveat", cursive;
+            font-size: 29px;
+            font-weight: 700;
+            transform: rotate(-2deg);
+        }
+
+        .poster-title {
+            max-width: 500px;
+            margin: -4px 0 2px;
+            color: #263831;
+            font-family: "Caveat", cursive;
+            font-size: clamp(65px, 8vw, 108px);
+            font-weight: 700;
+            line-height: .71;
+            letter-spacing: -.055em;
+            transform: rotate(-2deg);
+        }
+
+        .poster-subtitle {
+            margin-left: 200px;
+            color: #5d4939;
+            font-family: "Caveat", cursive;
+            font-size: 27px;
+            font-weight: 700;
+            transform: rotate(-4deg);
+        }
+
+        .poster-line {
+            width: 205px;
+            height: 40px;
+            margin: -2px 0 20px 65px;
+            border-bottom: 3px solid var(--coral);
+            border-radius: 50%;
+            transform: rotate(-7deg);
+        }
+
+        .poster-notes {
+            max-width: 440px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            margin-top: 35px;
+        }
+
+        .poster-note {
+            position: relative;
+            padding-top: 16px;
+            color: #5c5e56;
+            font-family: "Playfair Display", serif;
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+        .poster-note::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 29px;
+            height: 2px;
+            background: var(--coral);
+            transform: rotate(-7deg);
+        }
+
+        .poster-note strong {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--ink);
+            font-family: "Caveat", cursive;
+            font-size: 18px;
+        }
+
+        .poster-scene {
+            position: relative;
+            min-height: 570px;
+            overflow: hidden;
+            clip-path: polygon(15% 0, 100% 0, 100% 100%, 0 100%, 7% 89%, 3% 79%, 12% 68%, 6% 55%, 15% 43%, 9% 30%);
+            background:
+                linear-gradient(0deg, rgba(25, 52, 42, .18), transparent 58%),
+                url("https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=90") center / cover;
+        }
+
+        .poster-scene::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 72% 22%, rgba(232, 223, 191, .9) 0 2%, transparent 2.5%),
+                linear-gradient(145deg, rgba(28, 67, 53, .16), rgba(198, 151, 83, .25));
+            mix-blend-mode: color;
+        }
+
+        .botanical {
+            position: absolute;
+            z-index: 3;
+            top: -45px;
+            left: -15px;
+            width: 185px;
+            height: 420px;
+            transform: rotate(18deg);
+        }
+
+        .botanical .stem {
+            position: absolute;
+            left: 92px;
+            top: 35px;
+            width: 4px;
+            height: 360px;
+            border-radius: 50%;
+            background: #fffdf2;
+            transform: rotate(-8deg);
+            box-shadow: 0 0 12px rgba(255, 255, 255, .26);
+        }
+
+        .leaf {
+            position: absolute;
+            width: 62px;
+            height: 26px;
+            border-radius: 100% 0 100% 0;
+            background: #fffdf2;
+            transform-origin: right center;
+        }
+
+        .leaf:nth-child(2) {
+            top: 80px;
+            left: 31px;
+            transform: rotate(27deg);
+        }
+
+        .leaf:nth-child(3) {
+            top: 122px;
+            left: 80px;
+            transform: rotate(147deg);
+        }
+
+        .leaf:nth-child(4) {
+            top: 171px;
+            left: 20px;
+            transform: rotate(15deg) scale(.9);
+        }
+
+        .leaf:nth-child(5) {
+            top: 222px;
+            left: 84px;
+            transform: rotate(159deg) scale(.8);
+        }
+
+        .leaf:nth-child(6) {
+            top: 273px;
+            left: 32px;
+            transform: rotate(28deg) scale(.72);
+        }
+
+        .flower {
+            position: absolute;
+            top: 30px;
+            left: 55px;
+            width: 80px;
+            height: 80px;
+        }
+
+        .flower i {
+            position: absolute;
+            top: 31px;
+            left: 31px;
+            width: 48px;
+            height: 17px;
+            border-radius: 100%;
+            background: #fffdf2;
+            transform-origin: 8px center;
+        }
+
+        .flower i:nth-child(1) {
+            transform: rotate(0deg);
+        }
+
+        .flower i:nth-child(2) {
+            transform: rotate(60deg);
+        }
+
+        .flower i:nth-child(3) {
+            transform: rotate(120deg);
+        }
+
+        .flower i:nth-child(4) {
+            transform: rotate(180deg);
+        }
+
+        .flower i:nth-child(5) {
+            transform: rotate(240deg);
+        }
+
+        .flower i:nth-child(6) {
+            transform: rotate(300deg);
+        }
+
+        .flower::after {
+            content: "";
+            position: absolute;
+            top: 34px;
+            left: 34px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--coral);
+        }
+
+        .poster-seal {
+            position: absolute;
+            z-index: 7;
+            right: 24px;
+            top: 48px;
+            width: 68px;
+            height: 82px;
+            display: grid;
+            place-items: center;
+            border: 3px double rgba(255, 255, 255, .72);
+            border-radius: 48% 52% 46% 54%;
+            color: white;
+            background: #b53b2e;
+            font-family: "Dancing Script", cursive;
+            font-size: 26px;
+            line-height: 1.1;
+            text-align: center;
+            transform: rotate(7deg);
+            box-shadow: 0 5px 15px rgba(76, 28, 20, .25);
+        }
+
+        .poster-seal::after {
+            content: "✦";
+            display: block;
+            font-size: 12px;
+        }
+
+        .rooms-section {
+            padding: 120px 0;
+            background: var(--forest-deep);
+            color: var(--white);
+        }
+
+        .rooms-header {
+            margin-bottom: 55px;
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .rooms-header .section-copy {
+            color: rgba(255, 255, 255, .63);
+        }
+
+        .rooms-header .eyebrow {
+            color: #e99379;
+            font-family: "Dancing Script", cursive;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .room-card {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-width: 0;
+            color: var(--ink);
+            background: var(--paper);
+            transition: transform .35s ease;
+            height: 100%;
+        }
+
+        .room-card:nth-child(3n+2) {
+            transform: translateY(34px);
+        }
+
+        .room-card:hover {
+            transform: translateY(-8px);
+        }
+
+        .room-card:nth-child(3n+2):hover {
+            transform: translateY(24px);
+        }
+
+        .room-image {
+            display: block;
+            position: relative;
+            height: 300px;
+            overflow: hidden;
+            background: var(--sage);
+        }
+
+        .room-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .65s cubic-bezier(.2, .8, .2, 1);
+        }
+
+        .room-card:hover .room-image img {
+            transform: scale(1.06);
+        }
+
+        .room-fallback {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            place-items: center;
+            color: white;
+            background:
+                linear-gradient(135deg, rgba(31, 67, 53, .3), rgba(31, 67, 53, .75)),
+                url("https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80") center / cover;
+            font-family: "Playfair Display", serif;
+            font-size: 28px;
+        }
+
+        .room-number {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            padding: 7px 11px;
+            color: var(--forest);
+            background: rgba(255, 253, 248, .9);
+            backdrop-filter: blur(7px);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        .room-body {
+            flex: 1;
+            padding: 25px 25px 28px;
+            background: var(--paper);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .room-topline {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .room-type {
+            color: var(--coral);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+        }
+
+        .room-price {
+            font-family: "Playfair Display", serif;
+            font-size: 19px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .room-price small {
+            color: #778178;
+            font-family: "DM Sans", sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .room-body h3 {
+            margin: 11px 0 12px;
+            font-family: "Playfair Display", serif;
+            font-size: 28px;
+        }
+
+        .room-description {
+            min-height: 45px;
+            display: -webkit-box;
+            overflow: hidden;
+            color: #68736a;
+            font-size: 13px;
+            line-height: 1.7;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        .amenities {
+            min-height: 34px;
+            margin: 18px 0 20px;
+            color: #7b857d;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .room-actions {
+            margin-top: auto;
+            display: flex;
+            gap: 9px;
+        }
+
+        .room-link {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1px solid var(--forest);
+            color: var(--forest);
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: .25s ease;
+        }
+
+        .room-link.primary,
+        .room-link:hover {
+            color: var(--white);
+            background: var(--forest);
+        }
+
+        .room-link.primary:hover {
+            background: var(--coral);
+            border-color: var(--coral);
+        }
+
+        .empty-state {
+            padding: 70px 30px;
+            border: 1px solid rgba(255, 255, 255, .15);
+            color: rgba(255, 255, 255, .7);
+            text-align: center;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+            color: white;
+            font-family: "Playfair Display", serif;
+            font-size: 30px;
+        }
+
+        .experience {
+            padding: 155px 0 135px;
+        }
+
+        .experience-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8vw;
+            align-items: center;
+        }
+
+        .collage {
+            position: relative;
+            min-height: 590px;
+        }
+
+        .collage-main {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 77%;
+            height: 470px;
+            object-fit: cover;
+        }
+
+        .collage-small {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 48%;
+            height: 265px;
+            padding: 10px;
+            object-fit: cover;
+            background: var(--white);
+            box-shadow: var(--shadow);
+            transform: rotate(-4deg);
+        }
+
+        .collage-stamp {
+            position: absolute;
+            right: -34px;
+            bottom: 48px;
+            width: 155px;
+            height: 155px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: var(--white);
+            background: var(--coral);
+            font-family: "Caveat", cursive;
+            font-size: 24px;
+            line-height: .95;
+            text-align: center;
+            transform: rotate(8deg);
+        }
+
+        .experience-copy .section-copy {
+            margin-top: 25px;
+        }
+
+        .feature-list {
+            margin-top: 40px;
+            border-top: 1px solid var(--line);
+        }
+
+        .feature {
+            display: grid;
+            grid-template-columns: 46px 1fr;
+            gap: 18px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .feature-index {
+            color: var(--coral);
+            font-family: "Playfair Display", serif;
+            font-size: 19px;
+            font-style: italic;
+        }
+
+        .feature h4 {
+            margin-bottom: 5px;
+            font-family: "Playfair Display", serif;
+            font-size: 20px;
+        }
+
+        .feature p {
+            color: #6f786f;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .quote-section {
+            padding: 110px 0;
+            color: var(--white);
+            background: var(--sage);
+        }
+
+        .quote-grid {
+            display: grid;
+            grid-template-columns: .7fr 1.3fr;
+            gap: 7vw;
+            align-items: center;
+        }
+
+        .quote-image {
+            position: relative;
+        }
+
+        .quote-image img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            filter: saturate(.75);
+        }
+
+        .quote-image::after {
+            content: "Một góc để thở";
+            position: absolute;
+            right: -45px;
+            bottom: -25px;
+            padding: 17px 26px;
+            color: var(--forest);
+            background: var(--paper);
+            font-family: "Caveat", cursive;
+            font-size: 28px;
+            transform: rotate(-5deg);
+        }
+
+        .quote-mark {
+            color: #f0d7c5;
+            font-family: "Playfair Display", serif;
+            font-size: 100px;
+            line-height: .45;
+        }
+
+        blockquote {
+            max-width: 720px;
+            font-family: "Playfair Display", serif;
+            font-size: clamp(30px, 4vw, 50px);
+            font-style: italic;
+            line-height: 1.25;
+        }
+
+        .quote-author {
+            margin-top: 28px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+        }
+
+        .cta-section {
+            position: relative;
+            padding: 145px 0;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .cta-section::before,
+        .cta-section::after {
+            content: "";
+            position: absolute;
+            width: 240px;
+            height: 340px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: var(--shadow);
+        }
+
+        .cta-section::before {
+            left: -55px;
+            bottom: -55px;
+            transform: rotate(9deg);
+            background-image: url("https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80");
+        }
+
+        .cta-section::after {
+            top: -75px;
+            right: -45px;
+            transform: rotate(-8deg);
+            background-image: url("https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80");
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        .cta-content .section-title {
+            margin-bottom: 25px;
+        }
+
+        .cta-content p {
+            max-width: 540px;
+            margin: 0 auto 35px;
+            color: #667168;
+            line-height: 1.8;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 24px;
+            border: 1px solid var(--forest);
+            color: var(--white);
+            background: var(--forest);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: .25s ease;
+        }
+
+        .button:hover {
+            border-color: var(--coral);
+            background: var(--coral);
+            transform: translateY(-2px);
+        }
+
+        footer {
+            padding: 65px 0 28px;
+            color: rgba(255, 255, 255, .72);
+            background: var(--forest-deep);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1.3fr repeat(3, 1fr);
+            gap: 50px;
+            padding-bottom: 55px;
+        }
+
+        .footer-brand p {
+            max-width: 300px;
+            margin-top: 20px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        footer h4 {
+            margin-bottom: 18px;
+            color: white;
+            font-family: "Playfair Display", serif;
+            font-size: 18px;
+        }
+
+        footer ul {
+            list-style: none;
+        }
+
+        footer li+li {
+            margin-top: 11px;
+        }
+
+        footer li,
+        footer a {
+            color: rgba(255, 255, 255, .62);
+            font-size: 12px;
+            line-height: 1.6;
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            color: white;
+        }
+
+        .copyright {
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, .12);
+            display: flex;
+            justify-content: space-between;
+            gap: 25px;
+            font-size: 11px;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity .7s ease, transform .7s ease;
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 1050px) {
+            .nav-links {
+                gap: 15px;
+            }
+
+            .nav-links>a:not(.nav-cta),
+            .language {
+                display: none;
+            }
+
+            .search-card {
+                grid-template-columns: repeat(3, 1fr);
+                row-gap: 16px;
+            }
+
+            .field:nth-child(3) {
+                border-right: 0;
+            }
+
+            .search-button {
+                justify-self: center;
+            }
+
+            .rooms-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .room-card:nth-child(3n+2) {
+                transform: none;
+            }
+
+            .room-card:nth-child(3n+2):hover {
+                transform: translateY(-8px);
+            }
+        }
+
+        @media (max-width: 780px) {
+            .shell {
+                width: min(100% - 28px, 620px);
+            }
+
+            .nav {
+                height: 78px;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 78px;
+                left: 14px;
+                right: 14px;
+                padding: 18px;
+                align-items: stretch;
+                flex-direction: column;
+                background: rgba(25, 52, 42, .96);
+                box-shadow: var(--shadow);
+            }
+
+            .nav-links.open {
+                display: flex;
+            }
+
+            .nav-links>a:not(.nav-cta),
+            .language {
+                display: flex;
+            }
+
+            .nav-links>a {
+                padding: 9px;
+            }
+
+            .menu-button {
+                display: grid;
+            }
+
+            .hero {
+                min-height: 760px;
+                background-position: 62% center;
+            }
+
+            .hero-content {
+                width: 100%;
+                padding-top: 70px;
+            }
+
+            .hero h1 {
+                max-width: 520px;
+                font-size: clamp(53px, 16vw, 78px);
+            }
+
+            .hero-note {
+                display: none;
+            }
+
+            .hero-bottom {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            .round-link {
+                width: 68px;
+                height: 68px;
+            }
+
+            .search-wrap {
+                margin-top: -40px;
+            }
+
+            .search-card {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .field {
+                border-right: 0;
+                border-bottom: 1px solid var(--line);
+            }
+
+            .search-button {
+                width: 58px;
+                height: 58px;
+                justify-self: end;
+            }
+
+            .intro,
+            .experience {
+                padding: 110px 0 95px;
+            }
+
+            .after-art {
+                padding: 5px 0 100px;
+            }
+
+            .art-poster {
+                grid-template-columns: 1fr;
+            }
+
+            .poster-copy {
+                min-height: 500px;
+                padding: 65px 42px 48px;
+            }
+
+            .poster-scene {
+                min-height: 420px;
+                clip-path: polygon(0 8%, 12% 4%, 23% 10%, 35% 3%, 49% 9%, 63% 2%, 77% 8%, 89% 3%, 100% 7%, 100% 100%, 0 100%);
+            }
+
+            .poster-seal {
+                top: auto;
+                bottom: 30px;
+            }
+
+            .intro-grid,
+            .experience-grid,
+            .quote-grid {
+                grid-template-columns: 1fr;
+                gap: 75px;
+            }
+
+            .before-card {
+                margin-top: 45px;
+            }
+
+            .rooms-section {
+                padding: 90px 0;
+            }
+
+            .rooms-header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .rooms-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .room-image {
+                height: 330px;
+            }
+
+            .collage {
+                min-height: 520px;
+            }
+
+            .collage-stamp {
+                right: -5px;
+            }
+
+            .quote-image {
+                max-width: 440px;
+            }
+
+            .quote-image::after {
+                right: 10px;
+            }
+
+            .cta-section::before,
+            .cta-section::after {
+                opacity: .22;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .brand-copy small {
+                display: none;
+            }
+
+            .search-card {
+                grid-template-columns: 1fr;
+                padding: 14px;
+            }
+
+            .search-button {
+                width: 100%;
+                border-radius: 0;
+            }
+
+            .before-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .before-card img {
+                height: 180px;
+            }
+
+            .poster-copy {
+                min-height: 520px;
+                padding: 60px 24px 42px;
+            }
+
+            .poster-title {
+                font-size: 67px;
+            }
+
+            .poster-subtitle {
+                margin-left: 115px;
+                font-size: 23px;
+            }
+
+            .poster-line {
+                width: 160px;
+                margin-left: 40px;
+            }
+
+            .poster-notes {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                margin-top: 24px;
+            }
+
+            .poster-note {
+                padding: 7px 0 0 42px;
+            }
+
+            .poster-note::before {
+                top: 13px;
+            }
+
+            .poster-scene {
+                min-height: 330px;
+            }
+
+            .botanical {
+                transform: rotate(18deg) scale(.78);
+                transform-origin: top left;
+            }
+
+            .room-image {
+                height: 270px;
+            }
+
+            .room-actions {
+                flex-direction: column;
+            }
+
+            .collage {
+                min-height: 440px;
+            }
+
+            .collage-main {
+                width: 84%;
+                height: 355px;
+            }
+
+            .collage-small {
+                width: 55%;
+                height: 195px;
+            }
+
+            .collage-stamp {
+                width: 115px;
+                height: 115px;
+                font-size: 20px;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .copyright {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar">
+        <nav class="nav shell" aria-label="Điều hướng chính">
+            <a class="brand" href="/">
+                <span class="brand-mark">N</span>
+                <span class="brand-copy">
+                    <strong>Như Hotel</strong>
+                    <small>Stay beautifully</small>
+                </span>
+            </a>
+
+            <div class="nav-links" id="navLinks">
+                <a href="#story">Câu chuyện</a>
+                <a href="#rooms">Phòng nghỉ</a>
+                <a href="#experience">Trải nghiệm</a>
+                <a href="/my-bookings" th:if="${session.user != null}">Đặt phòng của tôi</a>
+                <a href="/ai-recommend" th:if="${session.user != null}">Trợ lý AI</a>
+                <a href="/admin" th:if="${session.user != null and session.user.role == 'ADMIN'}">Quản trị</a>
+                <div class="language">
+                    <a href="?lang=vi">VI</a>
+                    <a href="?lang=en">EN</a>
+                </div>
+                <a class="nav-cta" href="/profile" th:if="${session.user != null}"
+                    th:text="${session.user.fullName ?: session.user.username}">Tài khoản</a>
+                <a class="nav-cta" href="/login" th:if="${session.user == null}">Đăng nhập</a>
+            </div>
+
+            <button class="menu-button" id="menuButton" type="button" aria-label="Mở menu" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                    <path d="M5 8h14M5 16h14" />
+                </svg>
+            </button>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="shell">
+                <div class="hero-content">
+                    <div class="hero-kicker"><span></span> Boutique stay · Việt Nam</div>
+                    <h1>Ở một nơi <em>thật “Như”.</em></h1>
+                    <div class="hero-bottom">
+                        <p class="hero-description">
+                            Không chỉ là một căn phòng đẹp. Đó là ánh sáng vừa đủ, chiếc giường thật êm
+                            và cảm giác bình yên đến ngay khi bạn đặt hành lý xuống.
+                        </p>
+                        <a class="round-link" href="#rooms" aria-label="Khám phá phòng">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                                <path d="M5 12h14M13 6l6 6-6 6" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-note">Một kỳ nghỉ được “làm đẹp” từ những điều nhỏ nhất</div>
+            </div>
+        </section>
+
+        <div class="search-wrap shell" id="booking-search">
+            <form action="/rooms" method="get" class="search-card">
+                <div class="field">
+                    <label for="checkIn">Nhận phòng</label>
+                    <input id="checkIn" type="date" name="checkIn" th:value="${checkIn}">
+                </div>
+                <div class="field">
+                    <label for="checkOut">Trả phòng</label>
+                    <input id="checkOut" type="date" name="checkOut" th:value="${checkOut}">
+                </div>
+                <div class="field">
+                    <label for="minPrice">Giá từ</label>
+                    <input id="minPrice" type="number" name="minPrice" placeholder="500.000" th:value="${minPrice}">
+                </div>
+                <div class="field">
+                    <label for="maxPrice">Đến</label>
+                    <input id="maxPrice" type="number" name="maxPrice" placeholder="3.000.000" th:value="${maxPrice}">
+                </div>
+                <div class="field">
+                    <label for="roomType">Loại phòng</label>
+                    <select id="roomType" name="roomTypeId">
+                        <option value="">Tất cả loại phòng</option>
+                        <option th:each="type : ${roomTypes}" th:value="${type.id}" th:text="${type.name}"
+                            th:selected="${type.id == selectedTypeId}">Deluxe</option>
+                    </select>
+                </div>
+                <button class="search-button" type="submit" aria-label="Tìm phòng">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                        <circle cx="11" cy="11" r="6.5" />
+                        <path d="m16 16 4 4" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+        <section class="intro" id="story">
+            <div class="shell intro-grid">
+                <div class="before-card reveal">
+                    <div class="before-label">Trước khi “làm đẹp”</div>
+                    <div class="before-layout">
+                        <div>
+                            <h3>Một chỗ để ngủ</h3>
+                            <ol>
+                                <li>Căn phòng chỉ vừa đủ tiện nghi.</li>
+                                <li>Một chuyến đi vội và vài tấm ảnh.</li>
+                                <li>Trở về mà chẳng nhớ mình đã ở đâu.</li>
+                            </ol>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=700&q=80"
+                            alt="Không gian phòng khách sạn tối giản">
+                    </div>
+                </div>
+
+                <div class="intro-copy reveal">
+                    <span class="eyebrow">Triết lý của Như</span>
+                    <span class="hand-note">Rồi chúng mình thêm vào một chút rung động...</span>
+                    <h2 class="section-title">Biến thời gian lưu trú thành một kỷ niệm.</h2>
+                    <p class="section-copy">
+                        Như Hotel chọn những điều mềm mại: chất liệu tự nhiên, bảng màu dịu mắt,
+                        mùi hương nhẹ và sự chăm sóc vừa vặn. Mỗi căn phòng là một khoảng dừng riêng,
+                        để bạn sống chậm hơn và trở về với nhiều cảm hứng hơn.
+                    </p>
+                    <div class="signature">Ở đẹp, ngủ ngon, nhớ thật lâu.</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="after-art" aria-labelledby="after-art-title">
+            <div class="shell">
+                <h2 class="after-caption reveal" id="after-art-title">Sau khi “làm đẹp”</h2>
+                <div class="art-poster reveal">
+                    <div class="poster-copy">
+                        <span class="poster-bird">⌁</span>
+                        <span class="poster-kicker">Thưởng lãm</span>
+                        <div class="poster-title">Mỹ học</div>
+                        <div class="poster-subtitle">của một kỳ nghỉ</div>
+                        <div class="poster-line"></div>
+
+                        <div class="poster-notes">
+                            <div class="poster-note">
+                                <strong>Ánh sáng</strong>
+                                Nắng dịu đi qua rèm, vừa đủ để căn phòng thức giấc.
+                            </div>
+                            <div class="poster-note">
+                                <strong>Chất liệu</strong>
+                                Gỗ, vải thô và những gam màu khiến nhịp thở chậm lại.
+                            </div>
+                            <div class="poster-note">
+                                <strong>Cảm xúc</strong>
+                                Một nơi ở không chỉ đẹp trong ảnh, mà đẹp cả khi nhớ về.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="poster-scene" role="img" aria-label="Không gian nghỉ dưỡng mang phong vị nghệ thuật">
+                        <div class="botanical" aria-hidden="true">
+                            <span class="stem"></span>
+                            <span class="leaf"></span>
+                            <span class="leaf"></span>
+                            <span class="leaf"></span>
+                            <span class="leaf"></span>
+                            <span class="leaf"></span>
+                            <span class="flower">
+                                <i></i><i></i><i></i><i></i><i></i><i></i>
+                            </span>
+                        </div>
+                    </div>
+                    <span class="poster-seal">Như<br>Hotel</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="rooms-section" id="rooms">
+            <div class="shell">
+                <div class="rooms-header reveal">
+                    <div>
+                        <span class="eyebrow">Bộ sưu tập phòng</span>
+                        <h2 class="section-title">Chọn góc nghỉ<br>hợp với bạn.</h2>
+                    </div>
+                    <p class="section-copy">
+                        Từ căn phòng ấm áp cho chuyến đi ngắn ngày đến không gian rộng rãi để thật sự
+                        tách mình khỏi nhịp sống thường nhật.
+                    </p>
+                </div>
+
+                <div class="rooms-grid" th:if="${rooms != null and !rooms.isEmpty()}">
+                    <article class="room-card reveal" th:each="room : ${rooms}">
+                        <a class="room-image" th:href="@{/rooms/{id}(id=${room.id})}">
+                            <img th:if="${room.imageUrl != null and !room.imageUrl.isEmpty()}" th:src="${room.imageUrl}"
+                                th:alt="'Phòng ' + ${room.roomNumber}">
+                            <span class="room-fallback" th:unless="${room.imageUrl != null and !room.imageUrl.isEmpty()}"
+                                th:text="${room.roomType.name}">Deluxe Room</span>
+                            <span class="room-number" th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</span>
+                        </a>
+                        <div class="room-body">
+                            <div class="room-topline">
+                                <span class="room-type" th:text="${room.roomType.name}">Deluxe</span>
+                                <span class="room-price">
+                                    <span
+                                        th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">1.200.000</span>đ
+                                    <small>/đêm</small>
+                                </span>
+                            </div>
+                            <h3 th:text="'Phòng ' + ${room.roomNumber}">Phòng 101</h3>
+                            <p class="room-description" th:text="${room.description ?: room.roomType.description}">
+                                Không gian nghỉ dưỡng thanh lịch với đầy đủ tiện nghi.
+                            </p>
+                            <p class="amenities" th:if="${room.amenities != null and !room.amenities.isEmpty()}">
+                                <span th:each="am, stat : ${room.amenities}"
+                                    th:text="${am.name} + ${!stat.last ? ' · ' : ''}">Wi-Fi · Bữa sáng</span>
+                            </p>
+                            <p class="amenities" th:if="${room.amenities == null or room.amenities.isEmpty()}">
+                                Wi-Fi tốc độ cao · Điều hòa · Dịch vụ phòng
+                            </p>
+                            <div class="room-actions">
+                                <a class="room-link" th:href="@{/rooms/{id}(id=${room.id})}">Xem chi tiết</a>
+                                <a class="room-link primary" th:href="@{/booking/{id}(id=${room.id})}">Đặt phòng</a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="empty-state" th:if="${rooms == null or rooms.isEmpty()}">
+                    <h3>Chưa tìm thấy căn phòng phù hợp</h3>
+                    <p>Hãy thử thay đổi ngày lưu trú hoặc khoảng giá để khám phá thêm lựa chọn.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="experience" id="experience">
+            <div class="shell experience-grid">
+                <div class="collage reveal">
+                    <img class="collage-main"
+                        src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1100&q=85"
+                        alt="Không gian nội thất tinh tế tại Như Hotel">
+                    <img class="collage-small"
+                        src="https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=700&q=85"
+                        alt="Khoảnh khắc thư giãn bên hồ bơi">
+                    <span class="collage-stamp">Sau khi<br>“làm đẹp”<br>✦</span>
+                </div>
+
+                <div class="experience-copy reveal">
+                    <span class="eyebrow">Không chỉ là phòng đẹp</span>
+                    <h2 class="section-title">Mọi chi tiết đều có lý do để ở đó.</h2>
+                    <p class="section-copy">
+                        Một trải nghiệm tốt không cần phô trương. Nó nằm trong sự tiện lợi,
+                        yên tĩnh và những hỗ trợ xuất hiện đúng lúc bạn cần.
+                    </p>
+                    <div class="feature-list">
+                        <div class="feature">
+                            <span class="feature-index">01</span>
+                            <div>
+                                <h4>Đặt phòng thật nhẹ nhàng</h4>
+                                <p>Tìm kiếm theo ngày, mức giá và loại phòng; thanh toán an toàn qua VNPay.</p>
+                            </div>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-index">02</span>
+                            <div>
+                                <h4>Gợi ý vừa vặn với bạn</h4>
+                                <p>Trợ lý AI giúp chọn phòng và lên ý tưởng cho chuyến đi trong vài phút.</p>
+                            </div>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-index">03</span>
+                            <div>
+                                <h4>Chăm sóc xuyên suốt</h4>
+                                <p>Theo dõi đặt phòng, nhận thông báo và hỗ trợ nhanh trên cùng một nơi.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="quote-section">
+            <div class="shell quote-grid">
+                <div class="quote-image reveal">
+                    <img src="https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=800&q=85"
+                        alt="Không gian nghỉ dưỡng xanh mát">
+                </div>
+                <div class="reveal">
+                    <div class="quote-mark">“</div>
+                    <blockquote>
+                        Mình đến để nghỉ một đêm, nhưng lại mang về cảm giác như vừa sống trong một
+                        thước phim thật dịu dàng.
+                    </blockquote>
+                    <p class="quote-author">Minh Anh · Khách lưu trú tháng 06</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="cta-section">
+            <div class="shell">
+                <div class="cta-content reveal">
+                    <span class="eyebrow">Kỳ nghỉ tiếp theo</span>
+                    <h2 class="section-title">Bạn muốn căn phòng của mình trông như thế nào?</h2>
+                    <p>
+                        Hãy bắt đầu bằng ngày bạn muốn đi. Phần còn lại, Như Hotel sẽ giúp bạn
+                        sắp xếp thật đẹp.
+                    </p>
+                    <a class="button" href="#booking-search">
+                        Tìm căn phòng của bạn
+                        <span aria-hidden="true">→</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a class="brand" href="/">
+                        <span class="brand-mark">N</span>
+                        <span class="brand-copy">
+                            <strong>Như Hotel</strong>
+                            <small>Stay beautifully</small>
+                        </span>
+                    </a>
+                    <p>Một chốn nghỉ tinh tế cho những người yêu vẻ đẹp của sự bình yên.</p>
+                </div>
+                <div>
+                    <h4>Khám phá</h4>
+                    <ul>
+                        <li><a href="#story">Câu chuyện</a></li>
+                        <li><a href="#rooms">Phòng nghỉ</a></li>
+                        <li><a href="#experience">Trải nghiệm</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Tài khoản</h4>
+                    <ul>
+                        <li><a href="/profile">Hồ sơ cá nhân</a></li>
+                        <li><a href="/my-bookings">Đặt phòng của tôi</a></li>
+                        <li><a href="/my-reviews">Đánh giá</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Liên hệ</h4>
+                    <ul>
+                        <li>123 Đường Bình Yên, Việt Nam</li>
+                        <li><a href="tel:+842812345678">+84 28 1234 5678</a></li>
+                        <li><a href="mailto:hello@nhuhotel.vn">hello@nhuhotel.vn</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <span>© 2026 Như Hotel. All rights reserved.</span>
+                <span>Được tạo nên với sự chăm chút và một chút mộng mơ.</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const menuButton = document.getElementById("menuButton");
+        const navLinks = document.getElementById("navLinks");
+
+        menuButton.addEventListener("click", () => {
+            const isOpen = navLinks.classList.toggle("open");
+            menuButton.setAttribute("aria-expanded", isOpen);
+        });
+
+        navLinks.querySelectorAll("a").forEach(link => {
+            link.addEventListener("click", () => {
+                navLinks.classList.remove("open");
+                menuButton.setAttribute("aria-expanded", "false");
+            });
+        });
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("visible");
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+
+        document.querySelectorAll(".reveal").forEach(element => observer.observe(element));
+
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const checkIn = document.getElementById("checkIn");
+        const checkOut = document.getElementById("checkOut");
+        const formatDate = date => date.toISOString().split("T")[0];
+
+        checkIn.min = formatDate(today);
+        checkOut.min = formatDate(tomorrow);
+        checkIn.addEventListener("change", () => {
+            const nextDay = new Date(checkIn.value);
+            nextDay.setDate(nextDay.getDate() + 1);
+            checkOut.min = formatDate(nextDay);
+            if (!checkOut.value || checkOut.value <= checkIn.value) {
+                checkOut.value = formatDate(nextDay);
+            }
+        });
+    </script>
+</body>
+
+</html>

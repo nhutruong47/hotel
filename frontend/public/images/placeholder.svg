@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#28483b" />
+      <stop offset="100%" stop-color="#19342a" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)" />
+  <g fill="none" stroke="#87927b" stroke-opacity="0.32" stroke-width="2">
+    <circle cx="600" cy="400" r="180" />
+    <circle cx="600" cy="400" r="240" />
+    <circle cx="600" cy="400" r="300" />
+  </g>
+  <text x="50%" y="52%" text-anchor="middle" fill="#f5f0e4" font-family="Cormorant Garamond, Georgia, serif" font-size="48" font-style="italic">Nhu Villas</text>
+  <text x="50%" y="62%" text-anchor="middle" fill="#87927b" font-family="Outfit, system-ui, sans-serif" font-size="16" letter-spacing="6">PHOTO COMING SOON</text>
+</svg>
