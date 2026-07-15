@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; padding: 20px; border-radius: 8px; }
+        .header { background-color: #667eea; color: white; padding: 10px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; }
+        .footer { text-align: center; font-size: 12px; color: #777; margin-top: 20px; }
+        .button { display: inline-block; padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Yêu Cầu Thanh Toán</h1>
+        </div>
+        <div class="content">
+            <p>Chào <strong th:text="${booking.user.fullName ?: booking.user.username}">User</strong>,</p>
+            <p>Cảm ơn bạn đã đặt phòng tại Như Hotel! Đơn đặt phòng của bạn đã được tạo thành công và đang chờ thanh toán.</p>
+
+            <h3>Chi tiết đặt phòng:</h3>
+            <ul>
+                <li><strong>Mã đặt phòng:</strong> #<span th:text="${booking.id}">123</span></li>
+                <li><strong>Phòng:</strong> <span th:text="${booking.room.roomNumber}">101</span> (<span th:text="${booking.room.roomType.displayName}">Deluxe</span>)</li>
+                <li><strong>Nhận phòng:</strong> <span th:text="${checkInDate}">01/01/2026</span></li>
+                <li><strong>Trả phòng:</strong> <span th:text="${checkOutDate}">03/01/2026</span></li>
+                <li><strong>Tổng tiền:</strong> <strong th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' VNĐ'">2,400,000 VNĐ</strong></li>
+            </ul>
+
+            <p>Vui lòng thanh toán trước <strong th:text="${paymentDeadline}">02/01/2026 10:00</strong> để hoàn tất đặt phòng.</p>
+
+            <p style="text-align: center; margin-top: 30px;">
+                <a th:href="${paymentLink}" class="button">Thanh Toán Ngay</a>
+            </p>
+
+            <p>Nếu bạn không thanh toán trước thời hạn, đơn đặt phòng sẽ tự động bị hủy.</p>
+            <p>Bạn có thể xem lại tất cả các đặt phòng của mình tại đây: <a th:href="${myBookingsLink}">Đặt phòng của tôi</a>.</p>
+            <p>Cảm ơn bạn đã lựa chọn Như Hotel!</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Như Hotel. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

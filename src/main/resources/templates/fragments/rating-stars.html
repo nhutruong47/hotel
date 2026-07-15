@@ -1,0 +1,54 @@
+<!-- Rating Stars Fragment -->
+<!-- Usage: th:replace="~{fragments/rating-stars :: stars(rating=${review.rating})}" -->
+<div th:fragment="stars(rating)" style="display: inline;">
+    <span th:each="i : ${#numbers.sequence(1, 5)}" th:style="${i <= rating} ? 'color: #fbbf24;' : 'color: #4a5568;'"
+        th:text="'★'">★</span>
+</div>
+
+<!-- Interactive Star Rating for forms -->
+<!-- Usage: th:replace="~{fragments/rating-stars :: interactive(name='rating', selected=${review != null ? review.rating : 0})}" -->
+<div th:fragment="interactive(name, selected)" class="star-rating-input">
+    <style>
+        .star-rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+
+        .star-rating-input input {
+            display: none;
+        }
+
+        .star-rating-input label {
+            font-size: 30px;
+            color: #4a5568;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .star-rating-input input:checked~label,
+        .star-rating-input label:hover,
+        .star-rating-input label:hover~label {
+            color: #fbbf24;
+        }
+    </style>
+    <input type="radio" th:id="${name + '5'}" th:name="${name}" value="5" th:checked="${selected == 5}">
+    <label th:for="${name + '5'}">★</label>
+    <input type="radio" th:id="${name + '4'}" th:name="${name}" value="4" th:checked="${selected == 4}">
+    <label th:for="${name + '4'}">★</label>
+    <input type="radio" th:id="${name + '3'}" th:name="${name}" value="3" th:checked="${selected == 3}">
+    <label th:for="${name + '3'}">★</label>
+    <input type="radio" th:id="${name + '2'}" th:name="${name}" value="2" th:checked="${selected == 2}">
+    <label th:for="${name + '2'}">★</label>
+    <input type="radio" th:id="${name + '1'}" th:name="${name}" value="1" th:checked="${selected == 1}">
+    <label th:for="${name + '1'}">★</label>
+</div>
+
+<!-- Average Rating Display -->
+<!-- Usage: th:replace="~{fragments/rating-stars :: average(avg=${avgRating}, count=${reviewCount})}" -->
+<div th:fragment="average(avg, count)" style="display: flex; align-items: center; gap: 8px;">
+    <span style="color: #fbbf24; font-size: 18px;" th:each="i : ${#numbers.sequence(1, 5)}"
+        th:text="${i <= avg} ? '★' : '☆'">★</span>
+    <span style="color: #94a3b8; font-size: 14px;" th:text="'(' + ${count} + ' đánh giá)'"></span>
+</div>

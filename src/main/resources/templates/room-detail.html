@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title th:text="'Phòng ' + ${room.roomNumber} + ' - Như Hotel'">Chi tiết phòng - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar h2 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .detail-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Hero Image */
+        .room-hero {
+            width: 100%;
+            height: 350px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2em;
+            font-weight: 300;
+            position: relative;
+        }
+
+        .room-hero img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .room-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Content */
+        .room-content {
+            padding: 35px 40px;
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .room-title h1 {
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .room-type-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .room-price-box {
+            text-align: right;
+        }
+
+        .room-price-box .price {
+            font-size: 2em;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+
+        .room-price-box .price-unit {
+            font-size: 14px;
+            color: #999;
+            font-weight: normal;
+        }
+
+        /* Description */
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            color: #333;
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .room-description {
+            color: #666;
+            line-height: 1.8;
+            font-size: 15px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        /* Rating Summary */
+        .rating-box {
+            background: linear-gradient(135deg, #fff8e1, #fff3cd);
+            padding: 20px 25px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .rating-big {
+            font-size: 3em;
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .rating-stars {
+            color: #fbbf24;
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+
+        .rating-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Reviews */
+        .review-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .reviewer-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .reviewer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .reviewer-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .review-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .review-stars {
+            color: #fbbf24;
+            font-size: 16px;
+        }
+
+        .review-comment {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .no-reviews {
+            text-align: center;
+            color: #999;
+            padding: 30px;
+        }
+
+        .no-reviews span {
+            font-size: 2.5em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        /* Action Buttons */
+        .action-bar {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn-book {
+            flex: 1;
+            display: block;
+            text-align: center;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 18px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            transition: 0.3s;
+            min-width: 200px;
+        }
+
+        .btn-book:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-back {
+            display: block;
+            text-align: center;
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            padding: 18px 30px;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(102, 126, 234, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .room-header {
+                flex-direction: column;
+            }
+
+            .room-price-box {
+                text-align: left;
+            }
+
+            .room-hero {
+                height: 220px;
+            }
+
+            .room-content {
+                padding: 25px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h2>🏨 Như Hotel</h2>
+        <div class="nav-links">
+            <a href="/">Trang chủ</a>
+            <a href="/my-bookings">Đặt phòng của tôi</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="detail-card">
+            <!-- Hero Image -->
+            <div class="room-hero">
+                <img th:if="${room.imageUrl}" th:src="${room.imageUrl}" alt="Room Image">
+                <span th:unless="${room.imageUrl}" th:text="${room.roomType.displayName}">Ảnh Phòng</span>
+                <div class="room-badge" th:text="${room.roomType.displayName}">Deluxe</div>
+            </div>
+
+            <!-- Content -->
+            <div class="room-content">
+                <!-- Header: Title + Price -->
+                <div class="room-header">
+                    <div class="room-title">
+                        <h1 th:text="'Phòng ' + ${room.roomNumber}">Phòng 202</h1>
+                        <span class="room-type-badge" th:text="${room.roomType.displayName}">Deluxe</span>
+                    </div>
+                    <div class="room-price-box">
+                        <div class="price">
+                            <span
+                                th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">1,200,000</span>
+                            VNĐ
+                        </div>
+                        <span class="price-unit">/ đêm</span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="section">
+                    <h3>📋 Mô tả phòng</h3>
+                    <div class="room-description"
+                        th:text="${room.description != null and !room.description.isEmpty()} ? ${room.description} : ${room.roomType.description}">
+                        Mô tả chi tiết về phòng...
+                    </div>
+                </div>
+
+                <!-- Rating Summary -->
+                <div class="section">
+                    <h3>⭐ Đánh giá</h3>
+                    <div class="rating-box">
+                        <span class="rating-big" th:text="${avgRating}">4.5</span>
+                        <div>
+                            <div class="rating-stars">
+                                <span th:each="i : ${#numbers.sequence(1, 5)}"
+                                    th:text="${i <= avgRating} ? '★' : '☆'">★</span>
+                            </div>
+                            <span class="rating-count" th:text="${reviewCount} + ' đánh giá'">10 đánh giá</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reviews -->
+                <div class="section">
+                    <h3>💬 Nhận xét từ khách hàng</h3>
+
+                    <div th:if="${reviews == null or reviews.isEmpty()}" class="no-reviews">
+                        <span>📭</span>
+                        <p>Chưa có đánh giá nào cho phòng này</p>
+                    </div>
+
+                    <div th:each="review : ${reviews}" class="review-item">
+                        <div class="review-header">
+                            <div class="reviewer-info">
+                                <div class="reviewer-avatar"
+                                    th:text="${review.user.fullName != null ? review.user.fullName.substring(0,1).toUpperCase() : review.user.username.substring(0,1).toUpperCase()}">
+                                    N
+                                </div>
+                                <div>
+                                    <div class="reviewer-name"
+                                        th:text="${review.user.fullName != null ? review.user.fullName : review.user.username}">
+                                        Nguyễn Văn A
+                                    </div>
+                                    <div class="review-date"
+                                        th:text="${#temporals.format(review.createdAt, 'dd/MM/yyyy HH:mm')}">
+                                        01/01/2024
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="review-stars" th:text="${review.starsDisplay}">★★★★☆</div>
+                        </div>
+                        <p th:if="${review.comment != null and !review.comment.isEmpty()}" class="review-comment"
+                            th:text="${review.comment}">
+                            Nhận xét của khách hàng...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-bar">
+                    <a th:href="@{/booking/{id}(id=${room.id})}" class="btn-book">🎯 Đặt phòng ngay</a>
+                    <a href="/" class="btn-back">← Quay lại danh sách</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

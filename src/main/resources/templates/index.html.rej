@@ -1,0 +1,18 @@
+diff a/src/main/resources/templates/index.html b/src/main/resources/templates/index.html	(rejected hunks)
+@@ -220,8 +223,14 @@
+             <a href="/my-bookings">Đặt phòng của tôi</a>
+             <a href="/ai-recommend">🤖 Trợ lý AI</a>
+             <a href="/admin" th:if="${session.user.role == 'ADMIN'}" style="color: #f1c40f;">⚙️ Admin</a>
+-            <span class="user-info">Xin chào, <span
+-                    th:text="${session.user.fullName ?: session.user.username}">Khách</span>!</span>
++            <a th:href="@{/user/profile}" class="user-info">
++                <img th:if="${session.user.avatarFilename}" th:src="@{/uploads/{file}(file=${session.user.avatarFilename})}"
++                     alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" />
++                <span th:unless="${session.user.avatarFilename}" style="width:28px;height:28px;border-radius:50%;background:#fff3;display:inline-flex;align-items:center;justify-content:center;font-weight:600;color:white;">
++                    <span th:text="${session.user.fullName != null ? session.user.fullName.substring(0,1) : (session.user.username != null ? session.user.username.substring(0,1) : 'U')}">U</span>
++                </span>
++                <span>Xin chào, <span th:text="${session.user.fullName ?: session.user.username}">Khách</span>!</span>
++            </a>
+             <a href="/logout" class="logout-btn">Đăng xuất</a>
+         </div>
+     </div>

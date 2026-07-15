@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Users - Admin</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #22c55e20;
+            color: #22c55e;
+            border: 1px solid #22c55e40;
+        }
+
+        .alert-error {
+            background: #ef444420;
+            color: #ef4444;
+            border: 1px solid #ef444440;
+        }
+
+        .table-section {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        td {
+            color: white;
+        }
+
+        .role-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .role-ADMIN {
+            background: #e9456020;
+            color: #e94560;
+        }
+
+        .role-USER {
+            background: #3b82f620;
+            color: #3b82f6;
+        }
+
+        .action-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-form select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #16213e;
+            color: white;
+            cursor: pointer;
+        }
+
+        .action-form button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-save {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #2563eb;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin">📊 Dashboard</a>
+            <a href="/admin/reports">📈 Most Booking & Rating</a>
+            <a href="/admin/bookings">📋 Quản lý Booking</a>
+            <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
+            <a href="/admin/users" class="active">👥 Quản lý Users</a>
+            <a href="/admin/vouchers">🎟️ Quản lý Voucher</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>👥 Quản lý Users</h1>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <div class="table-section">
+            <table th:if="${users != null and !users.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Người dùng</th>
+                        <th>Email</th>
+                        <th>Ngày tạo</th>
+                        <th>Quyền</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="user : ${users}">
+                        <td th:text="${user.id}">1</td>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar"
+                                    th:text="${#strings.toUpperCase(#strings.substring(user.username, 0, 1))}">A</div>
+                                <div>
+                                    <div th:text="${user.fullName ?: user.username}">Nguyễn Văn A</div>
+                                    <div style="color: #94a3b8; font-size: 12px;" th:text="'@' + ${user.username}">
+                                        @admin</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td th:text="${user.email ?: 'N/A'}">admin@hotel.com</td>
+                        <td
+                            th:text="${user.createdAt != null} ? ${#temporals.format(user.createdAt, 'dd/MM/yyyy HH:mm')} : 'N/A'">
+                            01/01/2024</td>
+                        <td>
+                            <span class="role-badge" th:classappend="'role-' + ${user.role}"
+                                th:text="${user.role}">ADMIN</span>
+                        </td>
+                        <td>
+                            <div class="action-form">
+                                <form th:action="@{/admin/user/{id}/role(id=${user.id})}" method="post"
+                                    style="display: flex; gap: 8px;">
+                                    <select name="role">
+                                        <option value="USER" th:selected="${user.role == 'USER'}">USER</option>
+                                        <option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option>
+                                    </select>
+                                    <button type="submit" class="btn-save">💾</button>
+                                </form>
+                                <form th:action="@{/admin/user/{id}/delete(id=${user.id})}" method="post"
+                                    onsubmit="return confirm('Bạn có chắc muốn xóa user này?')"
+                                    th:if="${user.id != session.user.id}">
+                                    <button type="submit" class="btn-delete">🗑️</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div th:if="${users == null or users.isEmpty()}" class="empty-state">
+                <p>Không có user nào</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Tiện ích - Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .btn-add:hover {
+            transform: scale(1.05);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #22c55e20;
+            color: #22c55e;
+            border: 1px solid #22c55e40;
+        }
+
+        .alert-error {
+            background: #ef444420;
+            color: #ef4444;
+            border: 1px solid #ef444440;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            transition: 0.3s;
+            color: white;
+            text-align: center;
+        }
+
+        .card i {
+            font-size: 3em;
+            color: #e94560;
+            margin-bottom: 15px;
+        }
+
+        .card:hover {
+            border-color: #e94560;
+            transform: translateY(-5px);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-edit,
+        .btn-delete {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.3s;
+            font-size: 12px;
+        }
+
+        .btn-edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2563eb;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 30px;
+            width: 500px;
+            max-width: 90%;
+            border: 1px solid rgba(233, 69, 96, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: white;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: #16213e;
+            color: white;
+            font-size: 14px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin">📊 Dashboard</a>
+            <a href="/admin/reports">📈 Most Booking & Rating</a>
+            <a href="/admin/bookings">📋 Quản lý Booking</a>
+            <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
+            <a href="/admin/room-types">🏷️ Quản lý Loại Phòng</a>
+            <a href="/admin/amenities" class="active">✨ Quản lý Tiện Ích</a>
+            <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>✨ Quản lý Tiện Ích</h1>
+            <button class="btn-add" onclick="openModal()">➕ Thêm tiện ích</button>
+        </div>
+
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <div class="grid-container">
+            <div class="card" th:each="am : ${amenities}">
+                <i class="fas" th:classappend="${am.iconCode ?: 'fa-star'}"></i>
+                <h3 th:text="${am.name}">Wi-Fi</h3>
+
+                <div class="actions">
+                    <button class="btn-edit" th:data-id="${am.id}" th:data-name="${am.name}"
+                        th:data-icon="${am.iconCode}" onclick="editItem(this)">✏️ Sửa</button>
+                    <form th:action="@{/admin/amenity/{id}/delete(id=${am.id})}" method="post" style="flex: 1;"
+                        onsubmit="return confirm('Bạn có chắc muốn xóa tiện ích này?')">
+                        <button type="submit" class="btn-delete" style="width: 100%;">🗑️ Xóa</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Thêm Tiện ích</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form action="/admin/amenity" method="post">
+                <input type="hidden" name="id" id="itemId">
+                <div class="form-group">
+                    <label>Tên Tiện ích (Ví dụ: Wi-Fi, Hồ bơi...)</label>
+                    <input type="text" name="name" id="itemName" required>
+                </div>
+                <div class="form-group">
+                    <label>Mã icon FontAwesome (Ví dụ: fa-wifi, fa-swimming-pool...)</label>
+                    <input type="text" name="iconCode" id="itemIcon">
+                </div>
+                <button type="submit" class="btn-submit">💾 Lưu lại</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById('itemModal').classList.add('active');
+            document.getElementById('modalTitle').innerText = 'Thêm Tiện ích mới';
+            document.getElementById('itemId').value = '';
+            document.getElementById('itemId').disabled = true;
+            document.getElementById('itemName').value = '';
+            document.getElementById('itemIcon').value = '';
+        }
+
+        function editItem(btn) {
+            document.getElementById('itemModal').classList.add('active');
+            document.getElementById('modalTitle').innerText = 'Sửa Tiện ích ' + btn.getAttribute('data-name');
+            document.getElementById('itemId').value = btn.getAttribute('data-id');
+            document.getElementById('itemId').disabled = false;
+            document.getElementById('itemName').value = btn.getAttribute('data-name');
+            document.getElementById('itemIcon').value = btn.getAttribute('data-icon') || '';
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').classList.remove('active');
+        }
+
+        document.getElementById('itemModal').addEventListener('click', function (e) {
+            if (e.target === this) { closeModal(); }
+        });
+    </script>
+</body>
+
+</html>

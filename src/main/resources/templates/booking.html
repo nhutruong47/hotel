@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Đặt Phòng - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar h2 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .booking-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .room-preview {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 40px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .room-preview h2 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .room-preview .room-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .room-info {
+            margin-bottom: 15px;
+        }
+
+        .room-info label {
+            font-size: 12px;
+            opacity: 0.8;
+            display: block;
+        }
+
+        .room-info span {
+            font-size: 1.2em;
+        }
+
+        .room-price {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .room-price label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .room-price .price {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .booking-form {
+            padding: 40px;
+        }
+
+        .booking-form h3 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #666;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .alert-error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #fcc;
+        }
+
+        .alert-success {
+            background: #efe;
+            color: #060;
+            border: 1px solid #cfc;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-submit:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-back {
+            display: inline-block;
+            margin-top: 15px;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .btn-back:hover {
+            text-decoration: underline;
+        }
+
+        .price-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .price-preview.show {
+            display: block;
+        }
+
+        .price-preview .total {
+            font-size: 1.5em;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .booking-card {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h2>🏨 Như Hotel</h2>
+        <div class="nav-links">
+            <a href="/">Trang chủ</a>
+            <a href="/my-bookings">Đặt phòng của tôi</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="booking-card">
+            <div class="room-preview">
+                <h2 th:text="${room.roomType.displayName}">Phòng Deluxe</h2>
+                <div class="room-number" th:text="${room.roomNumber}">202</div>
+
+                <div class="room-info">
+                    <label>Mô tả</label>
+                    <span th:text="${room.description ?: room.roomType.description}">Mô tả phòng</span>
+                </div>
+
+                <!-- Rating & Reviews -->
+                <div class="room-info" style="margin-top: 15px;">
+                    <label>Đánh giá</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                        <span style="color: #fbbf24; font-size: 1.2em;">
+                            <span th:each="i : ${#numbers.sequence(1, 5)}"
+                                th:text="${i <= avgRating} ? '★' : '☆'">★</span>
+                        </span>
+                        <span th:text="${avgRating}" style="font-weight: bold;">4.5</span>
+                        <span style="opacity: 0.7; font-size: 13px;" th:text="'(' + ${reviewCount} + ' đánh giá)'"> (10
+                            đánh giá)</span>
+                    </div>
+                </div>
+
+                <!-- Recent Reviews -->
+                <div th:if="${recentReviews != null and !recentReviews.isEmpty()}"
+                    style="margin-top: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 12px;">
+                    <label style="font-size: 12px; opacity: 0.8; display: block; margin-bottom: 8px;">💬 Nhận xét gần
+                        đây</label>
+                    <div th:each="rv : ${recentReviews}"
+                        style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; font-weight: 500;"
+                                th:text="${rv.user.fullName ?: rv.user.username}">Khách</span>
+                            <span style="color: #fbbf24; font-size: 12px;" th:text="${rv.starsDisplay}">★★★★☆</span>
+                        </div>
+                        <p th:if="${rv.comment != null and !rv.comment.isEmpty()}"
+                            th:text="${rv.comment.length() > 60 ? rv.comment.substring(0, 60) + '...' : rv.comment}"
+                            style="font-size: 12px; opacity: 0.8; margin-top: 3px; line-height: 1.4;">Nhận xét...</p>
+                    </div>
+                    <a th:href="@{/room/{id}/reviews(id=${room.id})}"
+                        style="font-size: 12px; color: #fbbf24; text-decoration: none;">📝 Xem tất cả đánh giá →</a>
+                </div>
+                <div th:if="${recentReviews == null or recentReviews.isEmpty()}" style="margin-top: 10px;">
+                    <span style="font-size: 12px; opacity: 0.6;">Chưa có đánh giá nào</span>
+                </div>
+
+                <div class="room-price">
+                    <label>Giá mỗi đêm</label>
+                    <div class="price">
+                        <span
+                            th:text="${#numbers.formatDecimal(room.pricePerNight, 0, 'COMMA', 0, 'POINT')}">1,200,000</span>
+                        VNĐ
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-form">
+                <h3>📝 Thông tin đặt phòng</h3>
+
+                <div class="alert alert-error" th:if="${error}" th:text="${error}">Error message</div>
+                <div class="alert alert-success" th:if="${success}" th:text="${success}">Success message</div>
+
+                <form th:action="@{/booking}" method="post">
+                    <input type="hidden" name="roomId" th:value="${room.id}">
+
+                    <div class="form-group">
+                        <label>Tên khách hàng *</label>
+                        <input type="text" name="guestName" th:value="${user.fullName}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Số điện thoại</label>
+                        <input type="tel" name="guestPhone" placeholder="Nhập số điện thoại">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ngày nhận phòng *</label>
+                            <input type="date" name="checkIn" id="checkIn" th:min="${minDate}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày trả phòng *</label>
+                            <input type="date" name="checkOut" id="checkOut" th:min="${minDate}" required>
+                        </div>
+                    </div>
+
+                    <!-- Booked dates display -->
+                    <div id="bookedDatesPanel"
+                        style="background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 10px; padding: 14px; margin-bottom: 15px; display: none;">
+                        <div style="font-weight: 600; color: #f59e0b; margin-bottom: 8px; font-size: 14px;">📅 Lịch đặt
+                            phòng hiện tại</div>
+                        <div id="bookedDatesList" style="font-size: 13px; color: #555;"></div>
+                        <div style="font-size: 11px; color: #999; margin-top: 6px;">⚠️ Vui lòng chọn ngày không trùng
+                            với các khoảng trên</div>
+                    </div>
+
+                    <!-- Date conflict warning -->
+                    <div id="dateConflictWarning"
+                        style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 12px; margin-bottom: 15px; display: none; color: #dc2626; font-size: 13px; font-weight: 500;">
+                        ❌ <span id="conflictMessage">Ngày bạn chọn đã có người đặt. Vui lòng chọn ngày khác.</span>
+                    </div>
+
+                    <div class="price-preview" id="pricePreview">
+                        <label>Tổng tiền ước tính:</label>
+                        <div class="total" id="totalPrice">0 VNĐ</div>
+                        <small id="nightsInfo"></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Mã giảm giá</label>
+                        <div style="display:flex;gap:8px">
+                            <input type="text" id="voucherInput" placeholder="Nhập mã giảm giá">
+                            <button type="button" id="applyVoucherBtn" class="btn-submit"
+                                style="width:auto;padding:10px 14px;">Áp dụng</button>
+                        </div>
+                        <input type="hidden" name="voucherCode" id="voucherCode">
+                        <div id="voucherMessage" style="margin-top:8px;font-size:0.9em;color:#d00"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ghi chú</label>
+                        <textarea name="notes" rows="3" placeholder="Yêu cầu đặc biệt (nếu có)"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">✅ Xác nhận đặt phòng</button>
+                    <a href="/" class="btn-back">← Quay lại danh sách phòng</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const pricePerNight = [[${ room.pricePerNight }]];
+        const roomId = [[${ room.id }]];
+        const checkIn = document.getElementById('checkIn');
+        const checkOut = document.getElementById('checkOut');
+        const pricePreview = document.getElementById('pricePreview');
+        const totalPrice = document.getElementById('totalPrice');
+        const nightsInfo = document.getElementById('nightsInfo');
+        const submitBtn = document.querySelector('.btn-submit');
+        const voucherInput = document.getElementById('voucherInput');
+        const applyVoucherBtn = document.getElementById('applyVoucherBtn');
+        const voucherCodeHidden = document.getElementById('voucherCode');
+        const voucherMessage = document.getElementById('voucherMessage');
+
+        let bookedRanges = [];
+
+        // current computed values
+        let currentNights = 0;
+        let currentTotal = 0;
+        let currentDiscount = 0;
+
+        // Fetch booked dates on page load
+        fetch('/api/rooms/' + roomId + '/booked-dates')
+            .then(res => res.json())
+            .then(data => {
+                bookedRanges = data;
+                displayBookedDates(data);
+            })
+            .catch(err => console.log('Could not load booked dates'));
+
+        function displayBookedDates(ranges) {
+            const panel = document.getElementById('bookedDatesPanel');
+            const list = document.getElementById('bookedDatesList');
+            if (ranges.length === 0) {
+                panel.style.display = 'none';
+                return;
+            }
+            panel.style.display = 'block';
+            list.innerHTML = ranges.map(r => {
+                const statusLabel = r.status === 'CONFIRMED' ? '✅ Đã xác nhận' : '📋 ' + r.status;
+                const cin = new Date(r.checkIn).toLocaleDateString('vi-VN');
+                const cout = new Date(r.checkOut).toLocaleDateString('vi-VN');
+                return '<div style="padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center;">' +
+                    '<span>🛏️ ' + cin + ' → ' + cout + '</span>' +
+                    '<span style="font-size: 11px; opacity: 0.7;">' + statusLabel + '</span>' +
+                    '</div>';
+            }).join('');
+        }
+
+        function checkDateConflict() {
+            if (!checkIn.value || !checkOut.value) return false;
+            const selIn = new Date(checkIn.value);
+            const selOut = new Date(checkOut.value);
+            const warning = document.getElementById('dateConflictWarning');
+            const msg = document.getElementById('conflictMessage');
+
+            for (const r of bookedRanges) {
+                const bIn = new Date(r.checkIn);
+                const bOut = new Date(r.checkOut);
+                if (selIn < bOut && selOut > bIn) {
+                    const cin = bIn.toLocaleDateString('vi-VN');
+                    const cout = bOut.toLocaleDateString('vi-VN');
+                    msg.textContent = 'Ngày bạn chọn trùng với đặt phòng ' + cin + ' → ' + cout + '. Vui lòng chọn ngày khác.';
+                    warning.style.display = 'block';
+                    submitBtn.disabled = true;
+                    submitBtn.style.opacity = '0.5';
+                    submitBtn.style.cursor = 'not-allowed';
+                    return true;
+                }
+            }
+            warning.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+            return false;
+        }
+
+        function formatVND(n) {
+            return n.toLocaleString('vi-VN') + ' VNĐ';
+        }
+
+        function calculatePrice() {
+            if (checkIn.value && checkOut.value) {
+                const start = new Date(checkIn.value);
+                const end = new Date(checkOut.value);
+                const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+
+                if (nights === 0) {
+                    const total = pricePerNight * 0.5;
+                    pricePreview.classList.add('show');
+                    totalPrice.textContent = total.toLocaleString('vi-VN') + ' VNĐ';
+                    nightsInfo.textContent = 'Thuê trong ngày (50% giá phòng)';
+                } else if (nights > 0) {
+                    const total = nights * pricePerNight;
+                    currentNights = nights;
+                    currentTotal = total;
+                    pricePreview.classList.add('show');
+                    updatePriceDisplay();
+                    nightsInfo.textContent = nights + ' đêm × ' + pricePerNight.toLocaleString('vi-VN') + ' VNĐ';
+                } else {
+                    pricePreview.classList.remove('show');
+                }
+            }
+            checkDateConflict();
+        }
+
+        function updatePriceDisplay() {
+            const totalAfterDiscount = Math.max(0, currentTotal - currentDiscount);
+            totalPrice.textContent = formatVND(totalAfterDiscount);
+            // show discount line
+            let discountLine = document.getElementById('discountLine');
+            if (!discountLine) {
+                discountLine = document.createElement('div');
+                discountLine.id = 'discountLine';
+                discountLine.style.fontSize = '0.95em';
+                discountLine.style.color = '#666';
+                pricePreview.appendChild(discountLine);
+            }
+            if (currentDiscount > 0) {
+                discountLine.textContent = 'Giảm: ' + formatVND(currentDiscount);
+                discountLine.style.display = 'block';
+            } else {
+                discountLine.style.display = 'none';
+            }
+        }
+
+        applyVoucherBtn.addEventListener('click', async function () {
+            const code = voucherInput.value.trim();
+            voucherMessage.style.color = '#d00';
+            if (!code) { voucherMessage.textContent = 'Nhập mã giảm giá'; return; }
+            try {
+                const res = await fetch('/api/vouchers/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ code })
+                });
+                const j = await res.json();
+                if (res.ok && j.valid) {
+                    voucherMessage.style.color = 'green';
+                    const amount = parseFloat(j.amount || '0');
+                    const isPercent = j.percent === true || j.percent === 'true';
+                    voucherCodeHidden.value = code;
+                    if (isPercent) {
+                        // calculate percent on client if price available
+                        currentDiscount = Math.round((currentTotal * amount) / 100);
+                        updatePriceDisplay();
+                        voucherMessage.textContent = 'Áp dụng thành công: -' + amount + '%';
+                    } else {
+                        currentDiscount = amount;
+                        updatePriceDisplay();
+                        voucherMessage.textContent = 'Áp dụng thành công: -' + amount.toLocaleString('vi-VN') + ' VNĐ';
+                    }
+                } else {
+                    voucherMessage.textContent = j.message || 'Mã không hợp lệ';
+                    voucherCodeHidden.value = '';
+                    currentDiscount = 0;
+                    updatePriceDisplay();
+                }
+            } catch (e) {
+                voucherMessage.textContent = 'Lỗi kết nối';
+            }
+        });
+
+        checkIn.addEventListener('change', function () {
+            checkOut.min = this.value;
+            calculatePrice();
+        });
+        checkOut.addEventListener('change', calculatePrice);
+    </script>
+</body>
+
+</html>

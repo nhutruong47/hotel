@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+        }
+
+        .sidebar-header {
+            color: #e94560;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            transition: 0.3s;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+
+        .sidebar-menu a.active {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+            font-weight: 500;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-menu span {
+            color: #94a3b8;
+        }
+
+        .user-menu a {
+            background: #e94560;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .user-menu a:hover {
+            background: #c73e54;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+            transition: 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #e94560;
+        }
+
+        .stat-card h3 {
+            color: #94a3b8;
+            font-size: 14px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            color: white;
+            font-size: 2.2em;
+            font-weight: bold;
+        }
+
+        .stat-card .value.revenue {
+            color: #22c55e;
+        }
+
+        .stat-card .icon {
+            font-size: 2.5em;
+            opacity: 0.5;
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .table-section {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        .table-section h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+
+        td {
+            color: white;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-CONFIRMED {
+            background: #22c55e20;
+            color: #22c55e;
+        }
+
+        .status-CANCELLED {
+            background: #ef444420;
+            color: #ef4444;
+        }
+
+        .status-COMPLETED {
+            background: #3b82f620;
+            color: #3b82f6;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #94a3b8;
+            text-decoration: none;
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: 1px solid #94a3b8;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+
+        .back-link:hover {
+            background: #94a3b8;
+            color: #1a1a2e;
+        }
+
+        /* Notification styles */
+        .notification-badge {
+            background: #e94560;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            animation: slideIn 0.5s ease;
+            max-width: 350px;
+        }
+
+        .notification-popup.new-booking {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-popup h4 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        .notification-popup p {
+            margin: 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .notification-popup .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">🏨 Admin Panel</div>
+        <div class="sidebar-menu">
+            <a href="/admin" class="active">📊 Dashboard</a>
+            <a href="/admin/reports">📈 Most Booking & Rating</a>
+            <a href="/admin/bookings">📋 Quản lý Booking</a>
+            <a href="/admin/rooms">🛏️ Quản lý Phòng</a>
+            <a href="/admin/users">👥 Quản lý Users</a>
+            <a href="/">🏠 Về trang chủ</a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="header">
+            <h1>📊 Dashboard</h1>
+            <div class="user-menu">
+                <span th:if="${session.user != null}">Xin chào, <span
+                        th:text="${session.user.fullName != null ? session.user.fullName : session.user.username}">Admin</span></span>
+                <a href="/logout">Đăng xuất</a>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Tổng số phòng</h3>
+                <div class="value" th:text="${totalRooms}">10</div>
+            </div>
+            <div class="stat-card">
+                <h3>Phòng trống</h3>
+                <div class="value" th:text="${availableRooms}">8</div>
+            </div>
+
+            <div class="stat-card">
+                <h3>Booking hôm nay</h3>
+                <div class="value" th:text="${todayBookings}">5</div>
+            </div>
+            <div class="stat-card">
+                <h3>Doanh thu tháng này</h3>
+                <div class="value revenue">
+                    <span th:text="${#numbers.formatDecimal(monthlyRevenue, 0, 'COMMA', 0, 'POINT')}">10,000,000</span>
+                    VNĐ
+                </div>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <h2>📋 Booking gần đây</h2>
+            <table th:if="${recentBookings != null and !recentBookings.isEmpty()}">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Khách hàng</th>
+                        <th>Phòng</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="booking : ${recentBookings}">
+                        <td th:text="${booking.id}">1</td>
+                        <td th:text="${booking.guestName}">Nguyễn Văn A</td>
+                        <td th:text="${booking.room != null ? booking.room.roomNumber : 'N/A'}">101</td>
+                        <td th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01/2024</td>
+                        <td th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">05/01/2024</td>
+                        <td>
+                            <span
+                                th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')}">2,000,000</span>
+                            VNĐ
+                        </td>
+                        <td>
+                            <span class="status-badge" th:classappend="'status-' + ${booking.status}"
+                                th:text="${booking.status.displayName}">Đã xác nhận</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <p th:if="${recentBookings == null or recentBookings.isEmpty()}"
+                style="color: #94a3b8; text-align: center; padding: 40px;">
+                Chưa có booking nào
+        </div>
+
+
+
+        <div class="table-section">
+            <h2>📈 Báo cáo doanh thu</h2>
+            <form th:action="@{/admin/reports/excel}" method="post" style="margin-bottom: 20px;">
+                <label for="startDate" style="color: #94a3b8;">Từ ngày:</label>
+                <input type="date" id="startDate" name="startDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <label for="endDate" style="color: #94a3b8;">Đến ngày:</label>
+                <input type="date" id="endDate" name="endDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <button type="submit"
+                    style="background: #22c55e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải Excel (Tất cả)
+                </button>
+            </form>
+            <form th:action="@{/admin/reports/pdf}" method="post" style="margin-bottom: 20px;">
+                <label for="pdfStartDate" style="color: #94a3b8;">Từ ngày:</label>
+                <input type="date" id="pdfStartDate" name="startDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <label for="pdfEndDate" style="color: #94a3b8;">Đến ngày:</label>
+                <input type="date" id="pdfEndDate" name="endDate"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white;">
+                <button type="submit"
+                    style="background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải PDF (Tất cả)
+                </button>
+            </form>
+        </div>
+
+        <div class="table-section" style="margin-top: 30px;">
+            <h2>🏨 Báo cáo theo phòng</h2>
+            <form th:action="@{/admin/reports/excel/room}" method="post" style="margin-bottom: 20px;">
+                <label for="room-select-excel" style="color: #94a3b8;">Chọn phòng:</label>
+                <select id="room-select-excel" name="roomId"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white; min-width: 200px;">
+                    <option th:each="room : ${allRooms}" th:value="${room.id}"
+                        th:text="${'Phòng ' + room.roomNumber + ' - ' + room.roomType.displayName}"></option>
+                </select>
+                <button type="submit"
+                    style="background: #22c55e; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải Excel theo phòng
+                </button>
+            </form>
+            <form th:action="@{/admin/reports/pdf/room}" method="post">
+                <label for="room-select-pdf" style="color: #94a3b8;">Chọn phòng:</label>
+                <select id="room-select-pdf" name="roomId"
+                    style="padding: 8px; border-radius: 5px; border: 1px solid #94a3b8; background: #1e293b; color: white; min-width: 200px;">
+                    <option th:each="room : ${allRooms}" th:value="${room.id}"
+                        th:text="${'Phòng ' + room.roomNumber + ' - ' + room.roomType.displayName}"></option>
+                </select>
+                <button type="submit"
+                    style="background: #ef4444; color: white; padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer;">
+                    Tải PDF theo phòng
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <script>
+        // Realtime notifications using polling (SSE backup)
+        let lastPendingCount = parseInt(document.getElementById('pending-count')?.textContent || '0');
+
+        function showNotification(type, title, message) {
+            const container = document.getElementById('notification-container');
+            const popup = document.createElement('div');
+            popup.className = 'notification-popup ' + (type === 'newBooking' ? 'new-booking' : '');
+            popup.innerHTML = `
+                <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+                <h4>${type === 'payment' ? '💰' : '🔔'} ${title}</h4>
+                <p>${message}</p>
+            `;
+            container.appendChild(popup);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => popup.remove(), 5000);
+
+            // Play sound (optional)
+            // new Audio('/notification.mp3').play();
+        }
+
+        // Polling for updates every 10 seconds
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/notifications/poll');
+                const data = await response.json();
+
+                // Removed pendingCount logic because bookings are automatically CONFIRMED now
+                const newCount = data.confirmedCount;
+            } catch (e) {
+                console.log('Polling error:', e);
+            }
+        }, 10000);
+
+        // Try SSE if supported
+        if (typeof EventSource !== 'undefined') {
+            const eventSource = new EventSource('/api/notifications/stream');
+
+            eventSource.addEventListener('payment', function (e) {
+                const data = JSON.parse(e.data);
+                showNotification('payment', 'Thanh toán mới!', data.message);
+            });
+
+            eventSource.addEventListener('newBooking', function (e) {
+                const data = JSON.parse(e.data);
+                showNotification('newBooking', 'Booking mới!', data.message);
+                // Update pending count
+                const el = document.getElementById('pending-count');
+                if (el) el.textContent = parseInt(el.textContent) + 1;
+            });
+
+            eventSource.onerror = function () {
+                console.log('SSE connection error, using polling instead');
+            };
+        }
+    </script>
+</body>
+
+</html>

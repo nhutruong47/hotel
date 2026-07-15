@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Thanh toán - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h2 {
+            color: white;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .payment-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .payment-header {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            padding: 25px;
+            text-align: center;
+            color: white;
+        }
+
+        .payment-header h2 {
+            margin-bottom: 5px;
+        }
+
+        .deadline {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .payment-body {
+            padding: 30px;
+        }
+
+        .two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .two-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Left Column - Bank Info */
+        .bank-info {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            padding: 25px;
+            border-radius: 12px;
+            color: white;
+        }
+
+        .bank-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .bank-logo .icon {
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .bank-logo .name {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .bank-detail {
+            margin-bottom: 15px;
+        }
+
+        .bank-detail label {
+            display: block;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .bank-detail .value {
+            font-size: 1.1em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .amount-highlight {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .amount-highlight .label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .amount-highlight .amount {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        /* Right Column - QR & Confirm */
+        .qr-section {
+            text-align: center;
+        }
+
+        .qr-code {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .qr-note {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .booking-ref {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .booking-ref label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .booking-ref .ref-code {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e74c3c;
+            font-family: monospace;
+        }
+
+        .confirm-section {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .confirm-section h4 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .confirm-section p {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .btn-confirm {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-confirm:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-cancel {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #999;
+            text-decoration: none;
+        }
+
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .step .num {
+            width: 25px;
+            height: 25px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h2>🏨 Như Hotel</h2>
+        <div class="nav-links">
+            <a href="/">Trang chủ</a>
+            <a href="/my-bookings">Đặt phòng của tôi</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="payment-card">
+            <div class="payment-header">
+                <h2>🏦 Thanh Toán Chuyển Khoản</h2>
+                <div class="deadline" th:if="${booking.paymentDeadline}">
+                    ⏰ Hạn thanh toán: <span
+                        th:text="${#temporals.format(booking.paymentDeadline, 'dd/MM/yyyy HH:mm')}">01/02/2026
+                        12:00</span>
+                </div>
+            </div>
+
+            <div class="payment-body">
+                <!-- Steps -->
+                <div class="steps">
+                    <div class="step"><span class="num">1</span> Chuyển khoản</div>
+                    <div class="step"><span class="num">2</span> Nhập nội dung</div>
+                    <div class="step"><span class="num">3</span> Xác nhận</div>
+                </div>
+
+                <!-- Room Details -->
+                <div
+                    style="background: #f0f4ff; border-radius: 12px; padding: 18px; margin-bottom: 25px; display: flex; gap: 20px; align-items: center;">
+                    <div style="font-size: 2.5em;">🛏️</div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 1.1em; font-weight: 600; color: #333; margin-bottom: 4px;"
+                            th:text="'Phòng ' + ${booking.room.roomNumber} + ' - ' + ${booking.room.roomType.displayName}">
+                            Phòng 202 - Deluxe
+                        </div>
+                        <div style="font-size: 13px; color: #666; display: flex; gap: 20px; flex-wrap: wrap;">
+                            <span>📅 Nhận: <b
+                                    th:text="${#temporals.format(booking.checkInDate, 'dd/MM/yyyy')}">01/01</b></span>
+                            <span>📅 Trả: <b
+                                    th:text="${#temporals.format(booking.checkOutDate, 'dd/MM/yyyy')}">03/01</b></span>
+                            <span>🌙 <b th:text="${booking.numberOfNights}">2</b> đêm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="two-columns">
+                    <!-- Left: Bank Details -->
+                    <div class="bank-info">
+                        <div class="bank-logo">
+                            <div class="icon">🏦</div>
+                            <div>
+                                <div class="name">Vietcombank</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Ngân hàng TMCP Ngoại thương</div>
+                            </div>
+                        </div>
+
+                        <div class="bank-detail">
+                            <label>Số tài khoản</label>
+                            <div class="value">
+                                <span id="account-number">1234567890123</span>
+                                <button class="copy-btn" onclick="copyText('account-number')">📋 Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="bank-detail">
+                            <label>Chủ tài khoản</label>
+                            <div class="value">NHU HOTEL COMPANY</div>
+                        </div>
+
+                        <div class="bank-detail">
+                            <label>Chi nhánh</label>
+                            <div class="value">Hồ Chí Minh</div>
+                        </div>
+
+                        <div class="bank-detail">
+                            <label>Nội dung chuyển khoản</label>
+                            <div class="value">
+                                <span id="transfer-content" th:text="'BOOKING' + ${booking.id}">BOOKING123</span>
+                                <button class="copy-btn" onclick="copyText('transfer-content')">📋 Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="amount-highlight">
+                            <div class="label">Số tiền cần thanh toán</div>
+                            <!-- Show original total, discount (if any), and final amount -->
+                            <div style="font-size:0.95em;color:#666;margin-bottom:8px;" th:if="${booking.discountAmount != null and booking.discountAmount.doubleValue() > 0}">
+                                Tổng ban đầu: <span th:text="${#numbers.formatDecimal(booking.totalPrice + booking.discountAmount, 0, 'COMMA', 0, 'POINT')} + ' đ'"></span>
+                                <br />
+                                Giảm (mã <span th:text="${booking.appliedVoucherCode}"></span>): -<span th:text="${#numbers.formatDecimal(booking.discountAmount, 0, 'COMMA', 0, 'POINT')}"></span> đ
+                            </div>
+                            <div class="amount" th:text="${#numbers.formatDecimal(booking.totalPrice, 0, 'COMMA', 0, 'POINT')} + ' đ'">2,000,000 đ</div>
+                        </div>
+                    </div>
+
+                    <!-- Right: QR & Confirm -->
+                    <div class="qr-section">
+                        <div class="qr-code">
+                            <!-- Simulated QR code pattern -->
+                            <svg width="180" height="180" viewBox="0 0 180 180">
+                                <rect fill="white" width="180" height="180" />
+                                <g fill="black">
+                                    <rect x="10" y="10" width="50" height="50" />
+                                    <rect x="120" y="10" width="50" height="50" />
+                                    <rect x="10" y="120" width="50" height="50" />
+                                    <rect x="20" y="20" width="30" height="30" fill="white" />
+                                    <rect x="130" y="20" width="30" height="30" fill="white" />
+                                    <rect x="20" y="130" width="30" height="30" fill="white" />
+                                    <rect x="28" y="28" width="14" height="14" />
+                                    <rect x="138" y="28" width="14" height="14" />
+                                    <rect x="28" y="138" width="14" height="14" />
+                                    <rect x="70" y="10" width="10" height="10" />
+                                    <rect x="90" y="10" width="10" height="10" />
+                                    <rect x="70" y="30" width="10" height="10" />
+                                    <rect x="80" y="40" width="10" height="10" />
+                                    <rect x="70" y="70" width="40" height="40" />
+                                    <rect x="80" y="80" width="20" height="20" fill="white" />
+                                    <rect x="85" y="85" width="10" height="10" />
+                                    <rect x="130" y="70" width="10" height="10" />
+                                    <rect x="150" y="80" width="10" height="10" />
+                                    <rect x="10" y="80" width="10" height="10" />
+                                    <rect x="30" y="70" width="10" height="10" />
+                                </g>
+                            </svg>
+                        </div>
+                        <div class="qr-note">Quét mã QR bằng ứng dụng ngân hàng để thanh toán nhanh</div>
+
+                        <div class="booking-ref">
+                            <label>Mã đặt phòng</label>
+                            <div class="ref-code" th:text="'#' + ${booking.id}">#123</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                Phòng <span th:text="${booking.room.roomNumber}">P01</span> •
+                                <span th:text="${booking.numberOfNights}">2</span> đêm
+                            </div>
+                        </div>
+
+                        <div class="confirm-section">
+                            <h4>✅ Đã chuyển khoản xong?</h4>
+                            <p>Sau khi chuyển khoản thành công, nhấn nút bên dưới để xác nhận.
+                                Chúng tôi sẽ kiểm tra và xác nhận đặt phòng của bạn.</p>
+
+                            <form th:action="@{/booking/{id}/pay(id=${booking.id})}" method="post">
+                                <button type="submit" class="btn-confirm"
+                                    onclick="return confirm('Bạn xác nhận đã chuyển khoản thành công?')">
+                                    ✅ Tôi đã thanh toán
+                                </button>
+                            </form>
+                        </div>
+
+                        <a href="/my-bookings" class="btn-cancel">← Thanh toán sau</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Đã copy: ' + text);
+            });
+        }
+    </script>
+</body>
+
+</html>

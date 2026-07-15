@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Gợi ý phòng - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar h2 {
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .chat-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 25px;
+            color: white;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header-text h3 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .chat-header-text p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: 0.3s;
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.ai .message-avatar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .message.user .message-avatar {
+            background: #27ae60;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 18px 18px 18px 4px;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+
+        .chat-input {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #eee;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .chat-input input:focus {
+            border-color: #667eea;
+        }
+
+        .chat-input button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .chat-input button:hover {
+            transform: scale(1.05);
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .suggestions {
+            padding: 15px 20px;
+            background: #fff;
+            border-top: 1px solid #eee;
+        }
+
+        .suggestions p {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion-chip {
+            padding: 8px 15px;
+            background: #f0f2f5;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #666;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .suggestion-chip:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+        }
+
+        .typing-indicator.show {
+            display: flex;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite both;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .history-divider {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .history-divider::before,
+        .history-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 30%;
+            height: 1px;
+            background: #ddd;
+        }
+
+        .history-divider::before {
+            left: 0;
+        }
+
+        .history-divider::after {
+            right: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h2>🏨 Như Hotel</h2>
+        <div class="nav-links">
+            <a href="/">Trang chủ</a>
+            <a href="/my-bookings">Đặt phòng của tôi</a>
+            <a href="/ai-recommend" style="background: rgba(255,255,255,0.2);">🤖 Trợ lý AI</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="chat-card">
+            <div class="chat-header">
+                <div class="chat-header-text">
+                    <h3>🤖 Trợ Lý AI Thông Minh</h3>
+                    <p>Mô tả nhu cầu của bạn, AI sẽ gợi ý phòng phù hợp nhất!</p>
+                </div>
+                <button class="btn-clear" onclick="clearHistory()">🗑️ Xóa lịch sử</button>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <!-- Welcome message -->
+                <div class="message ai">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">Xin chào! Tôi là trợ lý AI của Như Hotel. Hãy cho tôi biết nhu cầu của
+                        bạn!</div>
+                </div>
+
+                <!-- Load history from server -->
+                <th:block th:if="${chatHistory != null and !chatHistory.isEmpty()}">
+                    <div class="history-divider">📜 Lịch sử trò chuyện</div>
+                    <th:block th:each="msg : ${chatHistory}">
+                        <div class="message user">
+                            <div class="message-avatar">👤</div>
+                            <div class="message-content" th:text="${msg.userMessage}"></div>
+                        </div>
+                        <div class="message ai">
+                            <div class="message-avatar">🤖</div>
+                            <div class="message-content" th:text="${msg.aiResponse}"></div>
+                        </div>
+                    </th:block>
+                </th:block>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message ai">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="suggestions">
+                <p>💡 Gợi ý câu hỏi:</p>
+                <div class="suggestion-chips">
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Phòng cho cặp đôi, lãng mạn</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Gia đình 4 người, giá hợp lý</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Phòng VIP sang trọng nhất</span>
+                    <span class="suggestion-chip" onclick="useSuggestion(this)">Đi công tác, cần yên tĩnh</span>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Nhập nhu cầu của bạn..."
+                    onkeypress="if(event.key==='Enter') sendMessage()">
+                <button onclick="sendMessage()" id="sendBtn">Gửi 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Scroll to bottom on load
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        function addMessage(content, isUser) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (isUser ? 'user' : 'ai');
+            messageDiv.innerHTML = `
+            <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
+            <div class="message-content">${content.replace(/\n/g, '<br>')}</div>
+        `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function useSuggestion(chip) {
+            userInput.value = chip.textContent;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            userInput.value = '';
+            sendBtn.disabled = true;
+            typingIndicator.classList.add('show');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch('/ai-recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                typingIndicator.classList.remove('show');
+
+                if (data.error) {
+                    addMessage('❌ ' + data.error, false);
+                } else {
+                    addMessage(data.response, false);
+                }
+            } catch (error) {
+                typingIndicator.classList.remove('show');
+                addMessage('❌ Lỗi kết nối. Vui lòng thử lại.', false);
+            }
+
+            sendBtn.disabled = false;
+        }
+
+        async function clearHistory() {
+            if (!confirm('Xóa toàn bộ lịch sử chat?')) return;
+
+            try {
+                await fetch('/ai-recommend/clear', { method: 'POST' });
+                location.reload();
+            } catch (error) {
+                alert('Không thể xóa lịch sử');
+            }
+        }
+    </script>
+</body>
+
+</html>

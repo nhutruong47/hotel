@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Đánh giá của tôi - Như Hotel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: white;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-links a {
+            background: rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .reviews-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .review-card {
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .room-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .room-info img {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .room-info h3 {
+            color: #e94560;
+            margin-bottom: 5px;
+        }
+
+        .room-info p {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .review-stars {
+            color: #fbbf24;
+            font-size: 20px;
+        }
+
+        .review-content {
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .review-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .review-date {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .review-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .btn-edit {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .btn-edit:hover {
+            background: rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        .no-reviews {
+            text-align: center;
+            color: #64748b;
+            padding: 60px;
+            background: linear-gradient(145deg, #1e293b, #16213e);
+            border-radius: 16px;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        .no-reviews span {
+            font-size: 4em;
+            display: block;
+            margin-bottom: 20px;
+        }
+
+        .no-reviews p {
+            margin-bottom: 20px;
+        }
+
+        .no-reviews a {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⭐ Đánh giá của tôi</h1>
+            <div class="nav-links">
+                <a href="/my-bookings">📋 Đặt phòng</a>
+                <a href="/">🏠 Trang chủ</a>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+        <!-- No Reviews State -->
+        <div th:if="${reviews == null or reviews.isEmpty()}" class="no-reviews">
+            <span>📝</span>
+            <p>Bạn chưa có đánh giá nào</p>
+            <a href="/my-bookings">Xem đặt phòng để đánh giá</a>
+        </div>
+
+        <!-- Reviews Grid -->
+        <div th:if="${reviews != null and !reviews.isEmpty()}" class="reviews-grid">
+            <div th:each="review : ${reviews}" class="review-card">
+                <div class="review-header">
+                    <div class="room-info">
+                        <img th:src="${review.room.imageUrl != null ? review.room.imageUrl : 'https://via.placeholder.com/80x60'}"
+                            alt="Room">
+                        <div>
+                            <h3 th:text="'Phòng ' + ${review.room.roomNumber}">Phòng 101</h3>
+                            <p th:text="${review.room.roomType.displayName}">Deluxe</p>
+                        </div>
+                    </div>
+                    <div class="review-stars" th:text="${review.starsDisplay}">★★★★☆</div>
+                </div>
+
+                <div th:if="${review.comment != null and !review.comment.isEmpty()}" class="review-content">
+                    <p th:text="${review.comment}">Nhận xét...</p>
+                </div>
+
+                <div class="review-footer">
+                    <span class="review-date"
+                        th:text="'Đánh giá ngày ' + ${#temporals.format(review.createdAt, 'dd/MM/yyyy')}">
+                        Đánh giá ngày 01/01/2024
+                    </span>
+                    <div class="review-actions">
+                        <a th:href="@{/booking/{id}/review(id=${review.booking.id})}" class="btn btn-edit">
+                            ✏️ Sửa
+                        </a>
+                        <form th:action="@{/review/{id}/delete(id=${review.id})}" method="post" style="display: inline;"
+                            onsubmit="return confirm('Bạn có chắc muốn xóa đánh giá này?')">
+                            <button type="submit" class="btn btn-delete">🗑️ Xóa</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
