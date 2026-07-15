@@ -1,43 +1,33 @@
-# IDEs and Editors
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Log files
-*.log
-logs/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Node / Frontend
+# Node
 node_modules/
 dist/
 build/
-.next/
-out/
-.eslintcache
 
-# Java / Spring Boot
+# Java
 target/
 *.class
 *.jar
-*.war
-.gradle/
 
-# Temporary / Backup / Testing files
-temp_ui_backup/
-Copy/
-diff_output.txt
-gemini_test.json
-test_gemini.js
+# Python
+venv/
+.venv/
 __pycache__/
 *.pyc
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+compile.log*
+compile_output*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
