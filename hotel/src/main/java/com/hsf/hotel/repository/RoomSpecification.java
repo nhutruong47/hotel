@@ -1,6 +1,7 @@
 package com.hsf.hotel.repository;
 
 import com.hsf.hotel.model.Booking;
+import com.hsf.hotel.model.BookingStatus;
 import com.hsf.hotel.model.Room;
 import com.hsf.hotel.model.RoomTypeEntity;
 import jakarta.persistence.criteria.*;
@@ -54,16 +55,7 @@ public class RoomSpecification {
     public static Specification<Room> hasAmenities(List<String> amenities) {
         return (root, query, cb) -> {
             if (amenities == null || amenities.isEmpty()) return null;
-            
-            // To require ALL amenities, we can use a subquery or repeated joins.
-            // A simpler approach in Criteria for "has all these amenities":
-            Predicate[] predicates = new Predicate[amenities.size()];
-            for (int i = 0; i < amenities.size(); i++) {
-                Join<Object, Object> amenityJoin = root.join("amenities");
-                predicates[i] = cb.equal(amenityJoin.get("name"), amenities.get(i));
-            }
-            // For requiring all, multiple joins can lead to cross joins.
-            // Alternative: Count matching amenities.
+
             Subquery<Long> subquery = query.subquery(Long.class);
             Root<Room> subRoot = subquery.from(Room.class);
             Join<Object, Object> subAmenityJoin = subRoot.join("amenities");
@@ -80,19 +72,19 @@ public class RoomSpecification {
         return (root, query, cb) -> {
             if (checkIn == null || checkOut == null) return null;
 
-            Subquery<Long> subquery = query.subquery(Long.class);
+            Subquery<Integer> subquery = query.subquery(Integer.class);
             Root<Booking> bookingRoot = subquery.from(Booking.class);
-            subquery.select(cb.count(bookingRoot.get("id")));
+            subquery.select(cb.literal(1));
 
             subquery.where(
                 cb.equal(bookingRoot.get("room").get("id"), root.get("id")),
-                bookingRoot.get("status").in(List.of("PENDING_PAYMENT", "PAID",
-                        "CHECKED_IN", "CHECKED_OUT", "COMPLETED")),
+                bookingRoot.get("status").in(List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.PAID,
+                        BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT, BookingStatus.COMPLETED)),
                 cb.lessThan(bookingRoot.get("checkInDate"), checkOut),
                 cb.greaterThan(bookingRoot.get("checkOutDate"), checkIn)
             );
 
-            return cb.equal(subquery, 0L);
+            return cb.not(cb.exists(subquery));
         };
     }
 
