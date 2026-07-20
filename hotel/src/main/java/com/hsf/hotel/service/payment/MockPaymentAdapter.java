@@ -2,12 +2,14 @@ package com.hsf.hotel.service.payment;
 
 import com.hsf.hotel.model.Booking;
 import com.hsf.hotel.model.Payment;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
 @Component
+@ConditionalOnProperty(name = "stripe.enabled", havingValue = "false", matchIfMissing = true)
 public class MockPaymentAdapter implements PaymentGateway {
 
     @Override

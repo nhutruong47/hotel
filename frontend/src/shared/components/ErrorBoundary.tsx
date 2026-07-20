@@ -57,10 +57,10 @@ function DefaultErrorFallback({ onReload }: { onReload: () => void }) {
                 <h1 className="mt-4 text-3xl font-light text-brand-charcoal">
                     We couldn't load this page.
                 </h1>
-                <p 
-                  className="mt-4 text-sm leading-7 text-brand-ink/64" 
-                  dangerouslySetInnerHTML={{ __html: 'Refresh to try again. If the problem keeps happening, contact <span class="text-brand-forest">reservations@nhuvillas.com</span>.' }} 
-                />
+                <p className="mt-4 text-sm leading-7 text-brand-ink/64">
+                  Refresh to try again. If the problem keeps happening, contact{' '}
+                  <span className="text-brand-forest">reservations@nhuvillas.com</span>.
+                </p>
                 <button
                     type="button"
                     onClick={onReload}

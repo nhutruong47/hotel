@@ -13,6 +13,10 @@ import java.util.Optional;
 public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
     Optional<Voucher> findByCodeIgnoreCase(String code);
 
+    default Optional<Voucher> findByCode(String code) {
+        return findByCodeIgnoreCase(code);
+    }
+
     /**
      * Atomically decrement {@code quantity} if and only if at least one unit
      * remains. Returns the number of rows actually updated so callers can

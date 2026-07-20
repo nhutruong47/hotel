@@ -59,7 +59,9 @@ public class UserApi {
                                                       HttpSession session,
                                                       HttpServletRequest request) {
         User user = requireUser(session);
-        boolean ok = userService.updateUser(user.getUsername(), req.getNewPassword());
+        boolean ok = req.isConfirmed()
+                && userService.updateUser(user.getUsername(), req.getCurrentPassword(),
+                req.getNewPassword(), req.getConfirmPassword());
         if (!ok) {
             auditLogService.log(user, AuditActions.PASSWORD_CHANGE, "User", user.getId(),
                     "password update failed", request);
@@ -144,9 +146,9 @@ public class UserApi {
         if (currentUser.getId().equals(id)) {
             throw new BusinessRuleException("SELF_DELETE", "Không thể xóa chính mình!");
         }
-        userRepository.deleteById(id);
+        userService.disableUser(id, "Disabled by admin delete action", currentUser);
         auditLogService.log(currentUser, AuditActions.ADMIN_USER_DELETE, "User", id,
-                "user deleted", request);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Xóa user thành công")));
+                "user disabled by delete action", request);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã vô hiệu hóa user")));
     }
 }

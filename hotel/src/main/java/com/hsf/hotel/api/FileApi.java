@@ -11,9 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -32,17 +30,13 @@ public class FileApi {
         if (file == null) {
             return ResponseEntity.notFound().build();
         }
-        MediaType mediaType;
-        try {
-            Path path = Path.of(file.getURI());
-            mediaType = MediaType.parseMediaType(Files.probeContentType(path));
-        } catch (IOException | IllegalArgumentException ex) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
+        String safeName = file.getFilename() != null ? file.getFilename().replace("\"", "") : "file";
+        String lower = safeName.toLowerCase(Locale.ROOT);
+        MediaType mediaType = lower.endsWith(".png") ? MediaType.IMAGE_PNG : MediaType.IMAGE_JPEG;
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePrivate())
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeName + "\"")
                 .header("X-Content-Type-Options", "nosniff")
                 .body(file);
     }

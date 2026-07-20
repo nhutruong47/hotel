@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import { AccountDashboardPage } from '../../features/account/AccountDashboardPage';
 
 export default function AccountIndexPage() {
-  redirect('/account/bookings');
+  return <AccountDashboardPage />;
 }

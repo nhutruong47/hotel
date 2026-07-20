@@ -1,10 +1,13 @@
 package com.hsf.hotel.config;
 
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.filter.ShallowEtagHeaderFilter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+import jakarta.servlet.Filter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -20,18 +23,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
                     .addResourceLocations("file:" + frontendDist.toString() + "/")
                     .setCachePeriod(0);
         }
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:./uploads/")
-                .setCachePeriod(3600);
     }
 
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         // No Thymeleaf views. All page routes handled by React Router via SPA fallback below.
     }
-
-    @Override
-    public void addInterceptors(org.springframework.web.servlet.config.annotation.InterceptorRegistry registry) {
-        registry.addInterceptor(new RateLimiterInterceptor()).addPathPatterns("/api/**");
+    @Bean
+    public Filter shallowEtagHeaderFilter() {
+        return new ShallowEtagHeaderFilter();
     }
+
 }

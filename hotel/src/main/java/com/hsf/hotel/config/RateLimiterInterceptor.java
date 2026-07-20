@@ -13,12 +13,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Per-IP token-bucket rate limiter for the {@code /api/**} tree. The default
  * budget of 60 requests/minute applies to most endpoints; higher-traffic
- * public reads (rooms, blogs, info) are excluded so a single crawler cannot
+ * public reads (rooms, blogs) are excluded so a single crawler cannot
  * starve a real user.
  *
  * <p>Security headers that previously lived here were moved to
@@ -38,7 +37,7 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
 
     private static final Map<String, Integer> MAX_REQUESTS_OVERRIDE = Map.of();
     private static final java.util.Set<String> SKIP_PATHS = java.util.Set.of(
-            "/api/v1/health", "/api/v1/info", "/actuator/health", "/actuator/info"
+            "/api/v1/health", "/actuator/health", "/actuator/info"
     );
     private static final java.util.Set<String> STRICT_PREFIXES = java.util.Set.of(
             "/api/v1/auth/login",

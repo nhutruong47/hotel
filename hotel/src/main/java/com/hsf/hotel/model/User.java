@@ -25,11 +25,16 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @JsonIgnore
     private String fullName;
+    @Column(unique = true)
+    @JsonIgnore
     private String email;
+    @JsonIgnore
     private String role = "USER";
 
     // Email verification fields
+    @JsonIgnore
     private Boolean emailVerified = false;
 
     @JsonIgnore
@@ -49,9 +54,13 @@ public class User {
     private String avatarFilename;
 
     // Extended profile fields (all optional)
+    @JsonIgnore
     private String phone;
+    @JsonIgnore
     private String dateOfBirth;
+    @JsonIgnore
     private String gender;
+    @JsonIgnore
     private String nationality;
 
     // Emergency contact (required for luxury stays)
@@ -75,7 +84,9 @@ public class User {
     @JsonIgnore
     private String address;
 
+    @JsonIgnore
     private String city;
+    @JsonIgnore
     private String country;
 
     @JsonIgnore
@@ -98,10 +109,13 @@ public class User {
      * existing rows are unaffected by the column being added mid-life.
      */
     @Column(nullable = false)
+    @JsonIgnore
     private Boolean disabled = false;
 
+    @JsonIgnore
     private LocalDateTime disabledAt;
 
+    @JsonIgnore
     private String disabledReason;
 
     /**
@@ -111,6 +125,7 @@ public class User {
      * not require a schema migration.
      */
     @Column(columnDefinition = "TEXT")
+    @JsonIgnore
     private String preferencesJson;
 
     // --- Getters and Setters ---
@@ -120,12 +135,14 @@ public class User {
     public void setUsername(String username) { this.username = username; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    public void setPasswordHash(String passwordHash) { this.password = passwordHash; }
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public void setRole(UserRole role) { this.role = role != null ? role.name() : null; }
     public Boolean getEmailVerified() { return emailVerified; }
     public void setEmailVerified(Boolean emailVerified) { this.emailVerified = emailVerified; }
     public String getVerificationToken() { return verificationToken; }

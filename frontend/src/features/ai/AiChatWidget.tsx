@@ -109,7 +109,14 @@ export const AiChatWidget = () => {
                 <div className="flex items-center justify-center h-full text-brand-ink/40">{t('common.loadingHistory')}</div>
               ) : historyQuery.data?.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-brand-ink/60 text-center">
-                  <p dangerouslySetInnerHTML={{ __html: t('common.aiGreeting') }}></p>
+                  <p>
+                    {t('common.aiGreeting').split('<br/>').map((line, index) => (
+                      <span key={`${index}-${line}`}>
+                        {index > 0 ? <br /> : null}
+                        {line}
+                      </span>
+                    ))}
+                  </p>
                 </div>
               ) : (
                 historyQuery.data?.map((msg, index) => (

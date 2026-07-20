@@ -72,11 +72,16 @@ export function useTextReveal(ref: RefObject<HTMLElement | null>) {
     const el = ref.current
     const text = el.textContent || ''
 
-    // Split text into spans
-    el.innerHTML = text
-      .split('')
-      .map((char) => `<span class="inline-block" style="opacity:0;transform:translateY(20px)">${char === ' ' ? '&nbsp;' : char}</span>`)
-      .join('')
+    // Split text into spans without parsing HTML.
+    el.textContent = ''
+    text.split('').forEach((char) => {
+      const span = document.createElement('span')
+      span.className = 'inline-block'
+      span.style.opacity = '0'
+      span.style.transform = 'translateY(20px)'
+      span.textContent = char === ' ' ? '\u00a0' : char
+      el.appendChild(span)
+    })
 
     const chars = el.querySelectorAll('span')
 

@@ -108,10 +108,15 @@ public class UserService {
 
     @Transactional
     public void resendVerificationEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Account", email));
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            log.info("Verification resend requested for unknown email");
+            return;
+        }
+        User user = userOpt.get();
         if (Boolean.TRUE.equals(user.getEmailVerified())) {
-            throw new BusinessRuleException(ErrorCodes.ALREADY_VERIFIED, "Email đã được xác thực");
+            log.info("Verification resend requested for already verified email");
+            return;
         }
         String rawToken = TokenHasher.generateToken(24);
         user.setVerificationToken(TokenHasher.hash(rawToken));
@@ -138,7 +143,8 @@ public class UserService {
             return Optional.empty();
         }
         if (!Boolean.TRUE.equals(userOpt.get().getEmailVerified())) {
-            log.info("User {} signed in with unverified email", username);
+            log.info("User {} attempted to sign in with unverified email", username);
+            return Optional.empty();
         }
         return userOpt;
     }
@@ -207,6 +213,25 @@ public class UserService {
             return false;
         }
         User user = userOpt.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return true;
+    }
+
+    @Transactional
+    public boolean updateUser(String username, String currentPassword, String newPassword, String confirmPassword) {
+        Optional<User> userOpt = userRepository.findByUsername(username);
+        if (userOpt.isEmpty()
+                || currentPassword == null
+                || newPassword == null
+                || !newPassword.equals(confirmPassword)
+                || newPassword.length() < MIN_PASSWORD_LENGTH) {
+            return false;
+        }
+        User user = userOpt.get();
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            return false;
+        }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         return true;

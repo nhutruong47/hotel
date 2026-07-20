@@ -29,6 +29,9 @@ public class Voucher {
     @Column(nullable = false)
     private Integer quantity = 1; // remaining uses
 
+    @Transient
+    private Integer usedCount = 0;
+
     // If true, 'amount' is treated as percentage (0-100); otherwise 'amount' is fixed currency
     @Column(name = "is_percent", nullable = false)
     private Boolean percent = false;
@@ -74,6 +77,14 @@ public class Voucher {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public Integer getUsedCount() {
+        return usedCount;
+    }
+
+    public void setUsedCount(Integer usedCount) {
+        this.usedCount = usedCount;
     }
 
     public Boolean getPercent() {

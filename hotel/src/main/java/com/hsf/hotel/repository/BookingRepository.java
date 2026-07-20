@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
+import com.hsf.hotel.dto.RoomStatsDto;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
@@ -34,6 +35,12 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         // Admin queries
         @EntityGraph(attributePaths = {"user", "room"})
         List<Booking> findAllByOrderByCreatedAtDesc();
+
+        @EntityGraph(attributePaths = {"user", "room"})
+        org.springframework.data.domain.Page<Booking> findAll(org.springframework.data.domain.Pageable pageable);
+
+        @EntityGraph(attributePaths = {"user", "room"})
+        org.springframework.data.domain.Page<Booking> findByStatus(BookingStatus status, org.springframework.data.domain.Pageable pageable);
 
         List<Booking> findByCheckInDate(LocalDate checkInDate);
 
@@ -92,11 +99,11 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
         List<Booking> findAllByCheckInDateBetween(LocalDate startDate, LocalDate endDate);
 
-        @Query("SELECT b.room, COUNT(b.room) as booking_count FROM Booking b GROUP BY b.room ORDER BY booking_count DESC")
-        List<Object[]> findMostBookedRooms();
+        @Query("SELECT b.room.id as roomId, b.room.roomNumber as roomNumber, COUNT(b.room) as totalBookings FROM Booking b GROUP BY b.room.id, b.room.roomNumber ORDER BY totalBookings DESC")
+        List<RoomStatsDto> findMostBookedRooms();
 
-        @Query("SELECT b.room, AVG(r.rating) as average_rating FROM Booking b JOIN Review r ON b.id = r.booking.id GROUP BY b.room ORDER BY average_rating DESC")
-        List<Object[]> findMostratingRooms();
+        @Query("SELECT b.room.id as roomId, b.room.roomNumber as roomNumber, AVG(r.rating) as averageRating FROM Booking b JOIN Review r ON b.id = r.booking.id GROUP BY b.room.id, b.room.roomNumber ORDER BY averageRating DESC")
+        List<RoomStatsDto> findMostratingRooms();
 
         List<Booking> findAllByRoomId(Integer roomId);
 

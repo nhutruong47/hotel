@@ -53,7 +53,7 @@ export const BookingSuccessPage = () => {
   useEffect(() => {
     const id = initialBooking?.bookingId;
     if (!id) return;
-    api.get<BookingDetail>(API_PATHS.booking(id))
+    api.get<BookingDetail>(API_PATHS.bookings.booking(id))
       .then((data) => setBookingDetail(data as BookingDetail))
       .catch(() => {
         // best-effort only; UI works even if backend is unreachable
@@ -147,26 +147,6 @@ export const BookingSuccessPage = () => {
                   className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-forest px-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-60"
                 >
                   {paymentMutation.isPending ? t('booking.sendingPayment') : t('booking.notifyPayment')}
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setPaymentMsg(null);
-                    try {
-                      await api.post<{ message: string }>(API_PATHS.bookingSubmitPayment(initialBooking.bookingId), {
-                        transactionRef: 'MOCK-PAY-' + Date.now(),
-                        amount: initialBooking.total,
-                        paymentMethod: 'CARD'
-                      });
-                      setPaymentMsg(t('booking.simulatedPaymentSuccess'));
-                      setBookingDetail(prev => prev ? { ...prev, status: 'PAID', paymentStatus: 'PAID', paidAmount: initialBooking.total } : null);
-                    } catch (err: any) {
-                      setPaymentMsg(err.message || t('errors.somethingWentWrong'));
-                    }
-                  }}
-                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-sage/20 border border-brand-sage px-5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-charcoal hover:bg-brand-sage/40 transition"
-                >
-                  {t('booking.simulatePayment')}
                 </button>
                 {paymentMsg ? <span className="self-center w-full text-xs text-brand-forest mt-2">{paymentMsg}</span> : null}
               </div>

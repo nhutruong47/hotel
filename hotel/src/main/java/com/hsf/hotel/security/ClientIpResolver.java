@@ -22,14 +22,14 @@ public final class ClientIpResolver {
      * to defeat header injection.
      */
     public static String resolve(HttpServletRequest request) {
+        String remote = request.getRemoteAddr();
         String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
+        if (isTrustedProxy(remote) && forwarded != null && !forwarded.isBlank()) {
             String first = forwarded.split(",", 2)[0].trim();
             if (isValidIp(first)) {
                 return first;
             }
         }
-        String remote = request.getRemoteAddr();
         return remote == null ? "unknown" : remote;
     }
 
@@ -52,5 +52,35 @@ public final class ClientIpResolver {
     public static boolean isLocal(HttpServletRequest request) {
         String ip = resolve(request);
         return LOCAL_FALLBACKS.contains(ip);
+    }
+
+    private static boolean isTrustedProxy(String remote) {
+        if (remote == null || remote.isBlank()) {
+            return false;
+        }
+        if (LOCAL_FALLBACKS.contains(remote)) {
+            return true;
+        }
+        return remote.startsWith("10.")
+                || remote.startsWith("192.168.")
+                || is172Private(remote)
+                || remote.startsWith("fc")
+                || remote.startsWith("fd");
+    }
+
+    private static boolean is172Private(String remote) {
+        if (!remote.startsWith("172.")) {
+            return false;
+        }
+        String[] parts = remote.split("\\.");
+        if (parts.length < 2) {
+            return false;
+        }
+        try {
+            int second = Integer.parseInt(parts[1]);
+            return second >= 16 && second <= 31;
+        } catch (NumberFormatException ex) {
+            return false;
+        }
     }
 }

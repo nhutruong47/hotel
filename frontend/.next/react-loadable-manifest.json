@@ -14,7 +14,7 @@
   "features\\home\\HomePage.tsx -> ../villas/villasApi": {
     "id": 7243,
     "files": [
-      "static/chunks/7243.0e1c2a679b945f99.js"
+      "static/chunks/7243.5787cd82b74ddb67.js"
     ]
   },
   "features\\villas\\VillaDetailPage.tsx -> ./components/InteractiveMap": {

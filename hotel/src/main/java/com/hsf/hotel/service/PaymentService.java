@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.hsf.hotel.service.payment.PaymentGateway;
+import com.hsf.hotel.service.payment.StripePaymentAdapter;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
@@ -32,24 +33,30 @@ public class PaymentService {
     private final BookingStatusTransitionRepository transitionRepository;
     private final PaymentGateway paymentGateway;
     private final EmailService emailService;
-    private final String adminEmail;
+    @Value("${app.admin.email:admin@hotel.com}")
+    private String adminEmail = "admin@hotel.com";
 
     public PaymentService(PaymentRepository paymentRepository,
                           BookingRepository bookingRepository,
                           BookingStatusTransitionRepository transitionRepository,
                           PaymentGateway paymentGateway,
-                          EmailService emailService,
-                          @Value("${app.admin.email:admin@hotel.com}") String adminEmail) {
+                          EmailService emailService) {
         this.paymentRepository = paymentRepository;
         this.bookingRepository = bookingRepository;
         this.transitionRepository = transitionRepository;
         this.paymentGateway = paymentGateway;
         this.emailService = emailService;
-        this.adminEmail = adminEmail;
     }
 
     @Transactional
     public Payment createPaymentIntent(Booking booking, Payment.PaymentMethod method) {
+        return createPaymentIntentWithClientSecret(booking, method).payment();
+    }
+
+    public record PaymentIntentResult(Payment payment, String clientSecret) {}
+
+    @Transactional
+    public PaymentIntentResult createPaymentIntentWithClientSecret(Booking booking, Payment.PaymentMethod method) {
         if (booking == null) {
             throw new BusinessRuleException("INVALID_BOOKING", "Booking is required");
         }
@@ -58,18 +65,26 @@ public class PaymentService {
         }
 
         BigDecimal amount = booking.getTotalPrice();
-        String intentId = paymentGateway.createIntent(booking, amount, "VND");
+        String intentId;
+        String clientSecret = null;
+        if (paymentGateway instanceof StripePaymentAdapter stripeGateway) {
+            StripePaymentAdapter.IntentDetails details = stripeGateway.createIntentDetails(booking, amount, "VND");
+            intentId = details.intentId();
+            clientSecret = details.clientSecret();
+        } else {
+            intentId = paymentGateway.createIntent(booking, amount, "VND");
+        }
 
         Payment payment = new Payment(booking, amount, method, Payment.PaymentStatus.PENDING, generateRef());
         payment.setCurrency("VND");
-        payment.setGateway(Payment.PaymentGateway.MOCK);
+        payment.setGateway(clientSecret != null ? Payment.PaymentGateway.STRIPE : Payment.PaymentGateway.MOCK);
         payment.setIntentId(intentId);
         payment.setCreatedAt(LocalDateTime.now());
         
         Payment saved = paymentRepository.save(payment);
         log.info("Payment intent {} created for booking {} amount={}",
                 intentId, booking.getId(), amount);
-        return saved;
+        return new PaymentIntentResult(saved, clientSecret);
     }
 
     @Transactional
@@ -93,8 +108,6 @@ public class PaymentService {
         if ("succeeded".equalsIgnoreCase(status)) {
             payment.setStatus(Payment.PaymentStatus.PAID);
             payment.setCompletedAt(LocalDateTime.now());
-            recordPaymentTransition(payment, "Webhook reported success for intent "
-                    + intentId);
             // Delegate to BookingService.confirmPayment so the booking gets the
             // proper BookingStatusTransition row + email notification. We
             // pass null for amount because the booking already carries the

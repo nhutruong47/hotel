@@ -1,6 +1,7 @@
 package com.hsf.hotel.config;
 
 import com.hsf.hotel.model.User;
+import com.hsf.hotel.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,6 +48,11 @@ public class SessionAuthBridgeFilter extends OncePerRequestFilter {
             SecurityContextHolder.getContextHolderStrategy();
     private final SecurityContextRepository contextRepository =
             new HttpSessionSecurityContextRepository();
+    private final UserRepository userRepository;
+
+    public SessionAuthBridgeFilter(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -55,11 +61,23 @@ public class SessionAuthBridgeFilter extends OncePerRequestFilter {
         if (session != null) {
             Object u = session.getAttribute("user");
             if (u instanceof User user) {
-                List<SimpleGrantedAuthority> authorities = "ADMIN".equals(user.getRole())
+                User current = user.getId() != null
+                        ? userRepository.findById(user.getId()).orElse(null)
+                        : userRepository.findByUsername(user.getUsername()).orElse(null);
+                if (current == null || Boolean.TRUE.equals(current.getDisabled())) {
+                    session.invalidate();
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write(
+                            "{\"data\":null,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Session is no longer valid\"}}");
+                    return;
+                }
+                session.setAttribute("user", current);
+                List<SimpleGrantedAuthority> authorities = "ADMIN".equals(current.getRole())
                         ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"))
                         : List.of(new SimpleGrantedAuthority("ROLE_USER"));
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(user.getUsername(), null, authorities);
+                        new UsernamePasswordAuthenticationToken(current.getUsername(), null, authorities);
                 SecurityContext context = holderStrategy.createEmptyContext();
                 context.setAuthentication(auth);
                 holderStrategy.setContext(context);

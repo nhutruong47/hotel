@@ -10,16 +10,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
  * Lightweight CSRF defence for cookie-authenticated state-changing requests.
  *
- * <p>For every request the filter ensures a non-readable-by-JS cookie
- * {@code XSRF-TOKEN} is present. State-changing requests (anything other
- * than {@code GET}, {@code HEAD}, {@code OPTIONS}) are required to echo the
- * same value in either a request header ({@code X-XSRF-TOKEN}) or form
- * parameter ({@code _csrf}). Comparison is constant-time.
+ * <p>For every request the filter ensures a JS-readable cookie {@code XSRF-TOKEN}
+ * is present. State-changing requests (anything other than {@code GET},
+ * {@code HEAD}, {@code OPTIONS}) are required to echo the same value in either
+ * a request header ({@code X-XSRF-TOKEN}) or form parameter ({@code _csrf}).
+ * Comparison is constant-time.
  *
  * <p>This deliberately avoids the Spring Security CSRF repository so the
  * existing session-bridge filter keeps working untouched.
@@ -48,7 +50,7 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         boolean secure = request.isSecure();
-        Cookie csrfCookie = ensureCookie(request, response, secure);
+        List<Cookie> csrfCookies = ensureCookie(request, response, secure);
 
         if (SAFE_METHODS.contains(request.getMethod().toUpperCase()) || isExempt(request.getRequestURI())) {
             chain.doFilter(request, response);
@@ -60,7 +62,7 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
             supplied = request.getParameter(PARAM_NAME);
         }
 
-        if (supplied == null || !constantTimeEquals(supplied, csrfCookie.value)) {
+        if (supplied == null || !matchesAnyCookie(supplied, csrfCookies)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("application/json;charset=UTF-8");
             response.getWriter().write(
@@ -75,14 +77,14 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
     private boolean isExempt(String path) {
         if (path == null) return false;
         for (String exempt : CSRF_EXEMPT_PATHS) {
-            if (path.startsWith(exempt)) return true;
+            if (path.equals(exempt) || path.startsWith(exempt + "/")) return true;
         }
         return false;
     }
 
-    private Cookie ensureCookie(HttpServletRequest request, HttpServletResponse response, boolean secure) {
-        Cookie existing = readCookie(request);
-        if (existing != null) {
+    private List<Cookie> ensureCookie(HttpServletRequest request, HttpServletResponse response, boolean secure) {
+        List<Cookie> existing = readCookies(request);
+        if (!existing.isEmpty()) {
             return existing;
         }
         String token = TokenHasher.generateToken(24);
@@ -92,17 +94,28 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
                         + "; Path=/; HttpOnly=false; SameSite=Strict"
                         + (secure ? "; Secure" : "")
                         + "; Max-Age=86400");
-        return cookie;
+        return List.of(cookie);
     }
 
-    private Cookie readCookie(HttpServletRequest request) {
-        if (request.getCookies() == null) return null;
+    private List<Cookie> readCookies(HttpServletRequest request) {
+        if (request.getCookies() == null) return List.of();
+        List<Cookie> found = new ArrayList<>();
         for (jakarta.servlet.http.Cookie c : request.getCookies()) {
-            if (COOKIE_NAME.equals(c.getName())) {
-                return new Cookie(c.getValue());
+            if (COOKIE_NAME.equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                found.add(new Cookie(c.getValue()));
             }
         }
-        return null;
+        return found;
+    }
+
+    private static boolean matchesAnyCookie(String supplied, List<Cookie> cookies) {
+        if (supplied == null || cookies == null || cookies.isEmpty()) return false;
+        for (Cookie cookie : cookies) {
+            if (constantTimeEquals(supplied, cookie.value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean constantTimeEquals(String a, String b) {

@@ -4,6 +4,8 @@ import com.hsf.hotel.model.Promotion;
 import com.hsf.hotel.model.Promotion.PromotionCategory;
 import com.hsf.hotel.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import com.hsf.hotel.exception.VoucherException;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,14 +23,17 @@ public class PromotionService {
 
     private final PromotionRepository promotionRepository;
 
+    @Cacheable(cacheNames = "promotions", key = "'active'")
     public List<Promotion> getActivePromotions() {
         return promotionRepository.findActivePromotions(LocalDate.now());
     }
 
+    @Cacheable(cacheNames = "promotions", key = "'featured'")
     public List<Promotion> getFeaturedPromotions() {
         return promotionRepository.findFeaturedPromotions(LocalDate.now());
     }
 
+    @Cacheable(cacheNames = "promotions", key = "'category_' + #category.name()")
     public List<Promotion> getPromotionsByCategory(PromotionCategory category) {
         return promotionRepository.findByCategoryAndIsActiveTrueOrderByDisplayOrderAsc(category);
     }
@@ -41,14 +46,17 @@ public class PromotionService {
         return promotionRepository.findUpcomingPromotions(LocalDate.now());
     }
 
+    @Cacheable(cacheNames = "promotions", key = "'countdown'")
     public List<Promotion> getPromotionsWithCountdown() {
         return promotionRepository.findActiveWithCountdown(LocalDateTime.now());
     }
 
+    @Cacheable(cacheNames = "promotions", key = "'all'")
     public List<Promotion> getAllPromotions() {
         return promotionRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
     }
 
+    @Cacheable(cacheNames = "promotions", key = "'grouped'")
     public Map<PromotionCategory, List<Promotion>> getPromotionsGroupedByCategory() {
         List<Promotion> promotions = getActivePromotions();
         return promotions.stream()
@@ -102,12 +110,14 @@ public class PromotionService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "promotions", allEntries = true)
     public Promotion createPromotion(Promotion promotion) {
         promotion.setCreatedAt(LocalDateTime.now());
         return promotionRepository.save(promotion);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "promotions", allEntries = true)
     public Promotion updatePromotion(Integer id, Promotion updated) {
         Promotion existing = promotionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Promotion not found"));
@@ -134,6 +144,7 @@ public class PromotionService {
         return promotionRepository.save(existing);
     }
 
+    @CacheEvict(cacheNames = "promotions", allEntries = true)
     public void deletePromotion(Integer id) {
         promotionRepository.deleteById(id);
     }

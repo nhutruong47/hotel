@@ -39,6 +39,14 @@ public class RoomService {
         return roomRepository.findByIsAvailableTrue();
     }
 
+    public long countAll() {
+        return roomRepository.count();
+    }
+
+    public long countAvailable() {
+        return roomRepository.countByIsAvailableTrue();
+    }
+
     @Transactional(readOnly = true)
     public List<Room> getRoomsByType(RoomTypeEntity roomType) {
         return roomRepository.findByRoomType(roomType);

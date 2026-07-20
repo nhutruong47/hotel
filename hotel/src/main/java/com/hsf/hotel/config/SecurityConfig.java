@@ -82,7 +82,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // CSRF is enforced by CsrfCookieFilter
                 .headers(headers -> headers
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000))
-                        .contentSecurityPolicy(csp -> {})
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                "script-src 'self' https://js.stripe.com; " +
+                                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+                                "img-src 'self' data: blob: https:; " +
+                                "font-src 'self' data: https://fonts.gstatic.com; " +
+                                "connect-src 'self' https://api.stripe.com https://m.stripe.network https://m.stripe.com https://generativelanguage.googleapis.com; " +
+                                "frame-src https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://m.stripe.com; " +
+                                "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"))
                         .frameOptions(frame -> frame.deny())
                         .referrerPolicy(referrer -> referrer.policy(
                                 org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
@@ -94,7 +102,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         // Public static resources (images, CSS, JS, uploaded files)
                         .requestMatchers("/images/**", "/assets/**", "/static/**", "/uploads/**", "/*.html", "/*.js", "/*.css", "/*.ico", "/*.png", "/*.jpg", "/*.webp", "/*.woff*").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/rooms", "/api/v1/rooms/**", "/api/v1/reviews/room/**", "/api/v1/blogs", "/api/v1/blogs/**", "/api/v1/info/**", "/api/v1/health", "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/vouchers/validate", "/api/v1/promotions/**", "/api/v1/faqs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/rooms", "/api/v1/rooms/**", "/api/v1/reviews/room/**", "/api/v1/blogs", "/api/v1/blogs/**", "/api/v1/health", "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/pricing-preview", "/api/v1/bookings/vouchers/validate", "/api/v1/promotions/**", "/api/v1/faqs/**").permitAll()
                         // Public Auth endpoints
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/verify", "/api/v1/auth/resend-verification", "/api/v1/auth/session", "/api/v1/auth/logout").permitAll()
                         // Public voucher preview/validate as POST too (used by booking page)
@@ -108,8 +116,6 @@ public class SecurityConfig {
                         // re-checked in the service layer.
                         .requestMatchers(HttpMethod.GET, "/api/v1/users").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/users/me").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasRole("ADMIN")

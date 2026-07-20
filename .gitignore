@@ -58,10 +58,12 @@ env/
 # Environment
 # =========================
 .env
+.env.*
 .env.local
 .env.development.local
 .env.production.local
 .env.test.local
+!.env.example
 
 # Cho phép commit file mẫu
 !.env.example

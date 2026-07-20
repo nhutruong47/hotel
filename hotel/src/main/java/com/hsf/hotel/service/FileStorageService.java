@@ -22,12 +22,12 @@ import java.util.UUID;
 public class FileStorageService {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".avif"
+            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".avif"
     );
 
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/gif",
-            "image/webp", "image/svg+xml", "image/avif"
+            "image/webp", "image/avif"
     );
 
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024; // 5 MB
@@ -96,7 +96,7 @@ public class FileStorageService {
     private static String pickStorageExtension(String originalExt) {
         if (originalExt == null) return "jpg";
         return switch (originalExt.toLowerCase(Locale.ROOT)) {
-            case "png", "gif", "webp", "avif" -> "png";
+            case ".png", ".gif", ".webp", ".avif" -> "png";
             default -> "jpg";
         };
     }

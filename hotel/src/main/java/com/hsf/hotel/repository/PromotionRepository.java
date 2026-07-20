@@ -26,6 +26,9 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
 
     Optional<Promotion> findByPromoCode(String promoCode);
 
+    @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND p.promoCode = :promoCode")
+    Optional<Promotion> findActiveByPromoCode(@Param("promoCode") String promoCode);
+
     @Query("SELECT p FROM Promotion p WHERE p.isActive = true AND p.promoCode IS NOT NULL AND " +
            "p.startDate <= :today AND p.endDate >= :today AND " +
            "(p.maximumUses IS NULL OR p.currentUses < p.maximumUses)")

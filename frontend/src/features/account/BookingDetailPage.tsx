@@ -66,12 +66,12 @@ export const BookingDetailPage = ({ bookingId }: { bookingId: string }) => {
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
-    queryFn: () => api.get<any>(API_PATHS.booking(bookingId)),
+    queryFn: () => api.get<any>(API_PATHS.bookings.booking(bookingId)),
   });
 
   const { data: timeline } = useQuery({
     queryKey: ['booking-timeline', bookingId],
-    queryFn: () => api.get<any[]>(API_PATHS.bookingTimeline(bookingId)),
+    queryFn: () => api.get<any[]>(API_PATHS.bookings.timeline(bookingId)),
     enabled: !!booking,
   });
 
@@ -232,7 +232,7 @@ export const BookingDetailPage = ({ bookingId }: { bookingId: string }) => {
             {booking.status !== 'CANCELLED' && booking.status !== 'EXPIRED' && (
               <div className="mt-6 border-t border-brand-stone pt-6 text-center">
                 <a 
-                  href={`/api/v1${API_PATHS.booking(booking.id)}/invoice`}
+                  href={`/api/v1${API_PATHS.bookings.booking(booking.id)}/invoice`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex h-12 w-full items-center justify-center rounded-full border border-brand-forest text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition hover:bg-brand-forest hover:text-white"

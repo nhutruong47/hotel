@@ -169,6 +169,10 @@ public class ReviewService {
         return reviewRepository.findAllOrderByCreatedAtDesc();
     }
 
+    public long countAll() {
+        return reviewRepository.count();
+    }
+
     @Transactional
     public Review replyToReview(Integer reviewId, String reply) {
         Review review = reviewRepository.findById(reviewId)

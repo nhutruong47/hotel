@@ -90,14 +90,7 @@ public class AuthApi {
         return userService.login(req.username, req.password)
                 .map(user -> {
                     loginAttemptService.loginSucceeded(key);
-                    // Rotate session id on successful login (session fixation protection).
-                    sessionStrategy.onAuthentication(
-                            new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                                    user.getUsername(), null, java.util.List.of()),
-                            request, response);
-                    // re-fetch the rotated session (may be the same object after rotation)
-                    HttpSession newSession = request.getSession(true);
-                    newSession.setAttribute("user", user);
+                    establishSession(user, request, response);
                     auditLogService.log(user, AuditActions.LOGIN_SUCCESS, "User", user.getId(),
                             "username=" + user.getUsername(), request);
                     return ResponseEntity.ok(ApiResponse.ok(publicUser(user)));
@@ -114,11 +107,14 @@ public class AuthApi {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest req,
-                                                HttpServletRequest request) {
+                                                HttpServletRequest request,
+                                                HttpServletResponse response) {
         User saved = userService.registerUser(req.username, req.password, req.email, req.fullName);
+        establishSession(saved, request, response);
         auditLogService.log(saved, AuditActions.REGISTER, "User", saved.getId(),
                 "username=" + saved.getUsername(), request);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "user", publicUser(saved),
                 "message", "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản."
         )));
     }
@@ -163,7 +159,6 @@ public class AuthApi {
     public ResponseEntity<ApiResponse> session(HttpServletRequest request) {
         Map<String, Object> out = new LinkedHashMap<>();
         HttpSession session = request.getSession(false);
-        out.put("sessionId", session != null ? session.getId() : null);
 
         Map<String, Object> user = null;
         if (session != null && session.getAttribute("user") instanceof User u) {
@@ -212,5 +207,15 @@ public class AuthApi {
 
     private static Map<String, Object> publicUser(User u) {
         return UserSummaryDTO.from(u).asMap();
+    }
+
+    private void establishSession(User user, HttpServletRequest request, HttpServletResponse response) {
+        // Rotate session id when an unauthenticated visitor becomes signed in.
+        sessionStrategy.onAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        user.getUsername(), null, java.util.List.of()),
+                request, response);
+        HttpSession newSession = request.getSession(true);
+        newSession.setAttribute("user", user);
     }
 }

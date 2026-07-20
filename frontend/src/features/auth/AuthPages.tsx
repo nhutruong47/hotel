@@ -10,6 +10,7 @@ import { useTranslation } from '../../shared/i18n/hooks';
 
 type SessionResponse = { user: SessionUser | null };
 type AuthResponse = SessionUser;
+type RegisterResponse = { message: string; user: SessionUser };
 
 /* ============================================================
    Shared editorial shell.
@@ -387,37 +388,24 @@ export const RegisterPage = () => {
   const usernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(username);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  const mutation = useMutation<{ message: string; user: SessionUser | null }, ApiError, void>({
+  const mutation = useMutation<RegisterResponse, ApiError, void>({
     mutationFn: async () => {
-      const res = await api.post<{ message: string }>(API_PATHS.auth.register, {
+      return api.post<RegisterResponse>(API_PATHS.auth.register, {
         username: username.trim(),
         email: email.trim(),
         password,
         fullName: fullName.trim(),
       });
-      let user = null;
-      try {
-        const loginRes = await api.post<AuthResponse>(API_PATHS.auth.login, {
-          username: username.trim(),
-          password,
-        });
-        user = loginRes;
-      } catch (e) {
-        // Ignore automatic login error, fallback to login page
-      }
-      return { message: res.message, user };
     },
     onSuccess: async (data) => {
       setSuccessMsg(data.message);
-      if (data.user) {
-        try {
-          window.sessionStorage.setItem('nhu.session', JSON.stringify(data.user));
-        } catch {}
-        await refresh();
-        setTimeout(() => router.push(redirectTo ? redirectTo : '/profile'), 1600);
-      } else {
-        setTimeout(() => router.push(`/login${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`), 1600);
+      try {
+        window.sessionStorage.setItem('nhu.session', JSON.stringify(data.user));
+      } catch {
+        /* sessionStorage unavailable */
       }
+      await refresh();
+      router.replace(redirectTo ? redirectTo : '/profile');
     },
     onError: (err) => setErrorMsg(err.message || t('errors.somethingWentWrong')),
   });
@@ -544,7 +532,7 @@ export const RegisterPage = () => {
             onChange={(e) => setAcceptTerms(e.target.checked)}
             className="mt-0.5 h-4 w-4 rounded border-brand-stone text-brand-forest focus:ring-brand-sage/40"
           />
-          <span dangerouslySetInnerHTML={{ __html: t('auth.termsText') }} />
+          <span>{t('auth.termsText').replace(/<[^>]+>/g, '')}</span>
         </label>
         {errorMsg ? (
           <p className="rounded-2xl border border-brand-coral/30 bg-brand-coral/10 px-4 py-3 text-sm text-brand-ink" role="alert">

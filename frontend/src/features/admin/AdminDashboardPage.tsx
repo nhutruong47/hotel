@@ -3,6 +3,14 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, API_PATHS, ApiError } from '../../shared/api/client';
+import {
+  AnalyticsPanel,
+  AuditLogsPanel,
+  CatalogPanel,
+  ContactsPanel,
+  PromotionsPanel,
+  ReviewsModerationPanel,
+} from './AdminExtendedPanels';
 
 type AdminDashboard = {
   totalRooms: number;
@@ -69,9 +77,12 @@ type AdminUser = {
   fullName: string;
   role: string;
   emailVerified?: boolean;
+  disabled?: boolean;
+  disabledReason?: string;
+  createdAt?: string;
 };
 
-type BookingAction = 'approve' | 'reject' | 'complete' | 'cancel';
+type BookingAction = 'approve' | 'reject' | 'complete' | 'cancel' | 'checkin' | 'checkout';
 
 function formatVnd(value: number | string | undefined): string {
   if (value == null) return '—';
@@ -84,7 +95,13 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'bookings', label: 'Bookings' },
   { id: 'rooms', label: 'Rooms' },
+  { id: 'catalog', label: 'Catalog' },
   { id: 'vouchers', label: 'Vouchers' },
+  { id: 'promotions', label: 'Promotions' },
+  { id: 'reviews', label: 'Reviews' },
+  { id: 'contacts', label: 'Contacts' },
+  { id: 'analytics', label: 'Analytics' },
+  { id: 'audit', label: 'Audit' },
   { id: 'users', label: 'Users' },
 ] as const;
 
@@ -92,12 +109,14 @@ type TabId = (typeof TABS)[number]['id'];
 
 const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: 'All' },
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'AWAITING_PAYMENT', label: 'Awaiting' },
-  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'PENDING_PAYMENT', label: 'Pending Payment' },
+  { value: 'PAID', label: 'Paid' },
+  { value: 'CHECKED_IN', label: 'Checked In' },
+  { value: 'CHECKED_OUT', label: 'Checked Out' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'REJECTED', label: 'Rejected' },
+  { value: 'EXPIRED', label: 'Expired' },
+  { value: 'NO_SHOW', label: 'No Show' },
 ];
 
 export const AdminDashboardPage = () => {
@@ -157,6 +176,8 @@ export const AdminDashboardPage = () => {
         reject: API_PATHS.admin.rejectBooking(id),
         complete: API_PATHS.admin.completeBooking(id),
         cancel: API_PATHS.admin.cancelBooking(id),
+        checkin: API_PATHS.admin.checkInBooking(id),
+        checkout: API_PATHS.admin.checkOutBooking(id),
       };
       return api.post<unknown>(pathByAction[action], reason ? { reason } : {});
     },
@@ -173,6 +194,17 @@ export const AdminDashboardPage = () => {
 
   const updateUserRole = useMutation<{ message: string }, ApiError, { id: number; role: string }>({
     mutationFn: ({ id, role }) => api.put<{ message: string }>(API_PATHS.users.updateRole(id), { role }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  });
+
+  const setUserDisabled = useMutation<{ message: string }, ApiError, { id: number; disabled: boolean; reason?: string }>({
+    mutationFn: ({ id, disabled, reason }) =>
+      api.patch<{ message: string }>(API_PATHS.users.setDisabled(id), { disabled, reason }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
+  });
+
+  const deleteUser = useMutation<{ message: string }, ApiError, number>({
+    mutationFn: (id) => api.delete<{ message: string }>(API_PATHS.users.delete(id)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 
@@ -221,6 +253,8 @@ export const AdminDashboardPage = () => {
           />
         ) : null}
 
+        {tab === 'catalog' ? <CatalogPanel /> : null}
+
         {tab === 'vouchers' ? (
           <VouchersPanel
             data={vouchersQuery.data}
@@ -229,11 +263,19 @@ export const AdminDashboardPage = () => {
           />
         ) : null}
 
+        {tab === 'promotions' ? <PromotionsPanel /> : null}
+        {tab === 'reviews' ? <ReviewsModerationPanel /> : null}
+        {tab === 'contacts' ? <ContactsPanel /> : null}
+        {tab === 'analytics' ? <AnalyticsPanel /> : null}
+        {tab === 'audit' ? <AuditLogsPanel /> : null}
+
         {tab === 'users' ? (
           <UsersPanel
             data={usersQuery.data}
             isLoading={usersQuery.isLoading}
             onUpdateRole={(id, role) => updateUserRole.mutate({ id, role })}
+            onSetDisabled={(id, disabled, reason) => setUserDisabled.mutate({ id, disabled, reason })}
+            onDelete={(id) => deleteUser.mutate(id)}
           />
         ) : null}
       </div>
@@ -397,7 +439,7 @@ function BookingsPanel({
                       onChange={(e) => onUpdateStatus(b.id, e.target.value)}
                       className="mb-2 w-full rounded-full border border-brand-stone bg-brand-white px-3 py-2 text-xs"
                     >
-                      {(data.statuses ?? ['PENDING', 'AWAITING_PAYMENT', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'REJECTED']).map((s) => (
+                      {(data.statuses ?? ['PENDING_PAYMENT', 'PAID', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'CANCELLED', 'EXPIRED', 'NO_SHOW']).map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
@@ -407,6 +449,12 @@ function BookingsPanel({
                       </button>
                       <button type="button" onClick={() => onAction('complete', b.id)} className="rounded-full border border-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
                         Complete
+                      </button>
+                      <button type="button" onClick={() => onAction('checkin', b.id)} className="rounded-full border border-brand-sage px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
+                        Check in
+                      </button>
+                      <button type="button" onClick={() => onAction('checkout', b.id)} className="rounded-full border border-brand-sage px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
+                        Check out
                       </button>
                       <button type="button" onClick={() => setRejectOpenId(rejectOpenId === b.id ? null : b.id)} className="rounded-full border border-brand-coral/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-coral">
                         Reject
@@ -819,42 +867,102 @@ function VouchersPanel({ data, isLoading, onChanged }: { data?: { vouchers: Admi
   );
 }
 
-function UsersPanel({ data, isLoading, onUpdateRole }: { data?: AdminUser[]; isLoading: boolean; onUpdateRole: (id: number, role: string) => void }) {
+function UsersPanel({
+  data, isLoading, onUpdateRole, onSetDisabled, onDelete,
+}: {
+  data?: AdminUser[];
+  isLoading: boolean;
+  onUpdateRole: (id: number, role: string) => void;
+  onSetDisabled: (id: number, disabled: boolean, reason?: string) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [detailId, setDetailId] = useState<number | null>(null);
+  const [reasonById, setReasonById] = useState<Record<number, string>>({});
   if (isLoading) return <p className="mt-10 text-brand-ink/58">Loading users...</p>;
   if (!data) return <p className="mt-10 text-brand-ink/58">No data.</p>;
+  const selected = data.find((u) => u.id === detailId);
   return (
-    <div className="mt-10 overflow-x-auto rounded-[2rem] bg-brand-paper shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-      <table className="w-full min-w-[820px] text-left text-sm">
-        <thead className="bg-brand-white text-xs uppercase tracking-[0.14em] text-brand-ink/58">
-          <tr>
-            <th className="p-4">Username</th>
-            <th className="p-4">Email</th>
-            <th className="p-4">Name</th>
-            <th className="p-4">Verified</th>
-            <th className="p-4">Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((u) => (
-            <tr key={u.id} className="border-t border-brand-stone/40">
-              <td className="p-4 font-semibold text-brand-charcoal">{u.username}</td>
-              <td className="p-4">{u.email}</td>
-              <td className="p-4">{u.fullName || '—'}</td>
-              <td className="p-4">{u.emailVerified ? '✓' : '—'}</td>
-              <td className="p-4">
-                <select
-                  defaultValue={u.role}
-                  onChange={(e) => onUpdateRole(u.id, e.target.value)}
-                  className="rounded-full border border-brand-stone bg-brand-white px-3 py-2 text-xs"
-                >
-                  <option value="USER">USER</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
-              </td>
+    <div className="mt-10 grid gap-6 xl:grid-cols-[1fr_360px]">
+      <div className="overflow-x-auto rounded-[2rem] bg-brand-paper shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
+        <table className="w-full min-w-[980px] text-left text-sm">
+          <thead className="bg-brand-white text-xs uppercase tracking-[0.14em] text-brand-ink/58">
+            <tr>
+              <th className="p-4">Username</th>
+              <th className="p-4">Email</th>
+              <th className="p-4">Name</th>
+              <th className="p-4">Verified</th>
+              <th className="p-4">Status</th>
+              <th className="p-4">Role</th>
+              <th className="p-4">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((u) => (
+              <tr key={u.id} className="border-t border-brand-stone/40 align-top">
+                <td className="p-4 font-semibold text-brand-charcoal">{u.username}</td>
+                <td className="p-4">{u.email}</td>
+                <td className="p-4">{u.fullName || '-'}</td>
+                <td className="p-4">{u.emailVerified ? 'Yes' : 'No'}</td>
+                <td className="p-4">{u.disabled ? 'Disabled' : 'Active'}</td>
+                <td className="p-4">
+                  <select
+                    defaultValue={u.role}
+                    onChange={(e) => onUpdateRole(u.id, e.target.value)}
+                    className="rounded-full border border-brand-stone bg-brand-white px-3 py-2 text-xs"
+                  >
+                    <option value="USER">USER</option>
+                    <option value="ADMIN">ADMIN</option>
+                  </select>
+                </td>
+                <td className="p-4">
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => setDetailId(u.id)} className="rounded-full border border-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
+                      Detail
+                    </button>
+                    <button type="button" onClick={() => onSetDisabled(u.id, !u.disabled, reasonById[u.id] || 'Updated by admin')} className="rounded-full border border-brand-stone px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/70">
+                      {u.disabled ? 'Enable' : 'Disable'}
+                    </button>
+                    <button type="button" onClick={() => onDelete(u.id)} className="rounded-full border border-brand-coral/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-coral">
+                      Delete
+                    </button>
+                  </div>
+                  <input
+                    value={reasonById[u.id] ?? ''}
+                    onChange={(e) => setReasonById((prev) => ({ ...prev, [u.id]: e.target.value }))}
+                    placeholder="Disable reason"
+                    className="mt-2 h-9 w-full rounded-full border border-brand-stone bg-brand-white px-3 text-xs"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <aside className="rounded-[2rem] bg-brand-paper p-6 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
+        <h2 className="text-xl text-brand-charcoal">User detail</h2>
+        {selected ? (
+          <dl className="mt-4 space-y-3 text-sm">
+            {[
+              ['ID', selected.id],
+              ['Username', selected.username],
+              ['Email', selected.email],
+              ['Full name', selected.fullName || '-'],
+              ['Role', selected.role],
+              ['Verified', selected.emailVerified ? 'Yes' : 'No'],
+              ['Status', selected.disabled ? 'Disabled' : 'Active'],
+              ['Disabled reason', selected.disabledReason || '-'],
+              ['Created', selected.createdAt || '-'],
+            ].map(([label, value]) => (
+              <div key={String(label)}>
+                <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/45">{label}</dt>
+                <dd className="mt-1 text-brand-charcoal">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mt-4 text-sm text-brand-ink/58">Select a user to inspect account details.</p>
+        )}
+      </aside>
     </div>
   );
 }

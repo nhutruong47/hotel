@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * Owns the profile / password / account-recovery flows. All public
@@ -34,6 +35,8 @@ public class ProfileService {
     private static final Logger log = LoggerFactory.getLogger(ProfileService.class);
     private static final int TOKEN_VALIDITY_HOURS = 2;
     private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final Pattern EMAIL_PATTERN =
+            Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$");
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -77,7 +80,15 @@ public class ProfileService {
             user.setFullName(dto.getFullName());
         }
         if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(user.getEmail())) {
-            user.setEmail(dto.getEmail());
+            String email = dto.getEmail().trim().toLowerCase(Locale.ROOT);
+            if (!EMAIL_PATTERN.matcher(email).matches()) {
+                throw new BusinessRuleException(ErrorCodes.INVALID_EMAIL, "Email khong hop le");
+            }
+            Optional<User> existing = userRepository.findByEmail(email);
+            if (existing.isPresent() && !existing.get().getId().equals(user.getId())) {
+                throw new BusinessRuleException(ErrorCodes.EMAIL_TAKEN, "Email da duoc su dung");
+            }
+            user.setEmail(email);
             user.setEmailVerified(false);
             String token = TokenHasher.generateToken(24);
             user.setVerificationToken(TokenHasher.hash(token));

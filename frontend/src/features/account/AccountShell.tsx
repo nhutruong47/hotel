@@ -19,6 +19,15 @@ type SessionUser = {
 
 const navItems = [
   {
+    href: '/account',
+    label: 'Overview',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+      </svg>
+    ),
+  },
+  {
     href: '/account/bookings',
     label: 'My Bookings',
     icon: (
@@ -114,7 +123,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
       <div className="fixed left-0 right-0 top-0 z-30 border-b border-brand-ink/8 bg-brand-paper/95 backdrop-blur-md pt-[72px] lg:hidden">
         <div className="flex overflow-x-auto scrollbar-none px-4 py-1 gap-1">
           {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive = item.href === '/account' ? pathname === '/account' : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -165,7 +174,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
             {/* Nav */}
             <nav className="mt-4 rounded-2xl bg-brand-paper p-2 shadow-[0_8px_40px_rgba(32,52,43,0.08)]">
               {navItems.map((item) => {
-                const isActive = pathname.startsWith(item.href);
+                const isActive = item.href === '/account' ? pathname === '/account' : pathname.startsWith(item.href);
                 return (
                   <Link
                     key={item.href}

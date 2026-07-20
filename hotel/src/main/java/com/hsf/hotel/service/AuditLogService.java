@@ -3,6 +3,7 @@ package com.hsf.hotel.service;
 import com.hsf.hotel.model.AuditLog;
 import com.hsf.hotel.model.User;
 import com.hsf.hotel.repository.AuditLogRepository;
+import com.hsf.hotel.security.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Records security-relevant operations for compliance and debugging.
@@ -26,6 +28,10 @@ public class AuditLogService {
     private static final Logger log = LoggerFactory.getLogger(AuditLogService.class);
     /** Retention window for log rows. Older rows are pruned by a scheduled job. */
     public static final int RETENTION_DAYS = 180;
+    private static final Pattern EMAIL = Pattern.compile(
+            "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
+    private static final Pattern SECRET_ASSIGNMENT = Pattern.compile(
+            "(?i)(password|passwd|pwd|token|secret|api[-_]?key|stripe[-_]?signature|authorization)\\s*[:=]\\s*[^\\s,;]+");
 
     private final AuditLogRepository auditLogRepository;
 
@@ -35,21 +41,22 @@ public class AuditLogService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(User user, String action, String entityType, Integer entityId, String details, HttpServletRequest request) {
+        String safeDetails = sanitize(details);
         AuditLog entry = new AuditLog(
                 user != null ? user.getId() : null,
                 user != null ? user.getUsername() : "SYSTEM",
                 action,
                 entityType,
                 entityId,
-                details
+                safeDetails
         );
         if (request != null) {
-            entry.setIpAddress(getClientIp(request));
+            entry.setIpAddress(ClientIpResolver.resolve(request));
             entry.setUserAgent(truncate(request.getHeader("User-Agent"), 512));
         }
         auditLogRepository.save(entry);
         log.info("AUDIT: {} by {} on {}#{} — {}", action,
-                entry.getUsername(), entityType, entityId, details);
+                entry.getUsername(), entityType, entityId, safeDetails);
     }
 
     /** Convenience overload without HTTP request context. */
@@ -90,16 +97,18 @@ public class AuditLogService {
         return deleted;
     }
 
-    private static String getClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
-    }
-
     private static String truncate(String value, int maxLength) {
         if (value == null) return null;
         return value.length() <= maxLength ? value : value.substring(0, maxLength);
+    }
+
+    private static String sanitize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String cleaned = value.replace('\r', ' ').replace('\n', ' ');
+        cleaned = EMAIL.matcher(cleaned).replaceAll("[email-redacted]");
+        cleaned = SECRET_ASSIGNMENT.matcher(cleaned).replaceAll("$1=[redacted]");
+        return truncate(cleaned, 1000);
     }
 }

@@ -140,7 +140,7 @@ export const MyBookingsPage = () => {
   const router = useRouter();
   const query = useQuery({
     queryKey: ['my-bookings'],
-    queryFn: () => api.get<Booking[]>(API_PATHS.bookings),
+    queryFn: () => api.get<Booking[]>(API_PATHS.bookings.list),
     retry: false,
   });
 
@@ -315,7 +315,7 @@ export const ReviewsPage = () => {
 
   const bookingsQuery = useQuery({
     queryKey: ['my-bookings'],
-    queryFn: () => api.get<Booking[]>(API_PATHS.bookings),
+    queryFn: () => api.get<Booking[]>(API_PATHS.bookings.list),
     retry: false,
   });
 

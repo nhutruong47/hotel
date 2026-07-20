@@ -92,7 +92,7 @@ function categorizeTabs(bookings: Booking[]): Record<TabKey, Booking[]> {
     const cin  = new Date(b.checkInDate); cin.setHours(0, 0, 0, 0);
     const cout = new Date(b.checkOutDate); cout.setHours(0, 0, 0, 0);
     const st = b.status;
-    if (st === 'CANCELLED' || st === 'REJECTED' || st === 'NO_SHOW') {
+    if (st === 'CANCELLED' || st === 'EXPIRED' || st === 'NO_SHOW') {
       result.cancelled.push(b);
     } else if (st === 'COMPLETED' || st === 'CHECKED_OUT') {
       result.completed.push(b);
@@ -114,14 +114,14 @@ function BookingActions({ booking, onCancelled }: { booking: Booking; onCancelle
   const { formatCurrency } = useCurrency();
 
   const cancelMutation = useMutation<unknown, ApiError, void>({
-    mutationFn: () => api.post(API_PATHS.bookingCancel(booking.id)),
+    mutationFn: () => api.post(API_PATHS.bookings.cancel(booking.id)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account-bookings'] });
       onCancelled();
     },
   });
 
-  if (status === 'AWAITING_PAYMENT' || status === 'PENDING') {
+  if (status === 'PENDING_PAYMENT') {
     return (
       <div className="flex flex-wrap gap-2">
         <Link
@@ -160,7 +160,7 @@ function BookingActions({ booking, onCancelled }: { booking: Booking; onCancelle
     );
   }
 
-  if (status === 'CONFIRMED' || status === 'PAID') {
+  if (status === 'PAID') {
     return (
       <div className="flex flex-wrap gap-2">
         <Link
@@ -229,7 +229,7 @@ function BookingActions({ booking, onCancelled }: { booking: Booking; onCancelle
     );
   }
 
-  if (status === 'CANCELLED' || status === 'REJECTED') {
+  if (status === 'CANCELLED' || status === 'EXPIRED' || status === 'NO_SHOW') {
     return (
       <div className="flex flex-wrap gap-2">
         <Link
@@ -352,8 +352,7 @@ function BookingCard({ booking }: { booking: Booking }) {
           <div className="mt-4 flex items-center gap-0">
             {[
               { label: 'Booked', done: true },
-              { label: 'Confirmed', done: ['CONFIRMED','CHECKED_IN','CHECKED_OUT','COMPLETED'].includes(booking.status) },
-              { label: 'Paid', done: ['CHECKED_IN','CHECKED_OUT','COMPLETED'].includes(booking.status) || !!booking.paidAt },
+              { label: 'Paid', done: ['PAID','CHECKED_IN','CHECKED_OUT','COMPLETED'].includes(booking.status) || !!booking.paidAt },
               { label: 'Checked In', done: ['CHECKED_IN','CHECKED_OUT','COMPLETED'].includes(booking.status) },
             ].map((step, i) => (
               <div key={step.label} className="flex items-center">
@@ -403,7 +402,7 @@ export function BookingsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['account-bookings'],
-    queryFn: () => api.get<Booking[]>(API_PATHS.bookings),
+    queryFn: () => api.get<Booking[]>(API_PATHS.bookings.list),
     retry: false,
   });
 

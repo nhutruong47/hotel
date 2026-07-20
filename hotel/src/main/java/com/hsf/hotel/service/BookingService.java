@@ -14,6 +14,7 @@ import com.hsf.hotel.repository.BookingRepository;
 import com.hsf.hotel.repository.BookingStatusTransitionRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import com.hsf.hotel.dto.RoomStatsDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -93,6 +94,22 @@ public class BookingService {
         return bookingRepository.findAllByOrderByCreatedAtDesc();
     }
 
+    public long countAll() {
+        return bookingRepository.count();
+    }
+
+    public long countByStatus(BookingStatus status) {
+        return bookingRepository.countByStatus(status);
+    }
+
+    public List<Booking> getRecentBookings(int limit) {
+        return bookingRepository.findAll(org.springframework.data.domain.PageRequest.of(0, limit, org.springframework.data.domain.Sort.by("createdAt").descending())).getContent();
+    }
+    
+    public List<Booking> getRecentBookingsByStatus(BookingStatus status, int limit) {
+        return bookingRepository.findByStatus(status, org.springframework.data.domain.PageRequest.of(0, limit, org.springframework.data.domain.Sort.by("createdAt").descending())).getContent();
+    }
+
     public List<Booking> getTodayBookings() {
         return bookingRepository.findByCheckInDate(LocalDate.now());
     }
@@ -101,11 +118,11 @@ public class BookingService {
         return bookingRepository.findByStatusOrderByCreatedAtDesc(status);
     }
 
-    public List<Object[]> getMostBookedRooms() {
+    public List<RoomStatsDto> getMostBookedRooms() {
         return bookingRepository.findMostBookedRooms();
     }
 
-    public List<Object[]> getMostRatingRooms() {
+    public List<RoomStatsDto> getMostRatingRooms() {
         return bookingRepository.findMostratingRooms();
     }
 
@@ -453,6 +470,11 @@ public class BookingService {
 
     @Transactional
     public Booking cancelBooking(Integer bookingId, User user) {
+        return cancelBooking(bookingId, user, "Cancelled by user");
+    }
+
+    @Transactional
+    public Booking cancelBooking(Integer bookingId, User user, String reason) {
         Booking booking = loadOrThrow(bookingId);
         if (!booking.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
             throw new ForbiddenException("Bạn không có quyền hủy đơn này");
@@ -482,7 +504,7 @@ public class BookingService {
         booking.setCancelledBy(user != null ? user.getUsername() : "system");
         calculateRefund(booking);
         Booking saved = bookingRepository.save(booking);
-        recordTransition(saved, oldStatus, BookingStatus.CANCELLED, user, "Cancelled by user");
+        recordTransition(saved, oldStatus, BookingStatus.CANCELLED, user, reason);
         return saved;
     }
 

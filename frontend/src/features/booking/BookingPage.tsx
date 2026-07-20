@@ -71,7 +71,7 @@ export const BookingPage = () => {
           serviceFee: number;
           taxAmount: number;
           total: number;
-        }>(`${API_PATHS.bookings}/pricing-preview?roomId=${villa.id}&checkIn=${checkIn}&checkOut=${checkOut}`);
+        }>(`${API_PATHS.bookings.list}/pricing-preview?roomId=${villa.id}&checkIn=${checkIn}&checkOut=${checkOut}`);
       } catch (err) {
         // Fallback to local calculation if backend fails
         const subtotal = nights * villa.pricePerNight;
@@ -223,7 +223,7 @@ export const BookingPage = () => {
                       if (!code) return;
                       try {
                         const res = await api.get<{ valid: boolean; message?: string; amount?: string; percent?: boolean }>(
-                          `${API_PATHS.validateVoucher}?code=${encodeURIComponent(code)}`
+                           `${API_PATHS.bookings.validateVoucher}?code=${encodeURIComponent(code)}`
                         );
                         if (res?.valid) {
                           setAppliedVoucher({

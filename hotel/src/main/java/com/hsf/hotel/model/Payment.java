@@ -121,10 +121,14 @@ public class Payment {
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public PaymentMethod getMethod() { return method; }
     public void setMethod(PaymentMethod method) { this.method = method; }
+    public PaymentMethod getPaymentMethod() { return method; }
+    public void setPaymentMethod(PaymentMethod paymentMethod) { this.method = paymentMethod; }
     public PaymentStatus getStatus() { return status; }
     public void setStatus(PaymentStatus status) { this.status = status; }
     public String getTransactionRef() { return transactionRef; }
     public void setTransactionRef(String transactionRef) { this.transactionRef = transactionRef; }
+    public String getPaymentRef() { return transactionRef; }
+    public void setPaymentRef(String paymentRef) { this.transactionRef = paymentRef; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
     public BigDecimal getRefundAmount() { return refundAmount; }

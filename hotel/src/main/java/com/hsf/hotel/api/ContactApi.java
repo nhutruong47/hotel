@@ -1,11 +1,13 @@
 package com.hsf.hotel.api;
 
 import com.hsf.hotel.model.ContactMessage;
-import com.hsf.hotel.model.ContactMessage.ContactPriority;
-import com.hsf.hotel.model.ContactMessage.ContactStatus;
 import com.hsf.hotel.model.ContactMessage.ContactType;
 import com.hsf.hotel.service.ContactService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,16 +21,36 @@ public class ContactApi {
 
     private final ContactService contactService;
 
+    public static class ContactRequest {
+        @NotBlank
+        @Size(max = 255)
+        public String name;
+
+        @NotBlank
+        @Email
+        @Size(max = 255)
+        public String email;
+
+        @Size(max = 64)
+        public String phone;
+
+        @NotBlank
+        @Size(max = 255)
+        public String subject;
+
+        @NotBlank
+        @Size(max = 5000)
+        public String message;
+
+        @Size(max = 32)
+        public String type;
+    }
+
     @PostMapping
     public ResponseEntity<Map<String, Object>> submitContact(
-            @RequestBody Map<String, String> body,
+            @Valid @RequestBody ContactRequest body,
             HttpServletRequest request) {
-        String name = body.get("name");
-        String email = body.get("email");
-        String phone = body.get("phone");
-        String subject = body.get("subject");
-        String message = body.get("message");
-        String typeStr = body.get("type");
+        String typeStr = body.type;
 
         ContactType type = ContactType.GENERAL;
         if (typeStr != null) {
@@ -38,7 +60,7 @@ public class ContactApi {
         }
 
         ContactMessage contact = contactService.submitContact(
-                name, email, phone, subject, message, type,
+                body.name.trim(), body.email.trim(), body.phone, body.subject.trim(), body.message.trim(), type,
                 request.getRemoteAddr(),
                 request.getHeader("User-Agent")
         );
@@ -48,31 +70,5 @@ public class ContactApi {
                 "message", "Tin nhắn của bạn đã được gửi thành công. Chúng tôi sẽ liên hệ lại sớm nhất có thể.",
                 "ticketId", "TKT-" + String.format("%06d", contact.getId())
         ));
-    }
-
-    @GetMapping("/stats")
-    public ResponseEntity<Map<String, Long>> getStats() {
-        return ResponseEntity.ok(contactService.getContactStats());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<ContactMessage> getContact(@PathVariable Integer id) {
-        return ResponseEntity.ok(contactService.getContactById(id));
-    }
-
-    @PutMapping("/{id}/status")
-    public ResponseEntity<ContactMessage> updateStatus(
-            @PathVariable Integer id,
-            @RequestParam ContactStatus status,
-            @RequestParam(required = false) String notes,
-            @RequestParam(required = false) Integer assignedTo) {
-        return ResponseEntity.ok(contactService.updateStatus(id, status, notes, assignedTo));
-    }
-
-    @PutMapping("/{id}/priority")
-    public ResponseEntity<ContactMessage> updatePriority(
-            @PathVariable Integer id,
-            @RequestParam ContactPriority priority) {
-        return ResponseEntity.ok(contactService.updatePriority(id, priority));
     }
 }

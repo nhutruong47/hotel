@@ -1,63 +1,117 @@
+# ============================================================
+# docker-compose.yml for Nhu Villas
+# ============================================================
+
 services:
-  postgres:
+  # PostgreSQL Database
+  db:
     image: postgres:16-alpine
+    container_name: nhu-villas-db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
-      POSTGRES_DB: ${SPRING_DATASOURCE_DB:-postgres}
+      POSTGRES_DB: hotel
+      POSTGRES_USER: hotel_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     ports:
       - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U hotel_user -d hotel"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Backend API
   backend:
     build:
       context: ./hotel
       dockerfile: Dockerfile
-    depends_on:
-      postgres:
-        condition: service_healthy
+    container_name: nhu-villas-backend
+    restart: unless-stopped
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${SPRING_DATASOURCE_DB:-postgres}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-postgres}
-      APP_BASE_URL: ${APP_BASE_URL:-http://localhost}
-      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
-      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:?APP_ADMIN_PASSWORD is required in production}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/hotel
+      SPRING_DATASOURCE_USERNAME: hotel_user
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+      APP_BASE_URL: ${APP_BASE_URL}
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS}
-      APP_WEBHOOK_SECRET: ${APP_WEBHOOK_SECRET:?APP_WEBHOOK_SECRET is required in production}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE}
+      STRIPE_ENABLED: ${STRIPE_ENABLED:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      APP_EMAIL_ENABLED: ${APP_EMAIL_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-localhost}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      LOG_LEVEL_APP: ${LOG_LEVEL_APP:-INFO}
-      JAVA_OPTS: ${JAVA_OPTS:--XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError}
+      APP_BOOKING_DEADLINE_HOURS: ${APP_BOOKING_DEADLINE_HOURS:-24}
+      APP_WEBHOOK_SECRET: ${APP_WEBHOOK_SECRET:-dev-secret}
     ports:
       - "8080:8080"
-    volumes:
-      # Persist user uploads outside the container so recreate / redeploy
-      # doesn't lose uploaded images.
-      - uploads-data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
       interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
 
+  # Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://backend:8080/api/v1}
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+    container_name: nhu-villas-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_TELEMETRY_DISABLED: "1"
+    ports:
+      - "3000:3000"
     depends_on:
-      backend:
-        condition: service_started
+      - backend
+
+  # Mailpit for local email testing (optional)
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: nhu-villas-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"  # Web UI
+      - "1025:1025"  # SMTP
+    profiles:
+      - mail
+
+  # Nginx Reverse Proxy (optional - for production)
+  nginx:
+    image: nginx:alpine
+    container_name: nhu-villas-proxy
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    profiles:
+      - with-proxy
 
 volumes:
-  postgres-data:
-  uploads-data:
+  postgres_data:
+    driver: local
+
+networks:
+  default:
+    name: nhu-villas-network

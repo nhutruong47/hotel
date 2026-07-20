@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { api, ApiError } from '../../shared/api/client';
+import { api, API_PATHS, ApiError } from '../../shared/api/client';
 
 const FAQS = [
   {
@@ -70,7 +70,7 @@ export function SupportPage() {
   })).filter((cat) => cat.items.length > 0);
 
   const submitMutation = useMutation<{ message: string }, ApiError, typeof formState>({
-    mutationFn: (body) => api.post<{ message: string }>('/api/v1/contact', body),
+    mutationFn: (body) => api.post<{ message: string }>(API_PATHS.contact, body),
     onSuccess: (data) => {
       setSubmitOk(true);
       setSubmitMsg(data.message || 'Your message has been sent. We will get back to you shortly.');

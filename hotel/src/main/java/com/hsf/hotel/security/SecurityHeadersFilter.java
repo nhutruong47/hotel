@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * Applies a strict baseline of HTTP response headers to every outbound
@@ -92,8 +93,35 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
                 + "base-uri 'self'; "
                 + "form-action 'self'; "
                 + "img-src 'self' data: https:; "
-                + "script-src 'self'; "
-                + "style-src 'self' 'unsafe-inline'; "
-                + "connect-src 'self' " + apiOrigin + ";";
+                + "script-src 'self' https://js.stripe.com; "
+                + "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+                + "font-src 'self' data: https://fonts.gstatic.com; "
+                + "connect-src 'self' https://api.stripe.com https://m.stripe.network https://m.stripe.com "
+                + "https://generativelanguage.googleapis.com " + safeConnectSources() + "; "
+                + "frame-src https://js.stripe.com https://hooks.stripe.com https://m.stripe.network https://m.stripe.com;";
+    }
+
+    private String safeConnectSources() {
+        StringBuilder out = new StringBuilder();
+        if (apiOrigin == null || apiOrigin.isBlank()) {
+            return "";
+        }
+        for (String raw : apiOrigin.split(",")) {
+            String origin = raw.trim();
+            if (origin.isEmpty()) {
+                continue;
+            }
+            try {
+                URI uri = URI.create(origin);
+                String scheme = uri.getScheme();
+                String host = uri.getHost();
+                if (("http".equals(scheme) || "https".equals(scheme)) && host != null) {
+                    out.append(origin).append(' ');
+                }
+            } catch (IllegalArgumentException ignored) {
+                // Ignore malformed or injection-looking origin values.
+            }
+        }
+        return out.toString().trim();
     }
 }

@@ -28,6 +28,47 @@ type Notification = {
   read: boolean;
 };
 
+type BackendNotification = {
+  id: number;
+  title: string;
+  message: string;
+  type: string;
+  isRead?: boolean;
+  link?: string;
+  createdAt: string;
+};
+
+type NotificationPayload = {
+  notifications: BackendNotification[];
+  unreadCount: number;
+};
+
+function mapNotificationType(type?: string): NotifType {
+  switch ((type ?? '').toUpperCase()) {
+    case 'BOOKING':
+      return 'booking_confirmed';
+    case 'PAYMENT':
+    case 'REFUND':
+      return 'payment_success';
+    case 'PROMOTION':
+      return 'general';
+    default:
+      return 'general';
+  }
+}
+
+function fromBackendNotification(n: BackendNotification): Notification {
+  return {
+    id: String(n.id),
+    type: mapNotificationType(n.type),
+    title: n.title,
+    body: n.message,
+    date: n.createdAt,
+    link: n.link,
+    read: Boolean(n.isRead),
+  };
+}
+
 function fmtDate(dateStr?: string): string {
   if (!dateStr) return '—';
   try {
@@ -69,20 +110,20 @@ function synthesizeNotifications(bookings: Booking[]): Notification[] {
     const link = `/account/bookings`;
 
     // Booking confirmed
-    if (['CONFIRMED', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'].includes(b.status) && b.approvedAt) {
+    if (['PAID', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'].includes(b.status) && (b.approvedAt || b.paidAt)) {
       notifications.push({
         id: `confirmed-${b.id}`,
         type: 'booking_confirmed',
         title: 'Booking Confirmed',
         body: `Your booking for ${roomLabel} (check-in ${fmtDate(b.checkInDate)}) has been confirmed.`,
-        date: b.approvedAt,
+        date: b.approvedAt ?? b.paidAt ?? b.createdAt ?? new Date().toISOString(),
         link,
         read: true,
       });
     }
 
     // Cancelled
-    if (['CANCELLED', 'REJECTED', 'NO_SHOW'].includes(b.status)) {
+    if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(b.status)) {
       notifications.push({
         id: `cancelled-${b.id}`,
         type: 'booking_cancelled',
@@ -108,7 +149,7 @@ function synthesizeNotifications(bookings: Booking[]): Notification[] {
     }
 
     // Upcoming stay (within 7 days)
-    if (['CONFIRMED'].includes(b.status)) {
+    if (['PAID'].includes(b.status)) {
       const cin = new Date(b.checkInDate); cin.setHours(0, 0, 0, 0);
       const daysUntil = Math.ceil((cin.getTime() - today.getTime()) / 86400000);
       if (daysUntil >= 0 && daysUntil <= 7) {
@@ -142,13 +183,16 @@ export function NotificationsPage() {
   const [filter, setFilter] = useState<FilterKey>('all');
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
-  const { data: bookings = [], isLoading } = useQuery({
-    queryKey: ['account-bookings'],
-    queryFn: () => api.get<Booking[]>(API_PATHS.bookings),
+  const { data: notificationPayload, isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api.get<NotificationPayload>(API_PATHS.notifications.list),
     retry: false,
   });
 
-  const all = useMemo(() => synthesizeNotifications(bookings), [bookings]);
+  const all = useMemo(
+    () => (notificationPayload?.notifications ?? []).map(fromBackendNotification),
+    [notificationPayload],
+  );
 
   const displayed = useMemo(() => {
     if (filter === 'all') return all;
@@ -157,7 +201,8 @@ export function NotificationsPage() {
 
   const unreadCount = useMemo(() => all.filter((n) => !n.read && !readIds.has(n.id)).length, [all, readIds]);
 
-  function markAllRead() {
+  async function markAllRead() {
+    await api.post(API_PATHS.notifications.markAllRead, {});
     setReadIds(new Set(all.map((n) => n.id)));
   }
 

@@ -1,14 +1,14 @@
-# ============================================================
-# Flyway baseline migration — V1
-#
-# This migration establishes the schema that matches the current
-# @Entity definitions. Hibernate `ddl-auto=validate` will refuse to boot if
-# the database schema drifts from this baseline, surfacing drift early
-# rather than allowing silent mutation.
-#
-# Idempotent: every CREATE statement uses IF NOT EXISTS so re-running this
-# script against an already-initialised H2 dev database is harmless.
-# ============================================================
+-- ============================================================
+-- Flyway baseline migration — V1
+--
+-- This migration establishes the schema that matches the current
+-- @Entity definitions. Hibernate `ddl-auto=validate` will refuse to boot if
+-- the database schema drifts from this baseline, surfacing drift early
+-- rather than allowing silent mutation.
+--
+-- Idempotent: every CREATE statement uses IF NOT EXISTS so re-running this
+-- script against an already-initialised H2 dev database is harmless.
+-- ============================================================
 
 -- ----- Users -----
 CREATE TABLE IF NOT EXISTS users (

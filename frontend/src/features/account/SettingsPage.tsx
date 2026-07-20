@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useSettings, Theme, Currency, Lang } from '../../shared/settings/SettingsContext';
 import { useTranslation } from '../../shared/i18n/hooks';
+import { api, API_PATHS } from '../../shared/api/client';
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -71,8 +73,42 @@ export function SettingsPage() {
   const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
 
+  const preferencesQuery = useQuery({
+    queryKey: ['profile-preferences'],
+    queryFn: () => api.get<Partial<typeof settings> & { language?: Lang }>(API_PATHS.profilePreferences),
+    retry: false,
+  });
+
+  const savePreferences = useMutation({
+    mutationFn: (payload: typeof settings) => api.put(API_PATHS.profilePreferences, {
+      theme: payload.theme,
+      language: payload.lang,
+      currency: payload.currency,
+      emailBooking: payload.emailBooking,
+      emailReminders: payload.emailReminders,
+      emailMarketing: payload.emailMarketing,
+      smsBooking: payload.smsBooking,
+    }),
+  });
+
+  useEffect(() => {
+    const pref = preferencesQuery.data;
+    if (!pref) return;
+    if (pref.theme && pref.theme !== settings.theme) updateSetting('theme', pref.theme as Theme);
+    const lang = (pref.language ?? pref.lang) as Lang | undefined;
+    if (lang && lang !== settings.lang) updateSetting('lang', lang);
+    if (pref.currency && pref.currency !== settings.currency) updateSetting('currency', pref.currency as Currency);
+    (['emailBooking', 'emailReminders', 'emailMarketing', 'smsBooking'] as const).forEach((key) => {
+      if (typeof pref[key] === 'boolean' && pref[key] !== settings[key]) {
+        updateSetting(key, pref[key]);
+      }
+    });
+  }, [preferencesQuery.data]);
+
   function update<K extends keyof typeof settings>(key: K, value: typeof settings[K]) {
+    const next = { ...settings, [key]: value };
     updateSetting(key, value);
+    savePreferences.mutate(next);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }

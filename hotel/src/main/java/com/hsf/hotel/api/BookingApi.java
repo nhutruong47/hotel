@@ -152,7 +152,7 @@ public class BookingApi {
                                               HttpSession session,
                                               HttpServletRequest request) {
         User user = currentUser(session);
-        Booking booking = bookingService.cancelBooking(id, user);
+        Booking booking = bookingService.cancelBooking(id, user, req != null ? req.reason : null);
         auditLogService.log(user, AuditActions.BOOKING_CANCEL, "Booking", id,
                 "refund=" + booking.getRefundAmount() + " reason=" + (req != null ? req.reason : null),
                 request);

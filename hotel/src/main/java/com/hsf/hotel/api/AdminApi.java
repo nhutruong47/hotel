@@ -87,26 +87,20 @@ public class AdminApi {
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse> dashboard(HttpSession session) {
         requireStaffOrAdmin(session);
-        List<Room> allRooms = roomService.getAllRooms();
-        List<Room> availableRooms = roomService.getAvailableRooms();
-        List<Booking> allBookings = bookingService.getAllBookings();
         List<Booking> todayBookings = bookingService.getTodayBookings();
         BigDecimal monthlyRevenue = bookingService.getMonthlyRevenue();
-        long pendingBookings = allBookings.stream()
-                .filter(b -> b.getStatus() == BookingStatus.PENDING_PAYMENT)
-                .count();
         long totalUsers = userService.countAllUsers();
 
         Map<String, Object> data = new HashMap<>();
-        data.put("totalRooms", allRooms.size());
-        data.put("availableRooms", availableRooms.size());
-        data.put("totalBookings", allBookings.size());
+        data.put("totalRooms", roomService.countAll());
+        data.put("availableRooms", roomService.countAvailable());
+        data.put("totalBookings", bookingService.countAll());
         data.put("todayBookings", todayBookings.size());
         data.put("monthlyRevenue", monthlyRevenue);
-        data.put("pendingBookings", pendingBookings);
+        data.put("pendingBookings", bookingService.countByStatus(BookingStatus.PENDING_PAYMENT));
         data.put("totalUsers", totalUsers);
-        data.put("totalReviews", reviewService.getAllReviews().size());
-        data.put("recentBookings", allBookings.stream().limit(5).toList());
+        data.put("totalReviews", reviewService.countAll());
+        data.put("recentBookings", bookingService.getRecentBookings(5));
         data.put("mostBookedRooms", bookingService.getMostBookedRooms());
         data.put("mostRatingRooms", bookingService.getMostRatingRooms());
         return ResponseEntity.ok(ApiResponse.ok(data));
@@ -122,8 +116,8 @@ public class AdminApi {
         List<Booking> bookings;
         try {
             bookings = (status != null && !status.isBlank())
-                    ? bookingService.getBookingsByStatus(BookingStatus.valueOf(status))
-                    : bookingService.getAllBookings();
+                    ? bookingService.getRecentBookingsByStatus(BookingStatus.valueOf(status), 200)
+                    : bookingService.getRecentBookings(200);
         } catch (IllegalArgumentException ex) {
             throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST,
                     "Trạng thái không hợp lệ: " + status);

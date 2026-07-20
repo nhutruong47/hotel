@@ -9,6 +9,7 @@ import com.hsf.hotel.repository.UserRepository;
 import com.hsf.hotel.repository.WishlistRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +51,11 @@ public class WishlistService {
         WishlistItem item = new WishlistItem();
         item.setUser(user);
         item.setRoom(room);
-        wishlistRepository.save(item);
+        try {
+            wishlistRepository.saveAndFlush(item);
+        } catch (DataIntegrityViolationException ex) {
+            return wishlistRepository.findByUserIdAndRoomId(userId, roomId).isPresent();
+        }
         return true;
     }
 }

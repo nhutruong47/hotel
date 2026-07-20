@@ -84,7 +84,7 @@ export const ProfileSettingsPage = () => {
   }, [avatarPreview, profile?.avatarFilename]);
 
   const updateProfile = useMutation<Profile, ApiError, FormData>({
-    mutationFn: async (formData) => api.put<Profile>(API_PATHS.profile, formData),
+    mutationFn: async (formData) => api.put<Profile>(API_PATHS.profile, undefined, { body: formData }),
     onSuccess: (data) => {
       setSavedMessage(t('settings.profileUpdated'));
       setAvatarFile(null);

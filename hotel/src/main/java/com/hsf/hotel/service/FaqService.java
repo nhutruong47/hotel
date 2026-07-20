@@ -5,6 +5,8 @@ import com.hsf.hotel.model.FaqItem.FaqCategory;
 import com.hsf.hotel.repository.FaqItemRepository;
 import com.hsf.hotel.security.Sanitizers;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +21,12 @@ public class FaqService {
 
     private final FaqItemRepository faqRepository;
 
+    @Cacheable(cacheNames = "faqs", key = "'allPublished'")
     public List<FaqItem> getAllPublishedFaqs() {
         return faqRepository.findByIsPublishedTrueOrderByDisplayOrderAsc();
     }
 
+    @Cacheable(cacheNames = "faqs", key = "'category_' + #category.name()")
     public List<FaqItem> getFaqsByCategory(FaqCategory category) {
         return faqRepository.findByCategoryAndIsPublishedTrueOrderByDisplayOrderAsc(category);
     }
@@ -37,17 +41,20 @@ public class FaqService {
         return faqRepository.searchFaqItems(sanitised);
     }
 
+    @Cacheable(cacheNames = "faqs", key = "'grouped'")
     public Map<FaqCategory, List<FaqItem>> getFaqsGroupedByCategory() {
         List<FaqItem> faqs = getAllPublishedFaqs();
         return faqs.stream()
                 .collect(Collectors.groupingBy(FaqItem::getCategory));
     }
 
+    @Cacheable(cacheNames = "faqs", key = "'categories'")
     public List<FaqCategory> getActiveCategories() {
         return faqRepository.findActiveCategories();
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "faqs", allEntries = true)
     public FaqItem markHelpful(Integer id, boolean helpful) {
         FaqItem faq = faqRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("FAQ not found: " + id));
@@ -60,12 +67,14 @@ public class FaqService {
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "faqs", allEntries = true)
     public FaqItem createFaq(FaqItem faq) {
         faq.setCreatedAt(LocalDateTime.now());
         return faqRepository.save(faq);
     }
 
     @Transactional
+    @CacheEvict(cacheNames = "faqs", allEntries = true)
     public FaqItem updateFaq(Integer id, FaqItem updated) {
         FaqItem existing = faqRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("FAQ not found: " + id));
@@ -79,6 +88,7 @@ public class FaqService {
         return faqRepository.save(existing);
     }
 
+    @CacheEvict(cacheNames = "faqs", allEntries = true)
     public void deleteFaq(Integer id) {
         faqRepository.deleteById(id);
     }

@@ -24,6 +24,7 @@ import java.util.Map;
 public class AiApi {
 
     private static final Logger log = LoggerFactory.getLogger(AiApi.class);
+    private static final int MAX_MESSAGE_LENGTH = 2000;
 
     private final GeminiService geminiService;
     private final ChatMessageRepository chatMessageRepository;
@@ -48,6 +49,11 @@ public class AiApi {
         if (message == null || message.trim().isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Vui lòng nhập yêu cầu"));
+        }
+        message = message.trim();
+        if (message.length() > MAX_MESSAGE_LENGTH) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Message is too long"));
         }
         String ai = geminiService.getAiRecommendation(message);
         try {

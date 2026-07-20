@@ -50,6 +50,9 @@ public final class ImageProcessor {
     public static boolean isSupported(String extension) {
         if (extension == null) return false;
         String e = extension.toLowerCase(Locale.ROOT);
+        if (e.startsWith(".")) {
+            e = e.substring(1);
+        }
         return LOSSY_FORMATS.contains(e) || LOSSLESS_FORMATS.contains(e);
     }
 
@@ -135,6 +138,9 @@ public final class ImageProcessor {
 
     private static String pickFormat(String originalExtension, BufferedImage src) {
         String e = originalExtension == null ? "" : originalExtension.toLowerCase(Locale.ROOT);
+        if (e.startsWith(".")) {
+            e = e.substring(1);
+        }
         if (LOSSY_FORMATS.contains(e)) return "jpg";
         if (LOSSLESS_FORMATS.contains(e)) {
             // PNG keeps transparency. Webp/gif/avif all re-encode fine, but

@@ -56,7 +56,8 @@ public class VoucherService {
             return new VoucherValidationResult(false, "Vui lòng nhập mã", BigDecimal.ZERO, false, (Voucher) null);
         }
 
-        Optional<Voucher> opt = voucherRepository.findByCodeIgnoreCase(code.trim());
+        String normalizedCode = code.trim();
+        Optional<Voucher> opt = voucherRepository.findByCode(normalizedCode);
         if (opt.isPresent()) {
             Voucher v = opt.get();
             if (v.getExpiryDate() != null && v.getExpiryDate().isBefore(LocalDate.now())) {
@@ -70,7 +71,7 @@ public class VoucherService {
         }
 
         // Check active promotions if no voucher matches
-        Optional<Promotion> promoOpt = promotionRepository.findByPromoCode(code.trim());
+        Optional<Promotion> promoOpt = promotionRepository.findActiveByPromoCode(normalizedCode);
         if (promoOpt.isPresent()) {
             Promotion p = promoOpt.get();
             if (!p.isCurrentlyActive()) {
