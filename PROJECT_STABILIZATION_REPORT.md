@@ -1,7 +1,11 @@
 # PROJECT STABILIZATION REPORT
 
 Date: 2026-08-04
-Commit: `8a81281 chore: stabilize project release readiness`
+Latest commits:
+
+- Current report commit: `chore: add release verification gate`
+- `c7eccbd docs: record stabilization decisions`
+- `8a81281 chore: stabilize project release readiness`
 
 ## Fixed
 
@@ -13,6 +17,7 @@ Commit: `8a81281 chore: stabilize project release readiness`
 | GlobalExceptionHandler risk | PASS | Removed duplicate REST handler conflict; the active handler is `hotel/src/main/java/com/hsf/hotel/config/GlobalExceptionHandler.java` with `@RestControllerAdvice`. |
 | Secrets/config hardening | PASS | Removed real Gemini API key from legacy config, changed legacy DB password to env variable, removed weak compose webhook fallback, cleaned sensitive-looking placeholders. |
 | Frontend lint/image/a11y/SEO/performance | PASS for current gate | Hero LCP media uses `next/image`; metadata has canonical/OpenGraph/Twitter/robots; shared CardMedia exposes `alt`; hook dependency warnings fixed; lint is clean. |
+| Repeatable release gate | PASS | Added `tools/verify-release.ps1` so release checks are reproducible instead of manual. |
 
 ## Verification
 
@@ -26,12 +31,13 @@ Commit: `8a81281 chore: stabilize project release readiness`
 | root `./mvnw.cmd test` | PASS, 16 tests |
 | Generated artifacts tracked | PASS, `.next` and `tsconfig.tsbuildinfo` no longer tracked |
 | Env files tracked | PASS, `.env` and `.env.production` are ignored and untracked |
+| Release verification command | PASS with `tools/verify-release.ps1` |
 
 ## Remaining Controlled Risks
 
 | Risk | Status | Note |
 | --- | --- | --- |
 | Legacy Thymeleaf still exists | Controlled | Kept intentionally because project rule says not to delete it until React flow is stable. |
-| Branch not pushed | Open | Local branch is ahead of `origin/develop` by 1 commit. |
+| Branch not pushed | Open | Local branch is ahead of `origin/develop`; push is the next remote sync step after final release gate. |
 | Full Lighthouse/accessibility audit | Open | Build/lint pass, but browser-based Lighthouse/axe scoring still needs a dedicated C1 audit. |
 | Production deploy smoke | Open | Requires real environment variables, database, and payment webhook configuration. |
