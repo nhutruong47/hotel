@@ -19,9 +19,9 @@ export function Footer() {
         </div>
         <nav aria-label="Footer navigation" className="grid grid-cols-2 gap-3 text-sm text-brand-paper/74">
           <Link href="/villas" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.villas')}</Link>
-          <a href="/#experiences" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.experiences')}</a>
-          <a href="/#gallery" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.gallery')}</a>
-          <a href="/#reviews" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.reviews')}</a>
+          <Link href="/#experiences" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.experiences')}</Link>
+          <Link href="/#gallery" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.gallery')}</Link>
+          <Link href="/#reviews" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.reviews')}</Link>
           <Link href="/offers" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.offers')}</Link>
           <Link href="/about" className="hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper">{t('nav.about')}</Link>
         </nav>

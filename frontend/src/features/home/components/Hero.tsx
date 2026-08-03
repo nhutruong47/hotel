@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { AmbientLayers } from './AmbientLayers';
 import { useMouseParallax } from '../hooks/useMouseParallax';
@@ -34,14 +35,14 @@ export function Hero() {
           ref={mountainsRef}
           className="hero-media-motion absolute inset-0 will-change-transform"
         >
-          <img
+          <Image
             src={heroImage}
             alt=""
             aria-hidden="true"
-            loading="eager"
-            decoding="async"
-            fetchPriority="high"
-            className="h-full w-full object-cover object-center"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
           />
         </div>
 
@@ -49,16 +50,16 @@ export function Hero() {
         <div className="absolute inset-x-0 bottom-0 h-[44%] overflow-hidden opacity-[0.18] [mask-image:linear-gradient(to_top,black_30%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_top,black_30%,transparent_100%)]">
           <div
             ref={villaRef}
-            className="hero-reflection will-change-transform"
+            className="hero-reflection relative h-full w-full will-change-transform"
             style={{ transform: 'scaleY(-1)' }}
           >
-            <img
+            <Image
               src={heroImage}
               alt=""
               aria-hidden="true"
-              loading="eager"
-              decoding="async"
-              className="h-full w-full object-cover object-center blur-md"
+              fill
+              sizes="100vw"
+              className="object-cover object-center blur-md"
             />
           </div>
         </div>

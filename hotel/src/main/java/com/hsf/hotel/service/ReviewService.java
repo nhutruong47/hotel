@@ -41,12 +41,10 @@ public class ReviewService {
         if (!booking.getUser().getId().equals(user.getId())) {
             throw new ForbiddenException("Bạn không có quyền đánh giá đơn này");
         }
-        if (booking.getStatus() != BookingStatus.PAID
-                && booking.getStatus() != BookingStatus.CHECKED_IN
-                && booking.getStatus() != BookingStatus.CHECKED_OUT
+        if (booking.getStatus() != BookingStatus.CHECKED_OUT
                 && booking.getStatus() != BookingStatus.COMPLETED) {
             throw new BusinessRuleException("REVIEW_NOT_ALLOWED",
-                    "Chỉ có thể đánh giá đơn đã thanh toán, đã nhận phòng, đã trả phòng hoặc hoàn thành");
+                    "Chỉ có thể đánh giá sau khi đã trả phòng hoặc hoàn thành kỳ nghỉ");
         }
         if (rating == null || rating < 1 || rating > 5) {
             throw new BusinessRuleException("INVALID_RATING", "Điểm đánh giá phải nằm trong khoảng 1-5");

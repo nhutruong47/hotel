@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 @Service
 public class GeminiService {
 
-        @Value("${gemini.api.key}")
+        @Value("${gemini.api.key:}")
         private String apiKey;
 
         @Value("${gemini.api.model:gemini-2.0-flash}")
@@ -35,6 +35,14 @@ public class GeminiService {
         }
 
         public String getAiRecommendation(String userRequest) {
+                if (apiKey == null || apiKey.isBlank()) {
+                        List<Room> availableRooms = roomRepository.findByIsAvailableTrue();
+                        if (availableRooms.isEmpty()) {
+                                return "AI assistant is not configured, and no rooms are currently available.";
+                        }
+                        return getFallbackRecommendation(availableRooms, userRequest);
+                }
+
                 System.out.println("🤖 AI Request: " + userRequest);
 
                 // Get all available rooms to provide context to AI

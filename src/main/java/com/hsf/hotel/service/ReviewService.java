@@ -38,9 +38,8 @@ public class ReviewService {
             throw new RuntimeException("Bạn không có quyền đánh giá đơn này");
         }
 
-        // Check booking status (must be CONFIRMED or COMPLETED)
-        if (booking.getStatus() != BookingStatus.CONFIRMED &&
-                booking.getStatus() != BookingStatus.COMPLETED) {
+        // Reviews are only valid after the stay has finished.
+        if (booking.getStatus() != BookingStatus.COMPLETED) {
             throw new RuntimeException("Chỉ có thể đánh giá đơn đã xác nhận hoặc hoàn thành");
         }
 

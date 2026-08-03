@@ -103,7 +103,7 @@ export function SettingsPage() {
         updateSetting(key, pref[key]);
       }
     });
-  }, [preferencesQuery.data]);
+  }, [preferencesQuery.data, settings, updateSetting]);
 
   function update<K extends keyof typeof settings>(key: K, value: typeof settings[K]) {
     const next = { ...settings, [key]: value };

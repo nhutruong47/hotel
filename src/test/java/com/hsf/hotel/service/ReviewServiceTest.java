@@ -69,7 +69,7 @@ class ReviewServiceTest {
         testBooking.setRoom(testRoom);
         testBooking.setCheckInDate(LocalDate.now().minusDays(3));
         testBooking.setCheckOutDate(LocalDate.now().minusDays(1));
-        testBooking.setStatus(BookingStatus.CONFIRMED);
+        testBooking.setStatus(BookingStatus.COMPLETED);
         testBooking.setTotalPrice(new BigDecimal("1000000"));
 
         // Setup test review

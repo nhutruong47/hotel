@@ -116,8 +116,19 @@ class ReviewServiceTest {
 
     @Test
     void createReview_InvalidBookingStatus() {
-        // Set status to PENDING_PAYMENT so the "must be CONFIRMED or COMPLETED" rule triggers.
+        // Set status to PENDING_PAYMENT so the post-stay review rule triggers.
         testBooking.setStatus(BookingStatus.PENDING_PAYMENT);
+        when(bookingRepository.findById(1)).thenReturn(Optional.of(testBooking));
+
+        BusinessRuleException ex = assertThrows(BusinessRuleException.class, () -> {
+            reviewService.createReview(testUser, 1, 5, "Good", 5, 5, 5, 5, 5);
+        });
+        assertEquals("REVIEW_NOT_ALLOWED", ex.getCode());
+    }
+
+    @Test
+    void createReview_PaidBookingNotEligible() {
+        testBooking.setStatus(BookingStatus.PAID);
         when(bookingRepository.findById(1)).thenReturn(Optional.of(testBooking));
 
         BusinessRuleException ex = assertThrows(BusinessRuleException.class, () -> {

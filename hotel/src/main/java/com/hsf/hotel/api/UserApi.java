@@ -22,10 +22,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserApi {
+
+    private static final Set<String> ALLOWED_ROLES = Set.of("USER", "ADMIN");
 
     private final UserService userService;
     private final UserRepository userRepository;
@@ -101,11 +104,15 @@ public class UserApi {
         requireAdmin(session);
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        String role = body.getRole() != null ? body.getRole().trim().toUpperCase() : "";
+        if (!ALLOWED_ROLES.contains(role)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST, "Role must be USER or ADMIN");
+        }
         String previousRole = user.getRole();
-        user.setRole(body.getRole());
+        user.setRole(role);
         userRepository.save(user);
         auditLogService.log(admin, AuditActions.ADMIN_USER_ROLE_CHANGE, "User", user.getId(),
-                "role " + previousRole + " -> " + body.getRole(), request);
+                "role " + previousRole + " -> " + role, request);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Cập nhật quyền thành công")));
     }
 

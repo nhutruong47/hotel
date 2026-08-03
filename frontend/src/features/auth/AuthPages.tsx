@@ -780,7 +780,7 @@ export const VerifyEmailPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [t, token]);
 
   return (
     <AuthShell

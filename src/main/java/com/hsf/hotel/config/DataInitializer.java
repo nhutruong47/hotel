@@ -103,7 +103,7 @@ public class DataInitializer implements CommandLineRunner {
                 }
 
                 int updated = jdbcTemplate.update(
-                                "UPDATE Rooms SET room_type_id = ? WHERE room_type_id NOT IN (SELECT id FROM RoomTypes)",
+                                "UPDATE rooms SET room_type_id = ? WHERE room_type_id NOT IN (SELECT id FROM room_types)",
                                 defaultType.getId());
 
                 if (updated > 0) {

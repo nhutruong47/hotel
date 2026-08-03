@@ -43,7 +43,8 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
             "/api/v1/auth/reset-password",
             "/api/v1/auth/verify",
             "/api/v1/auth/resend-verification",
-            "/api/v1/payments/webhook" // gateway signature is the real auth
+            "/api/v1/payments/webhook",
+            "/api/v1/payments/webhook/stripe" // gateway signatures are the real auth
     );
 
     @Override

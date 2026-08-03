@@ -58,6 +58,7 @@ export function Card({
 }
 
 export function CardMedia({
+  alt,
   ratio = 'portrait',
   className = '',
   width,
@@ -74,6 +75,7 @@ export function CardMedia({
         height={height}
         loading={loading}
         decoding={decoding}
+        alt={alt}
         {...props}
       />
     </div>

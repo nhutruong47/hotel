@@ -373,6 +373,14 @@ public class BookingService {
             throw new BusinessRuleException("INVALID_STATE",
                     "Đơn không ở trạng thái hợp lệ để thanh toán (hiện tại: " + booking.getStatus() + ")");
         }
+        if (amount == null || amount.signum() <= 0) {
+            throw new BusinessRuleException("INVALID_PAYMENT_AMOUNT", "Số tiền thanh toán phải lớn hơn 0");
+        }
+        BigDecimal expectedAmount = booking.getTotalPrice() != null ? booking.getTotalPrice() : BigDecimal.ZERO;
+        if (expectedAmount.compareTo(amount) != 0) {
+            throw new BusinessRuleException("PAYMENT_AMOUNT_MISMATCH",
+                    "Số tiền thanh toán không khớp với tổng giá trị đơn");
+        }
         BookingStatus oldStatus = booking.getStatus();
         booking.setStatus(BookingStatus.PAID);
         booking.setPaidAt(LocalDateTime.now());

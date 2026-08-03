@@ -20,8 +20,44 @@ const sansFont = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Nhu Villas',
-  description: 'A place to breathe.',
+  metadataBase: new URL('https://nhuvillas.com'),
+  title: {
+    default: 'Nhu Villas | Private Luxury Villa Retreats',
+    template: '%s | Nhu Villas',
+  },
+  description:
+    'Nhu Villas is a private luxury villa retreat for quiet stays, refined hospitality, and direct villa booking.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Nhu Villas | Private Luxury Villa Retreats',
+    description:
+      'Private pool villas, calm architecture, and refined hospitality for direct luxury stays.',
+    url: 'https://nhuvillas.com',
+    siteName: 'Nhu Villas',
+    images: [
+      {
+        url: '/images/nhu-hero-villa-4k.jpg',
+        width: 1600,
+        height: 900,
+        alt: 'Nhu Villas private pool villa at golden hour',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nhu Villas | Private Luxury Villa Retreats',
+    description:
+      'Private pool villas, calm architecture, and refined hospitality for direct luxury stays.',
+    images: ['/images/nhu-hero-villa-4k.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

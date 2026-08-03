@@ -69,7 +69,7 @@ export const CheckoutPage = () => {
       if (!guestName && user.fullName) setGuestName(user.fullName);
       if (!email && user.email) setEmail(user.email);
     }
-  }, [profile, user]);
+  }, [email, guestName, phone, profile, user]);
 
   // Handle error from checkout hook
   useEffect(() => {
