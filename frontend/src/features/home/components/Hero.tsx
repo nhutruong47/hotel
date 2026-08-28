@@ -27,7 +27,7 @@ export function Hero() {
   return (
     <section
       aria-labelledby="home-hero-title"
-      className="relative isolate flex min-h-[100dvh] w-full items-center justify-start overflow-hidden bg-brand-forest-deep text-brand-white"
+      className="force-light-theme relative isolate flex min-h-[100dvh] w-full items-center justify-start overflow-hidden bg-brand-forest-deep text-brand-white"
     >
       {/* Background media stack */}
       <div className="pointer-events-none absolute inset-0 -z-30">

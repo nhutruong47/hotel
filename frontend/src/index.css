@@ -34,6 +34,23 @@
     --color-brand-white: #0a100d;
   }
 }
+
+@layer utilities {
+  .force-light-theme {
+    --color-brand-ink: #20342b;
+    --color-brand-charcoal: #1f2923;
+    --color-brand-forest: #28483b;
+    --color-brand-forest-deep: #19342a;
+    --color-brand-sage: #87927b;
+    --color-brand-sage-light: #dbe0d2;
+    --color-brand-stone: #e5dccb;
+    --color-brand-sand: #eee4d1;
+    --color-brand-paper: #f5f0e4;
+    --color-brand-paper-warm: #eee4d1;
+    --color-brand-white: #fffdf8;
+  }
+}
+
 @layer base {
   body {
     background-color: var(--color-brand-sand);
