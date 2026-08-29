@@ -138,8 +138,8 @@ export const AiChatWidget = () => {
                 <div className="flex justify-start">
                   <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-brand-paper border border-brand-ink/10 px-4 py-2 text-brand-ink/60 shadow-sm flex items-center gap-2">
                     <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce"></span>
-                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce [animation-delay:200ms]"></span>
+                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce [animation-delay:400ms]"></span>
                   </div>
                 </div>
               )}

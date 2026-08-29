@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { DiningPage } from '../../features/content/ContentPages';
+import { DiningPage } from '../../features/content/pages/DiningPage';
 
 export default function Page() {
   return (

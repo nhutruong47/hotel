@@ -51,7 +51,7 @@ export function Hero() {
           <div
             ref={villaRef}
             className="hero-reflection relative h-full w-full will-change-transform"
-            style={{ transform: 'scaleY(-1)' }}
+            
           >
             <Image
               src={heroImage}
@@ -85,12 +85,12 @@ export function Hero() {
       {/* Content */}
       <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col items-start justify-center px-6 py-28 sm:px-8 lg:px-14 lg:py-36">
         <div className="hero-copy-motion max-w-[34rem]">
-          <p className="mb-7 w-fit rounded-full border border-brand-white/25 bg-brand-white/10 px-5 py-2 text-[0.68rem] font-medium uppercase tracking-[0.22em] text-brand-paper backdrop-blur-md">
+          <p className="mb-7 w-fit rounded-full border border-brand-white/25 bg-brand-white/10 px-5 py-2 text-[0.68rem] font-normal uppercase tracking-[0.22em] text-brand-paper backdrop-blur-md">
             {t('home.heroLocation')}
           </p>
           <h1
             id="home-hero-title"
-            className="max-w-[14ch] font-serif text-[clamp(3.25rem,7.4vw,5.75rem)] font-medium leading-[1.02] tracking-[-0.01em] text-brand-white"
+            className="max-w-[14ch] font-serif text-[clamp(3.25rem,7.4vw,5.75rem)] font-normal antialiased leading-[1.02] text-brand-white"
           >
             {t('home.heroTitle')}
           </h1>

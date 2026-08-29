@@ -1,13 +1,13 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
+import { Lora, Plus_Jakarta_Sans } from 'next/font/google';
 import '../index.css';
 import { Providers } from './providers';
 import { Navbar } from '../shared/components/Navbar';
 import { Footer } from '../shared/components/Footer';
 import { AiChatWidget } from '../features/ai/AiChatWidget';
 
-const cormorant = Cormorant_Garamond({
+const cormorant = Lora({
   subsets: ['latin', 'vietnamese'],
   weight: ['400', '500', '600', '700'],
   style: ['normal', 'italic'],
@@ -16,6 +16,8 @@ const cormorant = Cormorant_Garamond({
 
 const sansFont = Plus_Jakarta_Sans({
   subsets: ['latin', 'vietnamese'],
+  weight: ['300', '400', '500', '600', '700'],
+  style: ['normal', 'italic'],
   variable: '--font-sans-next',
 });
 

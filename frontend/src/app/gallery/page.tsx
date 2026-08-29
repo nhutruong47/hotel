@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { GalleryPage } from '../../features/content/ContentPages';
+import { GalleryPage } from '../../features/content/pages/GalleryPage';
 
 export default function Page() {
   return (

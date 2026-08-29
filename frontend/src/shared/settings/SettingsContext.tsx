@@ -87,7 +87,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   return (
     <SettingsContext.Provider value={{ settings, updateSetting }}>
       {!isMounted ? (
-        <div style={{ opacity: 0 }}>{children}</div>
+        <div className="opacity-0">{children}</div>
       ) : (
         children
       )}

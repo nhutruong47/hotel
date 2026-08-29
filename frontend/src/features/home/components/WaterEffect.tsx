@@ -288,7 +288,7 @@ export function WaterEffect({ imageUrl, className }: WaterEffectProps) {
         fetchPriority="high"
         loading="eager"
         className={`h-full w-full object-cover ${className ?? ''}`}
-        style={{ transition: 'opacity 600ms cubic-bezier(0.16, 1, 0.3, 1)' }}
+        
       />
       <canvas
         ref={canvasRef}

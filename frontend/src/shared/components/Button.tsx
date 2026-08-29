@@ -13,7 +13,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const baseClasses =
-  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full font-sans font-medium uppercase tracking-[0.08em] transition duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-gold disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full font-sans font-medium uppercase tracking-[0.15em] transition duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-gold disabled:pointer-events-none disabled:opacity-50';
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:

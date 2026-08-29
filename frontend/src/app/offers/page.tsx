@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { OffersPage } from '../../features/content/ContentPages';
+import { OffersPage } from '../../features/content/pages/OffersPage';
 
 export default function Page() {
   return (

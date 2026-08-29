@@ -250,7 +250,7 @@ export const CheckoutPage = () => {
                     onChange={() => handlePaymentMethodChange('stripe')}
                     className="sr-only"
                   />
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#635BFF] to-[#A259FF] text-white text-xs font-bold">S</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-500 text-white text-xs font-bold">S</span>
                   <div className="flex-1">
                     <span className="block text-sm font-medium text-brand-charcoal">Stripe</span>
                     <span className="text-xs text-brand-ink/62">Credit Card</span>
@@ -377,7 +377,7 @@ export const CheckoutPage = () => {
             <div className="mt-6 flex items-center justify-center gap-2 rounded-full bg-brand-sage/10 px-4 py-2">
               {paymentMethod === 'stripe' && (
                 <>
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#635BFF] to-[#A259FF] text-white text-xs font-bold">S</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-purple-500 text-white text-xs font-bold">S</span>
                   <span className="text-xs font-medium text-brand-charcoal">Secure payment via Stripe</span>
                 </>
               )}

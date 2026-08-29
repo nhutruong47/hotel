@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { ContactPage } from '../../features/content/ContentPages';
+import { ContactPage } from '../../features/content/pages/ContactPage';
 
 export default function Page() {
   return (
