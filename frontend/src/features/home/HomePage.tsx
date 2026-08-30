@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Hero } from './components/Hero';
 import { Reveal } from '../../shared/components/Reveal';
@@ -9,8 +10,8 @@ import { api, API_PATHS } from '../../shared/api/client';
 import { fallbackVillas } from '../villas/villaFallbacks';
 import type { Villa } from '../villas/types';
 import { useTranslation, useCurrency } from '../../shared/i18n/hooks';
-
-// Removed formatPrice in favor of useCurrency
+import { MagneticButton } from '../../shared/components/MagneticButton';
+import { ParallaxImage } from '../../shared/components/ParallaxImage';
 
 const villaExteriorImage = '/images/nhu-garden-pool-villa.jpg';
 const villaInteriorImage = '/images/nhu-villa-interior.jpg';
@@ -73,18 +74,34 @@ function VillaCardSkeleton({ delay = 0 }: { delay?: number }) {
 }
 
 // Dynamic Villa Card Component
-function VillaCard({ villa, delay = 0, featured = false }: { villa: Villa; delay?: number; featured?: boolean }) {
+function VillaCard({ 
+  villa, 
+  delay = 0, 
+  featured = false,
+  x = 0,
+  y = 36,
+  scale = 1,
+  duration = 1.1
+}: { 
+  villa: Villa; 
+  delay?: number; 
+  featured?: boolean;
+  x?: number;
+  y?: number;
+  scale?: number;
+  duration?: number;
+}) {
   const { formatCurrency } = useCurrency();
   const { t } = useTranslation();
   return (
-    <Reveal delay={delay} y={36}>
+    <Reveal delay={delay} y={y} x={x} scale={scale} duration={duration} className="h-full">
       <Link
         href={`/villas/${villa.id}`}
-        className={`group block rounded-[2rem] bg-brand-paper/70 p-2 shadow-[0_24px_80px_rgba(32,52,43,0.1)] transition duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:shadow-[0_34px_100px_rgba(32,52,43,0.16)] ${
+        className={`group flex h-full flex-col rounded-[2rem] bg-brand-paper/70 p-2 shadow-[0_24px_80px_rgba(32,52,43,0.1)] transition duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:shadow-[0_34px_100px_rgba(32,52,43,0.16)] ${
           featured ? 'lg:mt-16' : ''
         }`}
       >
-        <div className="relative overflow-hidden rounded-t-[1.55rem]">
+        <div className="relative shrink-0 overflow-hidden rounded-t-[1.55rem]">
           <img
             src={villa.imageUrl}
             alt={villa.description || villa.name}
@@ -98,13 +115,13 @@ function VillaCard({ villa, delay = 0, featured = false }: { villa: Villa; delay
             </div>
           ))}
         </div>
-        <div className="p-6 sm:p-7">
+        <div className="flex flex-1 flex-col p-6 sm:p-7">
           <div className="flex items-start justify-between gap-5">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-sage">
                 {t(`villas.data.${villa.id}.roomType` as any) === `villas.data.${villa.id}.roomType` ? villa.roomType : t(`villas.data.${villa.id}.roomType` as any)}
               </p>
-              <h3 className="mt-2 text-3xl leading-tight text-brand-charcoal">
+              <h3 className="mt-2 font-serif text-3xl leading-tight text-brand-charcoal">
                 {t(`villas.data.${villa.id}.name` as any) === `villas.data.${villa.id}.name` ? villa.name : t(`villas.data.${villa.id}.name` as any)}
               </h3>
             </div>
@@ -115,7 +132,7 @@ function VillaCard({ villa, delay = 0, featured = false }: { villa: Villa; delay
           <p className="mt-5 min-h-20 text-sm leading-7 text-brand-ink/64">
             {t(`villas.data.${villa.id}.description` as any) === `villas.data.${villa.id}.description` ? villa.description : t(`villas.data.${villa.id}.description` as any)}
           </p>
-          <div className="mt-7 flex items-center justify-between border-t border-brand-stone/80 pt-5">
+          <div className="mt-auto flex items-center justify-between border-t border-brand-stone/80 pt-5">
             <div className="flex items-center gap-2">
               <StarRating rating={Math.round(villa.rating)} size="sm" />
               <span className="text-xs text-brand-ink/50">({villa.reviewCount})</span>
@@ -134,34 +151,33 @@ function StorySection() {
   const { t } = useTranslation();
   return (
     <section id="story" className="bg-brand-paper px-5 py-24 sm:px-8 lg:px-12 lg:py-36">
-      <div className="mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:gap-24">
-        <Reveal>
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
+      <div className="mx-auto grid max-w-[1440px] gap-16 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-24 xl:gap-32">
+        <Reveal className="max-w-xl">
+          <p className="mb-6 text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-ink/40">
             {t('home.storyEyebrow')}
           </p>
-          <h2 className="max-w-[13ch] text-4xl leading-[1.06] text-brand-charcoal sm:text-5xl lg:text-7xl">
+          <h2 className="mb-12 font-serif text-4xl leading-[1.1] text-brand-charcoal sm:text-5xl lg:text-[4rem] xl:text-[4.5rem]">
             {t('home.storyTitle')}
           </h2>
-        </Reveal>
-        <div className="grid gap-6 md:grid-cols-[0.72fr_1fr] md:items-end">
-          <Reveal delay={0.1} className="md:pb-16">
-            <p className="text-lg leading-8 text-brand-ink/74">
+          <div className="flex flex-col gap-6 border-l border-brand-stone/60 pl-6 lg:pl-8">
+            <p className="text-base leading-[1.8] text-brand-ink/70">
               {t('home.storyP1')}
             </p>
-            <p className="mt-6 text-base leading-8 text-brand-ink/62">
+            <p className="text-base leading-[1.8] text-brand-ink/60">
               {t('home.storyP2')}
             </p>
-          </Reveal>
-          <Reveal delay={0.2} className="overflow-hidden rounded-[2rem] bg-brand-stone p-2 shadow-[0_26px_80px_rgba(32,52,43,0.13)]">
-            <img
-              src={villaExteriorImage}
-              alt="Quiet resort architecture surrounded by natural garden light"
-              className="h-full min-h-[420px] w-full rounded-[1.55rem] object-cover transition duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02]"
-              loading="lazy"
-              decoding="async"
-            />
-          </Reveal>
-        </div>
+          </div>
+        </Reveal>
+        
+        <Reveal delay={0.2} className="relative aspect-[4/5] w-full overflow-hidden rounded-bl-[8rem] rounded-tr-[8rem] rounded-br-[2rem] rounded-tl-[2rem] lg:aspect-square">
+          <img
+            src={villaExteriorImage}
+            alt="Quiet resort architecture surrounded by natural garden light"
+            className="h-full w-full object-cover transition-transform duration-1000 hover:scale-[1.03]"
+            loading="lazy"
+            decoding="async"
+          />
+        </Reveal>
       </div>
     </section>
   );
@@ -174,53 +190,79 @@ function VillaCollectionSection() {
       try {
         const { fetchVillas } = await import('../villas/villasApi');
         const res = await fetchVillas();
-        return res.slice(0, 3);
+        return res.slice(0, 6);
       } catch {
-        return fallbackVillas.slice(0, 3);
+        return fallbackVillas.slice(0, 6);
       }
     },
     staleTime: 60_000,
   });
 
-  const displayVillas = villas && villas.length > 0 ? villas : fallbackVillas.slice(0, 3);
+  const displayVillas = villas && villas.length > 0 ? villas.slice(0, 3) : fallbackVillas.slice(0, 3);
   const { t } = useTranslation();
 
   return (
-    <section id="villas" className="bg-brand-sand px-5 py-24 sm:px-8 lg:px-12 lg:py-36">
-      <div className="mx-auto max-w-[1440px]">
+    <section id="villas" className="bg-brand-sand py-24 lg:py-36 overflow-hidden">
+      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
         <Reveal className="mb-14 max-w-3xl">
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
             {t('home.featured')}
           </p>
-          <h2 className="text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
+          <h2 className="font-serif text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
             {t('home.featuredSubtitle')}
           </h2>
           <p className="mt-6 max-w-2xl text-base leading-8 text-brand-ink/66 sm:text-lg">
             {t('home.featuredDesc')}
           </p>
         </Reveal>
+      </div>
 
+      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
         {isLoading ? (
-          <div className="grid gap-7 lg:grid-cols-3 lg:gap-8">
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <VillaCardSkeleton key={i} delay={i * 100} />
+              <div key={i} className="w-full">
+                <VillaCardSkeleton delay={i * 100} />
+              </div>
             ))}
           </div>
         ) : (
-          <div className="grid gap-7 lg:grid-cols-3 lg:gap-8">
-            {displayVillas.map((villa, index) => (
-              <VillaCard key={villa.id} villa={villa} delay={index * 0.12} featured={index === 1} />
-            ))}
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {displayVillas.map((villa, index) => {
+              // Dramatic entrance: Card 1 from left, Card 2 from bottom, Card 3 from right
+              const animProps = 
+                index === 0 ? { x: -60, y: 0, scale: 0.95 } :
+                index === 1 ? { x: 0, y: 60, scale: 0.95 } :
+                { x: 60, y: 0, scale: 0.95 };
+                
+              return (
+                <div key={villa.id} className="h-full w-full">
+                  <VillaCard 
+                    villa={villa} 
+                    delay={index * 0.15 + 0.2} 
+                    featured={false} 
+                    x={animProps.x}
+                    y={animProps.y}
+                    scale={animProps.scale}
+                    duration={1.4}
+                  />
+                </div>
+              );
+            })}
           </div>
         )}
+      </div>
 
+      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
         <Reveal delay={0.3} className="mt-12 text-center">
-          <Link
-            href="/villas"
-            className="inline-flex min-h-12 w-fit items-center justify-center rounded-full border border-brand-forest px-8 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest hover:text-brand-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
-          >
-            {t('home.viewAll')}
-          </Link>
+          <MagneticButton>
+            <Link
+              href="/villas"
+              className="inline-flex min-h-12 w-fit items-center justify-center rounded-full border border-brand-forest px-8 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
+            >
+              {t('home.viewAll')}
+            </Link>
+          </MagneticButton>
         </Reveal>
       </div>
     </section>
@@ -258,7 +300,7 @@ function ExperienceSection() {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
               {t('home.expEyebrow')}
             </p>
-            <h2 className="max-w-[11ch] text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
+            <h2 className="max-w-[11ch] font-serif text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
               {t('home.expTitle')}
             </h2>
           </Reveal>
@@ -278,7 +320,7 @@ function ExperienceSection() {
                   decoding="async"
                 />
                 <div className="flex flex-col justify-end p-7 sm:p-9">
-                  <h3 className="text-3xl text-brand-charcoal sm:text-4xl">
+                  <h3 className="font-serif text-3xl text-brand-charcoal sm:text-4xl">
                     {index === 0 ? t('home.expMorningTitle') : index === 1 ? t('home.expDiningTitle') : t('home.expGardenTitle')}
                   </h3>
                   <p className="mt-5 max-w-xl text-base leading-8 text-brand-ink/65">
@@ -303,7 +345,7 @@ function AmenitiesSection() {
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage-light">
             {t('home.amenitiesEyebrow')}
           </p>
-          <h2 className="max-w-[12ch] text-4xl leading-[1.08] text-brand-white sm:text-5xl lg:text-7xl">
+          <h2 className="max-w-[12ch] font-serif text-4xl leading-[1.08] text-brand-white sm:text-5xl lg:text-7xl">
             {t('home.amenitiesTitle')}
           </h2>
           <p className="mt-6 max-w-xl text-base leading-8 text-brand-paper/72">
@@ -341,7 +383,7 @@ function ReviewsSection() {
         <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
           {t('home.reviewsEyebrow')}
         </p>
-        <blockquote className="text-3xl leading-[1.18] text-brand-charcoal sm:text-5xl lg:text-6xl">
+        <blockquote className="font-serif text-3xl leading-[1.18] text-brand-charcoal sm:text-5xl lg:text-6xl">
           {t('home.reviewsQuote')}
         </blockquote>
         <p className="mt-8 text-sm font-semibold uppercase tracking-[0.18em] text-brand-forest">
@@ -362,17 +404,19 @@ function GallerySection() {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
               {t('home.galleryEyebrow')}
             </p>
-            <h2 className="max-w-[12ch] text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
+            <h2 className="max-w-[12ch] font-serif text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
               {t('home.galleryTitle')}
             </h2>
           </Reveal>
           <Reveal delay={0.15}>
-            <Link
-              href="/gallery"
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-full border border-brand-forest px-6 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest hover:text-brand-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
-            >
-              {t('home.galleryBtn')}
-            </Link>
+            <MagneticButton>
+              <Link
+                href="/gallery"
+                className="inline-flex min-h-12 w-fit items-center justify-center rounded-full border border-brand-forest px-6 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
+              >
+                {t('home.galleryBtn')}
+              </Link>
+            </MagneticButton>
           </Reveal>
         </div>
         <div className="grid gap-5 md:grid-cols-4 md:grid-rows-[260px_260px] lg:grid-rows-[340px_340px]">
@@ -385,13 +429,7 @@ function GallerySection() {
                 index === 1 ? 'md:col-span-2 md:row-span-2' : ''
               }`}
             >
-              <img
-                src={item.src}
-                alt={item.alt}
-                className="h-full min-h-[260px] w-full rounded-[1.5rem] object-cover transition duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-[1.02]"
-                loading="lazy"
-                decoding="async"
-              />
+              <ParallaxImage src={item.src} alt={item.alt} />
             </Reveal>
           ))}
         </div>
@@ -409,7 +447,7 @@ function LocationSection() {
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
             {t('home.locEyebrow')}
           </p>
-          <h2 className="max-w-[12ch] text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
+          <h2 className="max-w-[12ch] font-serif text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
             {t('home.locTitle')}
           </h2>
           <p className="mt-6 max-w-xl text-base leading-8 text-brand-ink/66">
@@ -470,18 +508,20 @@ function FinalCtaSection() {
         <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage-light">
           {t('home.ctaEyebrow')}
         </p>
-        <h2 className="text-4xl leading-[1.08] sm:text-5xl lg:text-7xl">
+        <h2 className="font-serif text-4xl leading-[1.08] sm:text-5xl lg:text-7xl">
           {t('home.ctaTitle')}
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-brand-paper/76">
           {t('home.ctaDesc')}
         </p>
-        <Link
-          href="/villas"
-          className="mt-9 inline-flex min-h-12 items-center justify-center rounded-full border border-brand-paper bg-brand-paper px-8 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest-deep transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[1px] hover:bg-brand-white hover:shadow-[0_22px_60px_rgba(8,17,14,0.38)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper"
-        >
-          {t('home.ctaBtn')}
-        </Link>
+        <MagneticButton className="mt-9">
+          <Link
+            href="/villas"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-brand-paper bg-brand-paper px-8 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest-deep transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-white hover:shadow-[0_22px_60px_rgba(8,17,14,0.38)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper"
+          >
+            {t('home.ctaBtn')}
+          </Link>
+        </MagneticButton>
       </Reveal>
     </section>
   );
@@ -489,11 +529,14 @@ function FinalCtaSection() {
 
 
 
+import { FeaturedResidences } from './components/FeaturedResidences';
+
 export const HomePage = () => {
   return (
     <>
       <Hero />
       <StorySection />
+      <FeaturedResidences />
       <VillaCollectionSection />
       <ExperienceSection />
       <AmenitiesSection />

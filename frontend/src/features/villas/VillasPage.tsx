@@ -309,10 +309,10 @@ export const VillasPage = () => {
         {/* Header */}
         <div className="mb-12 grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
           <div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
+            <p className="mb-5 text-xs font-normal uppercase tracking-[0.25em] text-[#8C857B] font-sans">
               {t('villas.collection')}
             </p>
-            <h1 className="max-w-[12ch] text-5xl leading-[1.02] text-brand-charcoal sm:text-6xl lg:text-8xl">
+            <h1 className="max-w-[12ch] font-serif text-5xl leading-[1.02] text-brand-charcoal sm:text-6xl lg:text-8xl">
               {t('villas.title')}
             </h1>
           </div>
@@ -367,21 +367,36 @@ export const VillasPage = () => {
                   ]}
                 />
 
-                <div className="flex items-center gap-3">
-                  <input
-                    value={filters.minPrice}
-                    onChange={(event) => updateFilter('minPrice', event.target.value)}
-                    inputMode="numeric"
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                  <CustomSelect
+                    value={filters.minPrice || ''}
+                    onChange={(val) => updateFilter('minPrice', val)}
                     placeholder={t('villas.minPrice')}
-                    className="h-12 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm text-brand-ink outline-none transition focus:border-brand-forest focus:ring-2 focus:ring-brand-sage/30"
+                    options={[
+                      { label: t('villas.minPrice'), value: '' },
+                      { label: '100', value: '100' },
+                      { label: '200', value: '200' },
+                      { label: '300', value: '300' },
+                      { label: '500', value: '500' },
+                      { label: '800', value: '800' },
+                      { label: '1000', value: '1000' },
+                    ]}
                   />
                   <span className="text-brand-stone/60">-</span>
-                  <input
-                    value={filters.maxPrice}
-                    onChange={(event) => updateFilter('maxPrice', event.target.value)}
-                    inputMode="numeric"
+                  <CustomSelect
+                    value={filters.maxPrice || ''}
+                    onChange={(val) => updateFilter('maxPrice', val)}
                     placeholder={t('villas.maxPrice')}
-                    className="h-12 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm text-brand-ink outline-none transition focus:border-brand-forest focus:ring-2 focus:ring-brand-sage/30"
+                    options={[
+                      { label: t('villas.maxPrice'), value: '' },
+                      { label: '300', value: '300' },
+                      { label: '500', value: '500' },
+                      { label: '800', value: '800' },
+                      { label: '1000', value: '1000' },
+                      { label: '1500', value: '1500' },
+                      { label: '2000', value: '2000' },
+                      { label: '5000+', value: '5000' },
+                    ]}
                   />
                 </div>
 

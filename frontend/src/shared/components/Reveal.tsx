@@ -12,6 +12,12 @@ type RevealProps = {
   className?: string;
   /** Translate distance in px (default 48). */
   y?: number;
+  /** Translate X distance in px (default 0). */
+  x?: number;
+  /** Starting scale (default 1). */
+  scale?: number;
+  /** Starting rotation (default 0). */
+  rotation?: number;
   /** Animation duration in seconds (default 1.1). */
   duration?: number;
   /** Delay in seconds before the tween starts (default 0). */
@@ -30,17 +36,19 @@ type RevealProps = {
  */
 export function Reveal({
   children,
-  as,
+  as: Element = 'div',
   className = '',
   y = 48,
+  x = 0,
+  scale = 1,
+  rotation = 0,
   duration = 1.1,
   delay = 0,
-  start = 'top 86%',
+  start = 'top 85%',
   stagger,
   staggerSelector,
 }: RevealProps) {
   const ref = useRef<HTMLElement | null>(null);
-  const Element = (as ?? 'div') as ElementType;
 
   useEffect(() => {
     const el = ref.current;
@@ -63,11 +71,14 @@ export function Reveal({
           ? Array.from(el.children)
           : [el];
 
-    gsap.set(targets, { opacity: 0, y });
+    gsap.set(targets, { opacity: 0, y, x, scale, rotation });
 
     const tween = gsap.to(targets, {
       opacity: 1,
       y: 0,
+      x: 0,
+      scale: 1,
+      rotation: 0,
       duration,
       delay,
       stagger: stagger ?? 0,
@@ -83,10 +94,11 @@ export function Reveal({
       tween.scrollTrigger?.kill();
       tween.kill();
     };
-  }, [delay, duration, start, stagger, staggerSelector, y]);
+  }, [delay, duration, start, stagger, staggerSelector, y, x, scale, rotation]);
 
   return (
-    <Element ref={ref as never} className={className}>
+    // @ts-ignore
+    <Element ref={ref as any} className={className}>
       {children}
     </Element>
   );
