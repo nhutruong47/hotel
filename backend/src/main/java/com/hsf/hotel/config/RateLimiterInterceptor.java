@@ -50,7 +50,7 @@ public class RateLimiterInterceptor implements HandlerInterceptor {
     private final Map<String, TokenBucket> buckets = new ConcurrentHashMap<>();
 
     @Autowired(required = false)
-    private com.hsf.hotel.service.AuditLogService auditLogService;
+    private com.hsf.hotel.admin.service.AuditLogService auditLogService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {

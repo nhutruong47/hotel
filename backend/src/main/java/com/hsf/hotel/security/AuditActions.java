@@ -1,9 +1,10 @@
 package com.hsf.hotel.security;
+import com.hsf.hotel.admin.model.AuditLog;
 
 /**
  * Centralised list of {@code AuditLog.action} values so audit messages
  * cannot drift across services. Add new constants here rather than passing
- * raw strings to {@link com.hsf.hotel.service.AuditLogService}.
+ * raw strings to {@link com.hsf.hotel.admin.service.AuditLogService}.
  */
 public final class AuditActions {
     private AuditActions() {}

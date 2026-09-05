@@ -1,4 +1,5 @@
 package com.hsf.hotel.config;
+import com.hsf.hotel.user.model.User;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

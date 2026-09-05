@@ -1,7 +1,7 @@
 package com.hsf.hotel.service.payment;
 
-import com.hsf.hotel.model.Booking;
-import com.hsf.hotel.model.Payment;
+import com.hsf.hotel.booking.model.Booking;
+import com.hsf.hotel.payment.model.Payment;
 import java.math.BigDecimal;
 
 public interface PaymentGateway {

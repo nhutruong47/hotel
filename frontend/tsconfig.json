@@ -17,7 +17,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "plugins": [
+    "paths": { "@/*": ["./src/*"], "@shared/*": ["./src/shared/*"], "@features/*": ["./src/features/*"], "@entities/*": ["./src/entities/*"], "@widgets/*": ["./src/widgets/*"] }, "plugins": [
       {
         "name": "next"
       }

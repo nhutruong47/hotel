@@ -1,4 +1,5 @@
 package com.hsf.hotel.config;
+import com.hsf.hotel.payment.model.Payment;
 
 import com.stripe.Stripe;
 import jakarta.annotation.PostConstruct;

@@ -1,9 +1,10 @@
 package com.hsf.hotel.security;
+import com.hsf.hotel.user.model.User;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hsf.hotel.config.ErrorCodes;
 import com.hsf.hotel.config.ApiResponse;
-import com.hsf.hotel.repository.AuditLogRepository;
+import com.hsf.hotel.admin.repository.AuditLogRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -115,7 +116,7 @@ public class GatewaySignatureFilter extends OncePerRequestFilter {
 
     private void reject(HttpServletResponse response, HttpServletRequest request, String reason) throws IOException {
         try {
-            com.hsf.hotel.model.AuditLog entry = new com.hsf.hotel.model.AuditLog();
+            com.hsf.hotel.admin.model.AuditLog entry = new com.hsf.hotel.admin.model.AuditLog();
             entry.setAction("WEBHOOK_REJECTED");
             entry.setEntityType("Webhook");
             entry.setIpAddress(ClientIpResolver.resolve(request));

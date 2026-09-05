@@ -1,7 +1,7 @@
 package com.hsf.hotel.config;
 
-import com.hsf.hotel.model.User;
-import com.hsf.hotel.repository.UserRepository;
+import com.hsf.hotel.user.model.User;
+import com.hsf.hotel.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

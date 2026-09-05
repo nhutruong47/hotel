@@ -195,7 +195,7 @@ export function AvailabilityCalendar({
       </div>
 
       {/* Calendar */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1">
         {/* Month Navigation */}
         <div>
           <div className="mb-4 flex items-center justify-between">

@@ -1,16 +1,16 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { Lora, Plus_Jakarta_Sans } from 'next/font/google';
+import { Marcellus, Plus_Jakarta_Sans } from 'next/font/google';
 import '../index.css';
 import { Providers } from './providers';
 import { Navbar } from '../shared/components/Navbar';
 import { Footer } from '../shared/components/Footer';
 import { AiChatWidget } from '../features/ai/AiChatWidget';
 
-const cormorant = Lora({
-  subsets: ['latin', 'vietnamese'],
-  weight: ['400', '500', '600', '700'],
-  style: ['normal', 'italic'],
+const marcellus = Marcellus({
+  subsets: ['latin'],
+  weight: ['400'],
+  style: ['normal'],
   variable: '--font-serif-next',
 });
 
@@ -69,7 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning className={`bg-brand-paper min-h-screen text-brand-ink selection:bg-brand-sage selection:text-brand-white overflow-x-hidden ${cormorant.variable} ${sansFont.variable}`}>
+      <body suppressHydrationWarning className={`bg-brand-paper min-h-screen text-brand-ink selection:bg-brand-sage selection:text-brand-white overflow-x-hidden ${marcellus.variable} ${sansFont.variable}`}>
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[100] focus:px-6 focus:py-3 focus:bg-brand-white focus:text-brand-ink focus:text-sm focus:rounded focus:shadow-lg">
           Skip to main content
         </a>

@@ -1,11 +1,11 @@
 package com.hsf.hotel.config;
 
-import com.hsf.hotel.model.FaqItem;
-import com.hsf.hotel.model.FaqItem.FaqCategory;
-import com.hsf.hotel.model.Promotion;
-import com.hsf.hotel.model.Promotion.PromotionCategory;
-import com.hsf.hotel.repository.FaqItemRepository;
-import com.hsf.hotel.repository.PromotionRepository;
+import com.hsf.hotel.faq.model.FaqItem;
+import com.hsf.hotel.faq.model.FaqItem.FaqCategory;
+import com.hsf.hotel.promotion.model.Promotion;
+import com.hsf.hotel.promotion.model.Promotion.PromotionCategory;
+import com.hsf.hotel.faq.repository.FaqItemRepository;
+import com.hsf.hotel.promotion.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -29,9 +29,9 @@ public class DataInitializer implements CommandLineRunner {
 
     private final FaqItemRepository faqRepository;
     private final PromotionRepository promotionRepository;
-    private final com.hsf.hotel.repository.RoomRepository roomRepository;
-    private final com.hsf.hotel.repository.RoomTypeRepository roomTypeRepository;
-    private final com.hsf.hotel.repository.AmenityRepository amenityRepository;
+    private final com.hsf.hotel.room.repository.RoomRepository roomRepository;
+    private final com.hsf.hotel.room.repository.RoomTypeRepository roomTypeRepository;
+    private final com.hsf.hotel.room.repository.AmenityRepository amenityRepository;
 
     @Override
     public void run(String... args) {
@@ -44,41 +44,41 @@ public class DataInitializer implements CommandLineRunner {
         if (roomRepository.count() > 0) return;
 
         // Create Room Types
-        com.hsf.hotel.model.RoomTypeEntity poolVilla = new com.hsf.hotel.model.RoomTypeEntity();
+        com.hsf.hotel.room.model.RoomTypeEntity poolVilla = new com.hsf.hotel.room.model.RoomTypeEntity();
         poolVilla.setName("Pool Villa");
         poolVilla.setDescription("A one-bedroom garden villa with a private pool.");
         poolVilla = roomTypeRepository.save(poolVilla);
 
-        com.hsf.hotel.model.RoomTypeEntity familyVilla = new com.hsf.hotel.model.RoomTypeEntity();
+        com.hsf.hotel.room.model.RoomTypeEntity familyVilla = new com.hsf.hotel.room.model.RoomTypeEntity();
         familyVilla.setName("Family Villa");
         familyVilla.setDescription("Two quiet bedrooms, generous living space.");
         familyVilla = roomTypeRepository.save(familyVilla);
 
-        com.hsf.hotel.model.RoomTypeEntity residence = new com.hsf.hotel.model.RoomTypeEntity();
+        com.hsf.hotel.room.model.RoomTypeEntity residence = new com.hsf.hotel.room.model.RoomTypeEntity();
         residence.setName("Residence");
         residence.setDescription("A larger private residence for hosted dinners.");
         residence = roomTypeRepository.save(residence);
 
-        com.hsf.hotel.model.RoomTypeEntity signature = new com.hsf.hotel.model.RoomTypeEntity();
+        com.hsf.hotel.room.model.RoomTypeEntity signature = new com.hsf.hotel.room.model.RoomTypeEntity();
         signature.setName("Signature");
         signature.setDescription("The largest estate in our collection.");
         signature = roomTypeRepository.save(signature);
 
         // Create Amenities
-        com.hsf.hotel.model.Amenity pool = new com.hsf.hotel.model.Amenity();
+        com.hsf.hotel.room.model.Amenity pool = new com.hsf.hotel.room.model.Amenity();
         pool.setName("Private pool");
         pool = amenityRepository.save(pool);
 
-        com.hsf.hotel.model.Amenity breakfast = new com.hsf.hotel.model.Amenity();
+        com.hsf.hotel.room.model.Amenity breakfast = new com.hsf.hotel.room.model.Amenity();
         breakfast.setName("Breakfast service");
         breakfast = amenityRepository.save(breakfast);
 
-        com.hsf.hotel.model.Amenity wifi = new com.hsf.hotel.model.Amenity();
+        com.hsf.hotel.room.model.Amenity wifi = new com.hsf.hotel.room.model.Amenity();
         wifi.setName("High-speed Wi-Fi");
         wifi = amenityRepository.save(wifi);
 
         // Seed Room 1
-        com.hsf.hotel.model.Room r1 = new com.hsf.hotel.model.Room();
+        com.hsf.hotel.room.model.Room r1 = new com.hsf.hotel.room.model.Room();
         r1.setRoomNumber("GV-01");
         r1.setRoomType(poolVilla);
         r1.setDescription("A one-bedroom garden villa with a private pool, shaded terrace, and open-air living room.");
@@ -94,7 +94,7 @@ public class DataInitializer implements CommandLineRunner {
         roomRepository.save(r1);
 
         // Seed Room 2
-        com.hsf.hotel.model.Room r2 = new com.hsf.hotel.model.Room();
+        com.hsf.hotel.room.model.Room r2 = new com.hsf.hotel.room.model.Room();
         r2.setRoomNumber("TF-02");
         r2.setRoomType(familyVilla);
         r2.setDescription("Two quiet bedrooms, generous living space, and a terrace prepared for slow family days.");
@@ -109,7 +109,7 @@ public class DataInitializer implements CommandLineRunner {
         roomRepository.save(r2);
 
         // Seed Room 3
-        com.hsf.hotel.model.Room r3 = new com.hsf.hotel.model.Room();
+        com.hsf.hotel.room.model.Room r3 = new com.hsf.hotel.room.model.Room();
         r3.setRoomNumber("HR-03");
         r3.setRoomType(residence);
         r3.setDescription("A larger private residence for hosted dinners, longer retreats, and sunset pool rituals.");
@@ -124,7 +124,7 @@ public class DataInitializer implements CommandLineRunner {
         roomRepository.save(r3);
 
         // Seed Room 4
-        com.hsf.hotel.model.Room r4 = new com.hsf.hotel.model.Room();
+        com.hsf.hotel.room.model.Room r4 = new com.hsf.hotel.room.model.Room();
         r4.setRoomNumber("SE-04");
         r4.setRoomType(signature);
         r4.setDescription("The largest estate in our collection, offering panoramic views, four bedrooms, and complete privacy.");
@@ -199,11 +199,11 @@ public class DataInitializer implements CommandLineRunner {
     private void initializePromotions() {
         if (promotionRepository.count() > 0) return;
 
-        java.util.List<com.hsf.hotel.model.Room> rooms = roomRepository.findAll();
-        com.hsf.hotel.model.Room r1 = rooms.stream().filter(r -> "GV-01".equals(r.getRoomNumber())).findFirst().orElse(null);
-        com.hsf.hotel.model.Room r2 = rooms.stream().filter(r -> "TF-02".equals(r.getRoomNumber())).findFirst().orElse(null);
-        com.hsf.hotel.model.Room r3 = rooms.stream().filter(r -> "HR-03".equals(r.getRoomNumber())).findFirst().orElse(null);
-        com.hsf.hotel.model.Room r4 = rooms.stream().filter(r -> "SE-04".equals(r.getRoomNumber())).findFirst().orElse(null);
+        java.util.List<com.hsf.hotel.room.model.Room> rooms = roomRepository.findAll();
+        com.hsf.hotel.room.model.Room r1 = rooms.stream().filter(r -> "GV-01".equals(r.getRoomNumber())).findFirst().orElse(null);
+        com.hsf.hotel.room.model.Room r2 = rooms.stream().filter(r -> "TF-02".equals(r.getRoomNumber())).findFirst().orElse(null);
+        com.hsf.hotel.room.model.Room r3 = rooms.stream().filter(r -> "HR-03".equals(r.getRoomNumber())).findFirst().orElse(null);
+        com.hsf.hotel.room.model.Room r4 = rooms.stream().filter(r -> "SE-04".equals(r.getRoomNumber())).findFirst().orElse(null);
 
         LocalDate today = LocalDate.now();
 

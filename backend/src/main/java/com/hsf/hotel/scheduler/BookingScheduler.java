@@ -1,6 +1,7 @@
 package com.hsf.hotel.scheduler;
+import com.hsf.hotel.admin.service.AuditLogService;
 
-import com.hsf.hotel.service.BookingService;
+import com.hsf.hotel.booking.service.BookingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -75,7 +76,7 @@ public class BookingScheduler {
             int count = 0;
             
             for (var booking : allBookings) {
-                if (booking.getStatus() == com.hsf.hotel.model.BookingStatus.CHECKED_OUT
+                if (booking.getStatus() == com.hsf.hotel.booking.model.BookingStatus.CHECKED_OUT
                         && booking.getCheckOutDate() != null
                         && booking.getCheckOutDate().isBefore(java.time.LocalDate.now())) {
                     try {
@@ -112,7 +113,7 @@ public class BookingScheduler {
             
             for (var booking : allBookings) {
                 // Paid booking past checkout date without being checked in
-                if (booking.getStatus() == com.hsf.hotel.model.BookingStatus.PAID
+                if (booking.getStatus() == com.hsf.hotel.booking.model.BookingStatus.PAID
                         && booking.getCheckOutDate() != null
                         && booking.getCheckOutDate().isBefore(java.time.LocalDate.now())) {
                     try {

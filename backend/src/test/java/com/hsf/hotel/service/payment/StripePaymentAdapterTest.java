@@ -1,10 +1,10 @@
 package com.hsf.hotel.service.payment;
 
 import com.hsf.hotel.config.StripeConfig;
-import com.hsf.hotel.model.Booking;
-import com.hsf.hotel.model.Payment;
-import com.hsf.hotel.model.User;
-import com.hsf.hotel.model.UserRole;
+import com.hsf.hotel.booking.model.Booking;
+import com.hsf.hotel.payment.model.Payment;
+import com.hsf.hotel.user.model.User;
+import com.hsf.hotel.user.model.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

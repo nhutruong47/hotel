@@ -1,7 +1,7 @@
 package com.hsf.hotel.config;
 
-import com.hsf.hotel.model.User;
-import com.hsf.hotel.repository.UserRepository;
+import com.hsf.hotel.user.model.User;
+import com.hsf.hotel.user.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

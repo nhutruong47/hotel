@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { SessionProvider } from '../shared/auth/SessionProvider';
 import { ErrorBoundary } from '../shared/components/ErrorBoundary';
 import { SettingsProvider } from '../shared/settings/SettingsContext';
+import { useSmoothScroll } from '../hooks/useSmoothScroll';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  useSmoothScroll();
   const [queryClient] = useState(
     () =>
       new QueryClient({
