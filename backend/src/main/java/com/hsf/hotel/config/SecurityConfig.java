@@ -110,6 +110,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/vouchers/validate").permitAll()
                         // Public contact form
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
+                        // Webhooks (Authenticated via GatewaySignatureFilter or Stripe Adapter)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/**").permitAll()
                         // Admin endpoints require ADMIN role (defense-in-depth even if service-layer checks are forgotten)
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         // User self-service endpoints must NOT require ADMIN. They

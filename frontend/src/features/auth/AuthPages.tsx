@@ -254,8 +254,11 @@ export const LoginPage = () => {
       }
       await refresh();
       const role = data?.role;
-      if (redirectTo) {
-        router.push(redirectTo);
+      // Prevent open redirect by ensuring it is a relative path
+      const safeRedirect = (redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//'))
+          ? redirectTo : null;
+      if (safeRedirect) {
+        router.push(safeRedirect);
       } else {
         router.push(role === 'ADMIN' ? '/admin' : '/profile');
       }

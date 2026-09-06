@@ -196,7 +196,7 @@ public class BookingService {
 
         validateDates(checkIn, checkOut);
 
-        Room lockedRoom = entityManager.find(Room.class, room.getId());
+        Room lockedRoom = entityManager.find(Room.class, room.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (lockedRoom == null) {
             throw new ResourceNotFoundException("Room", room.getId());
         }
@@ -263,9 +263,12 @@ public class BookingService {
                 }
                 appliedCode = p.getPromoCode();
 
-                if (p.getCurrentUses() == null) p.setCurrentUses(0);
-                p.setCurrentUses(p.getCurrentUses() + 1);
-                entityManager.merge(p);
+                int updated = entityManager.createQuery("UPDATE Promotion p SET p.currentUses = COALESCE(p.currentUses, 0) + 1 WHERE p.id = :id AND (p.maximumUses IS NULL OR COALESCE(p.currentUses, 0) < p.maximumUses)")
+                        .setParameter("id", p.getId())
+                        .executeUpdate();
+                if (updated == 0) {
+                    throw new BusinessRuleException("PROMOTION_EXHAUSTED", "Mã ưu đãi đã hết lượt sử dụng");
+                }
             }
         }
 
@@ -644,6 +647,8 @@ public class BookingService {
         if (newCheckIn != null && newCheckOut != null) {
             validateDates(newCheckIn, newCheckOut);
             Room room = booking.getRoom();
+            // Lock the room row to serialize concurrent booking modifications.
+            entityManager.lock(room, LockModeType.PESSIMISTIC_WRITE);
             // Lock the room row + exclude this booking from the conflict set so
             // we don't collide with our own date range.
             List<Booking> conflicts = bookingRepository

@@ -48,9 +48,9 @@ public class AdminCredentialValidator implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        boolean isProduction = "prod".equals(activeProfile);
+        boolean isDev = "dev".equals(activeProfile);
         
-        if (isProduction) {
+        if (!isDev) {
             validateProductionCredentials();
         } else {
             provisionDevAdmin();

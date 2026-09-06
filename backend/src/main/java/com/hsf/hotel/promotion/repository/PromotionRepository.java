@@ -44,4 +44,8 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
     List<Promotion> findActiveWithCountdown(@Param("now") java.time.LocalDateTime now);
 
     long countByIsActiveTrue();
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Promotion p SET p.currentUses = COALESCE(p.currentUses, 0) + 1 WHERE p.id = :id AND (p.maximumUses IS NULL OR COALESCE(p.currentUses, 0) < p.maximumUses)")
+    int incrementUsesAtomic(@Param("id") Integer id);
 }
