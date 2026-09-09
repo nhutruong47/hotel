@@ -8,31 +8,31 @@ import { ContentShell, Promotion, CountdownTimer, getCategoryLabels, categoryCol
 
 export const AboutPage = () => {
       const timeline = [
-        { year: '2018', event: 'Khá»Ÿi cÃ´ng xÃ¢y dá»±ng dá»± Ã¡n Nhu Villas' },
-        { year: '2019', event: 'Khai trÆ°Æ¡ng 3 villa Ä‘áº§u tiÃªn' },
-        { year: '2020', event: 'Má»Ÿ rá»™ng thÃªm 2 villa vÃ  khu vá»±c dining' },
-        { year: '2021', event: 'Giáº£i thÆ°á»Ÿng Luxury Boutique Resort' },
+        { year: '2018', event: 'Khởi công xây dựng dự án Nhu Villas' },
+        { year: '2019', event: 'Khai trương 3 villa đầu tiên' },
+        { year: '2020', event: 'Mở rộng thêm 2 villa và khu vực dining' },
+        { year: '2021', event: 'Giải thưởng Luxury Boutique Resort' },
         { year: '2022', event: 'Ra máº¯t dá»‹ch vá»¥ private dining' },
         { year: '2023', event: 'Chá»©ng nháº­n Green Hospitality' },
-        { year: '2024', event: 'Má»Ÿ rá»™ng khu vá»±c spa vÃ  wellness' },
+        { year: '2024', event: 'Mở rộng khu vực spa và wellness' },
       ];
 
       const facilities = [
-        { icon: 'ðŸŠ', name: 'Private Pool', desc: 'Há»“ bÆ¡i riÃªng cho má»—i villa' },
-        { icon: 'ðŸ½ï¸', name: 'Private Dining', desc: 'Bá»¯a Äƒn Ä‘Æ°á»£c náº¥u theo yÃªu cáº§u' },
-        { icon: 'ðŸ’†', name: 'Spa & Wellness', desc: 'Tráº£i nghiá»‡m thÆ° giÃ£n Ä‘Ã­ch thá»±c' },
-        { icon: 'ðŸš´', name: 'Bike Tours', desc: 'KhÃ¡m phÃ¡ xung quanh báº±ng xe Ä‘áº¡p' },
-        { icon: 'ðŸ³', name: 'Breakfast Service', desc: 'Bá»¯a sÃ¡ng táº¡i ban cÃ´ng riÃªng' },
-        { icon: 'ðŸš—', name: 'Airport Transfer', desc: 'ÄÆ°a Ä‘Ã³n sÃ¢n bay riÃªng' },
-        { icon: 'ðŸ§¹', name: 'Housekeeping', desc: 'Dá»n phÃ²ng hÃ ng ngÃ y' },
-        { icon: 'ðŸŒ¿', name: 'Garden Walks', desc: 'Äi bá»™ trong vÆ°á»n tropical' },
+        { icon: '🏊', name: 'Private Pool', desc: 'Hồ bơi riêng cho mỗi villa' },
+        { icon: '🍽️', name: 'Private Dining', desc: 'Bữa ăn được nấu theo yêu cầu' },
+        { icon: '💆', name: 'Spa & Wellness', desc: 'Trải nghiệm thư giãn đích thực' },
+        { icon: '🚴', name: 'Bike Tours', desc: 'Khám phá xung quanh bằng xe đạp' },
+        { icon: '🍳', name: 'Breakfast Service', desc: 'Bữa sáng tại ban công riêng' },
+        { icon: '🚗', name: 'Airport Transfer', desc: 'Đưa đón sân bay riêng' },
+        { icon: '🧹', name: 'Housekeeping', desc: 'Dọn phòng hàng ngày' },
+        { icon: '🌿', name: 'Garden Walks', desc: 'Đi bộ trong vườn tropical' },
       ];
 
       const awards = [
         { year: '2021', title: 'Best Boutique Resort', org: 'Travel + Leisure' },
         { year: '2022', title: 'Excellence Award', org: 'Booking.com' },
         { year: '2023', title: 'Green Hospitality', org: 'Sustainable Travel' },
-        { year: '2024', title: 'Top 10 Villas', org: 'CondÃ© Nast Traveler' },
+        { year: '2024', title: 'Top 10 Villas', org: 'Condé Nast Traveler' },
       ];
 
       return (
@@ -53,7 +53,7 @@ export const AboutPage = () => {
                 </p>
                 <p className="mt-4 text-base leading-8 text-brand-ink/62">
                   Every villa is designed with natural materials, oriented toward light and landscape, and staffed by a team 
-                  who knows your name before you arrive. Our approach to service is quiet but present â€” available when needed, 
+                  who knows your name before you arrive. Our approach to service is quiet but present — available when needed,
                   invisible when not.
                 </p>
               </div>
@@ -72,7 +72,7 @@ export const AboutPage = () => {
             <h2 className="mb-8 text-4xl text-brand-charcoal">Brand Philosophy</h2>
             <div className="grid gap-6 md:grid-cols-3">
               <div className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-                <div className="mb-4 text-4xl">ðŸŒ¿</div>
+                <div className="mb-4 text-4xl">🌿</div>
                 <h3 className="text-2xl text-brand-charcoal">Privacy First</h3>
                 <p className="mt-4 text-sm leading-7 text-brand-ink/62">
                   Every product decision should make the guest feel informed, unhurried, and cared for. 
@@ -80,7 +80,7 @@ export const AboutPage = () => {
                 </p>
               </div>
               <div className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-                <div className="mb-4 text-4xl">ðŸ¡</div>
+                <div className="mb-4 text-4xl">🏡</div>
                 <h3 className="text-2xl text-brand-charcoal">Natural Materials</h3>
                 <p className="mt-4 text-sm leading-7 text-brand-ink/62">
                   Stone, wood, linen, and water. Our architecture draws from the landscape it sits in, 
@@ -88,7 +88,7 @@ export const AboutPage = () => {
                 </p>
               </div>
               <div className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-                <div className="mb-4 text-4xl">âœ¨</div>
+                <div className="mb-4 text-4xl">✨</div>
                 <h3 className="text-2xl text-brand-charcoal">Hosted Details</h3>
                 <p className="mt-4 text-sm leading-7 text-brand-ink/62">
                   Service without ceremony. A stocked terrace when you arrive, a quiet breakfast when you wake, 
@@ -139,7 +139,7 @@ export const AboutPage = () => {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {awards.map((award) => (
                 <div key={`${award.year}-${award.title}`} className="rounded-[1.5rem] bg-brand-sand p-6 text-center">
-                  <div className="text-4xl">ðŸ†</div>
+                  <div className="text-4xl">🏆</div>
                   <p className="mt-3 font-serif text-2xl text-brand-charcoal">{award.title}</p>
                   <p className="mt-1 text-xs text-brand-ink/58">{award.org}</p>
                   <p className="mt-2 text-sm font-semibold text-brand-sage">{award.year}</p>
@@ -157,15 +157,15 @@ export const AboutPage = () => {
             </p>
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <div className="rounded-xl bg-brand-white/10 p-4">
-                <span className="text-2xl">â˜€ï¸</span>
+                <span className="text-2xl">☀️</span>
                 <p className="mt-2 font-semibold">100% Renewable Energy</p>
               </div>
               <div className="rounded-xl bg-brand-white/10 p-4">
-                <span className="text-2xl">ðŸŒ±</span>
+                <span className="text-2xl">🌱</span>
                 <p className="mt-2 font-semibold">Zero Single-Use Plastics</p>
               </div>
               <div className="rounded-xl bg-brand-white/10 p-4">
-                <span className="text-2xl">â™»ï¸</span>
+                <span className="text-2xl">♻️</span>
                 <p className="mt-2 font-semibold">Local Sourcing</p>
               </div>
             </div>

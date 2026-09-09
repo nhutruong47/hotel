@@ -19,8 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/ai")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/ai")
 public class AiApi {
 
     private static final Logger log = LoggerFactory.getLogger(AiApi.class);
@@ -35,7 +35,7 @@ public class AiApi {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<ApiResponse> history(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> history(HttpSession session) {
         User user = requireUser(session);
         List<ChatMessage> history = chatMessageRepository.findTop20ByUserOrderByCreatedAtDesc(user);
         Collections.reverse(history);
@@ -43,7 +43,7 @@ public class AiApi {
     }
 
     @PostMapping("/recommend")
-    public ResponseEntity<ApiResponse> recommend(@RequestBody Map<String, String> request, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> recommend(@RequestBody Map<String, String> request, HttpSession session) {
         User user = requireUser(session);
         String message = request.get("message");
         if (message == null || message.trim().isEmpty()) {
@@ -67,7 +67,7 @@ public class AiApi {
     }
 
     @DeleteMapping("/history")
-    public ResponseEntity<ApiResponse> clear(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> clear(HttpSession session) {
         User user = requireUser(session);
         chatMessageRepository.deleteByUser(user);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã xóa lịch sử chat")));

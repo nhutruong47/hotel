@@ -91,24 +91,24 @@ export function CountdownTimer({ endDate }: { endDate: string }) {
   }, [endDate]);
 
   return (
-    <div className="flex gap-2">
+    <div className="flex justify-center gap-2 text-white">
       {timeLeft.days > 0 && (
-        <div className="rounded-lg bg-brand-forest-deep/20 px-2 py-1 text-center">
-          <span className="block text-lg font-bold text-brand-forest">{timeLeft.days}</span>
-          <span className="text-xs uppercase">Days</span>
+        <div className="min-w-14 rounded-lg border border-white/10 bg-white/10 px-2 py-2 text-center">
+          <span className="block text-xl font-bold leading-none !text-white">{timeLeft.days}</span>
+          <span className="mt-2 block text-[0.65rem] uppercase tracking-wider text-white/70">Days</span>
         </div>
       )}
-      <div className="rounded-lg bg-brand-forest-deep/20 px-2 py-1 text-center">
-        <span className="block text-lg font-bold text-brand-forest">{String(timeLeft.hours).padStart(2, '0')}</span>
-        <span className="text-xs uppercase">Hours</span>
+      <div className="min-w-14 rounded-lg border border-white/10 bg-white/10 px-2 py-2 text-center">
+        <span className="block text-xl font-bold leading-none !text-white">{String(timeLeft.hours).padStart(2, '0')}</span>
+        <span className="mt-2 block text-[0.65rem] uppercase tracking-wider text-white/70">Hours</span>
       </div>
-      <div className="rounded-lg bg-brand-forest-deep/20 px-2 py-1 text-center">
-        <span className="block text-lg font-bold text-brand-forest">{String(timeLeft.minutes).padStart(2, '0')}</span>
-        <span className="text-xs uppercase">Min</span>
+      <div className="min-w-14 rounded-lg border border-white/10 bg-white/10 px-2 py-2 text-center">
+        <span className="block text-xl font-bold leading-none !text-white">{String(timeLeft.minutes).padStart(2, '0')}</span>
+        <span className="mt-2 block text-[0.65rem] uppercase tracking-wider text-white/70">Min</span>
       </div>
-      <div className="rounded-lg bg-brand-forest-deep/20 px-2 py-1 text-center">
-        <span className="block text-lg font-bold text-brand-forest">{String(timeLeft.seconds).padStart(2, '0')}</span>
-        <span className="text-xs uppercase">Sec</span>
+      <div className="min-w-14 rounded-lg border border-white/10 bg-white/10 px-2 py-2 text-center">
+        <span className="block text-xl font-bold leading-none !text-white">{String(timeLeft.seconds).padStart(2, '0')}</span>
+        <span className="mt-2 block text-[0.65rem] uppercase tracking-wider text-white/70">Sec</span>
       </div>
     </div>
   );

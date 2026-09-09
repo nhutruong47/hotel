@@ -38,16 +38,16 @@ export const ContactPage = () => {
           setSubject('');
           setMessage('');
         } catch (err) {
-          setErrorMsg('KhÃ´ng thá»ƒ gá»­i tin nháº¯n. Vui lÃ²ng thá»­ láº¡i.');
+          setErrorMsg('Không thể gửi tin nhắn. Vui lòng thử lại.');
         }
       };
 
       const contactTypes = [
         { value: 'GENERAL', label: 'Chung' },
-        { value: 'RESERVATION', label: 'Äáº·t phÃ²ng' },
+        { value: 'RESERVATION', label: 'Đặt phòng' },
         { value: 'SUPPORT', label: 'Há»— trá»£' },
         { value: 'FEEDBACK', label: 'Pháº£n há»“i' },
-        { value: 'PARTNERSHIP', label: 'Há»£p tÃ¡c' },
+        { value: 'PARTNERSHIP', label: 'Hợp tác' },
         { value: 'EMERGENCY', label: 'Kháº©n cáº¥p' },
       ];
 
@@ -88,10 +88,10 @@ export const ContactPage = () => {
                 <h3 className="text-xl text-brand-charcoal">Quick Contact</h3>
                 <div className="mt-4 space-y-3">
                   <a href="tel:+84123456789" className="flex items-center gap-3 text-brand-ink/64 hover:text-brand-forest">
-                    <span>ðŸ“ž</span> +84 123 456 789
+                    <span>📞</span> +84 123 456 789
                   </a>
                   <a href="mailto:reservations@nhuvillas.com" className="flex items-center gap-3 text-brand-ink/64 hover:text-brand-forest">
-                    <span>âœ‰ï¸</span> reservations@nhuvillas.com
+                    <span>✉️</span> reservations@nhuvillas.com
                   </a>
                 </div>
               </div>

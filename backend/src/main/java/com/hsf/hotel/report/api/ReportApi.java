@@ -6,13 +6,15 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-@RestController
-@RequestMapping("/api/v1/admin/reports")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/admin/reports")
+@PreAuthorize("hasRole('ADMIN')")
 public class ReportApi {
 
     private static final String XLSX_CONTENT_TYPE =

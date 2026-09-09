@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
-@RequestMapping("/api/v1/blogs")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/blogs")
 public class BlogApi {
 
     private final BlogService blogService;
@@ -20,13 +20,13 @@ public class BlogApi {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> getAllBlogs() {
+    public ResponseEntity<ApiResponse<?>> getAllBlogs() {
         List<Blog> blogs = blogService.getAllBlogs();
         return ResponseEntity.ok(ApiResponse.ok(blogs));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> getBlogDetail(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponse<?>> getBlogDetail(@PathVariable Integer id) {
         Blog blog = blogService.getBlogById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Blog", id));
         return ResponseEntity.ok(ApiResponse.ok(blog));

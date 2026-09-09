@@ -25,13 +25,13 @@ export const FAQPage = () => {
       });
 
       const categoryLabels: Record<string, string> = {
-        BOOKING: 'Äáº·t phÃ²ng',
-        PAYMENT: 'Thanh toÃ¡n',
-        REFUND: 'HoÃ n tiá»n',
-        CANCELLATION: 'Há»§y phÃ²ng',
-        POLICIES: 'ChÃ­nh sÃ¡ch',
+        BOOKING: 'Đặt phòng',
+        PAYMENT: 'Thanh toán',
+        REFUND: 'Hoàn tiền',
+        CANCELLATION: 'Hủy phòng',
+        POLICIES: 'Chính sách',
         SERVICES: 'Dá»‹ch vá»¥',
-        FACILITIES: 'Tiá»‡n Ã­ch',
+        FACILITIES: 'Tiện ích',
         TRANSPORT: 'Di chuyá»ƒn',
         GENERAL: 'Chung',
       };
@@ -73,7 +73,7 @@ export const FAQPage = () => {
                 placeholder="Search questions..."
                 className="h-14 w-full rounded-full border border-brand-stone bg-brand-paper px-6 pl-14 text-sm focus:border-brand-forest focus:outline-none"
               />
-              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-ink/40">ðŸ”</span>
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-brand-ink/40">🔍</span>
             </div>
           </div>
 
@@ -135,13 +135,13 @@ export const FAQPage = () => {
                         onClick={() => markHelpful(faq.id, true)}
                         className="flex items-center gap-1 rounded-full bg-brand-sage/20 px-3 py-1 text-xs text-brand-forest hover:bg-brand-sage/30"
                       >
-                        ðŸ‘ {faq.helpfulCount || 0}
+                        👍 {faq.helpfulCount || 0}
                       </button>
                       <button
                         onClick={() => markHelpful(faq.id, false)}
                         className="flex items-center gap-1 rounded-full bg-brand-coral/10 px-3 py-1 text-xs text-brand-coral hover:bg-brand-coral/20"
                       >
-                        ðŸ‘Ž {faq.notHelpfulCount || 0}
+                        👎 {faq.notHelpfulCount || 0}
                       </button>
                     </div>
                   </div>

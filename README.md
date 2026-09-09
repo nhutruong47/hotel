@@ -43,6 +43,7 @@ two tightly coupled deliverables:
 
 ### `docs/`
 Contains all architectural, business, and enterprise documentation (e.g., `ARCHITECTURE.md`, `MASTER_PROJECT_PLAN.md`).
+All backend endpoints must follow [`docs/API_STANDARDS.md`](docs/API_STANDARDS.md); a build-time architecture test enforces the controller, versioning, response, and admin-authorization rules.
 
 ### `database/`
 Contains SQL migration scripts and constraints.

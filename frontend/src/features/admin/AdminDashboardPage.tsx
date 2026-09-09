@@ -85,7 +85,7 @@ type AdminUser = {
 type BookingAction = 'approve' | 'reject' | 'complete' | 'cancel' | 'checkin' | 'checkout';
 
 function formatVnd(value: number | string | undefined): string {
-  if (value == null) return 'â€”';
+  if (value == null) return '—';
   const num = typeof value === 'string' ? Number(value) : value;
   if (!Number.isFinite(num)) return String(value);
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(num);
@@ -313,12 +313,12 @@ function OverviewPanel({ data, isLoading }: { data?: AdminDashboard; isLoading: 
       <div className="mt-6 grid gap-5 md:grid-cols-3">
         <article className="rounded-[2rem] bg-brand-paper p-6 shadow-[0_18px_60px_rgba(32,52,43,0.08)]">
           <p className="text-sm font-semibold text-brand-ink/58">Users</p>
-          <p className="mt-4 font-serif text-3xl text-brand-charcoal">{data.totalUsers ?? 'â€”'}</p>
+          <p className="mt-4 font-serif text-3xl text-brand-charcoal">{data.totalUsers ?? '—'}</p>
           <p className="mt-3 text-sm text-brand-ink/52">Registered</p>
         </article>
         <article className="rounded-[2rem] bg-brand-paper p-6 shadow-[0_18px_60px_rgba(32,52,43,0.08)]">
           <p className="text-sm font-semibold text-brand-ink/58">Reviews</p>
-          <p className="mt-4 font-serif text-3xl text-brand-charcoal">{data.totalReviews ?? 'â€”'}</p>
+          <p className="mt-4 font-serif text-3xl text-brand-charcoal">{data.totalReviews ?? '—'}</p>
           <p className="mt-3 text-sm text-brand-ink/52">Across all villas</p>
         </article>
         <article className="rounded-[2rem] bg-brand-paper p-6 shadow-[0_18px_60px_rgba(32,52,43,0.08)]">
@@ -336,7 +336,7 @@ function OverviewPanel({ data, isLoading }: { data?: AdminDashboard; isLoading: 
             <ul className="mt-4 space-y-3 text-sm text-brand-ink/72">
               {data.recentBookings.map((b: AdminBooking) => (
                 <li key={b.id} className="flex items-center justify-between rounded-[1rem] bg-brand-white p-3">
-                  <span>#{b.id} Â· Room {b.room?.roomNumber ?? 'â€”'} Â· {b.guestName}</span>
+                  <span>#{b.id} · Room {b.room?.roomNumber ?? '—'} · {b.guestName}</span>
                   <span className="text-brand-ink/58">{b.status}</span>
                 </li>
               ))}
@@ -417,18 +417,18 @@ function BookingsPanel({
               <>
                 <tr key={b.id} className="border-t border-brand-stone/40 align-top">
                   <td className="p-4 font-semibold text-brand-charcoal">#{b.id}</td>
-                  <td className="p-4">{b.room?.roomNumber ?? 'â€”'}</td>
+                  <td className="p-4">{b.room?.roomNumber ?? '—'}</td>
                   <td className="p-4">
                     <div className="font-semibold text-brand-charcoal">{b.guestName}</div>
                     <div className="mt-1 text-xs text-brand-ink/58">
-                      {b.guestEmail || b.user?.email || 'â€”'}
-                      {b.guestPhone ? ` Â· ${b.guestPhone}` : ''}
-                      {b.guests ? ` Â· ${b.guests} pax` : ''}
+                      {b.guestEmail || b.user?.email || '—'}
+                      {b.guestPhone ? ` · ${b.guestPhone}` : ''}
+                      {b.guests ? ` · ${b.guests} pax` : ''}
                     </div>
                   </td>
                   <td className="p-4 text-brand-ink/62">
-                    <div>{b.checkInDate} â†’ {b.checkOutDate}</div>
-                    {b.notes ? <div className="mt-1 text-xs text-brand-ink/48">ðŸ“ {b.notes}</div> : null}
+                    <div>{b.checkInDate} → {b.checkOutDate}</div>
+                    {b.notes ? <div className="mt-1 text-xs text-brand-ink/48">📝 {b.notes}</div> : null}
                   </td>
                   <td className="p-4">{formatVnd(b.totalPrice)}</td>
                   <td className="p-4">
@@ -569,9 +569,9 @@ function RoomsPanel({
               <>
                 <tr key={r.id} className="border-t border-brand-stone/40 align-top">
                   <td className="p-4 font-semibold text-brand-charcoal">#{r.roomNumber}</td>
-                  <td className="p-4">{r.roomType?.name ?? 'â€”'}</td>
+                  <td className="p-4">{r.roomType?.name ?? '—'}</td>
                   <td className="p-4">{formatVnd(r.pricePerNight)}</td>
-                  <td className="p-4">{r.capacity ?? 'â€”'} Â· {r.bedrooms ?? 'â€”'} BR</td>
+                  <td className="p-4">{r.capacity ?? '—'} · {r.bedrooms ?? '—'} BR</td>
                   <td className="p-4">{r.isAvailable ? 'Yes' : 'No'}</td>
                   <td className="p-4">
                     <div className="flex flex-wrap gap-2">
@@ -666,7 +666,7 @@ function RoomForm({
         <label className="block text-xs font-semibold text-brand-charcoal">
           Room type
           <select value={roomTypeId ?? ''} onChange={(e) => setRoomTypeId(Number(e.target.value) || undefined)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4">
-            <option value="">â€” Select â€”</option>
+            <option value="">— Select —</option>
             {roomTypes.map((rt) => (
               <option key={rt.id} value={rt.id}>{rt.name}</option>
             ))}
@@ -772,10 +772,10 @@ function VouchersPanel({ data, isLoading, onChanged }: { data?: { vouchers: Admi
               <li key={v.id} className="flex items-center justify-between rounded-[1rem] bg-brand-white p-4 text-sm">
                 <div>
                   <span className="font-semibold text-brand-charcoal">{v.code}</span>{' '}
-                  Â· {v.percent ? `${v.amount}%` : formatVnd(v.amount)} Â· qty {v.quantity}
-                  {' Â· used '}{v.usedCount ?? 0}
-                  {v.expiryDate ? ` Â· exp ${v.expiryDate}` : ''}
-                  {v.active === false ? ' Â· inactive' : ''}
+                  · {v.percent ? `${v.amount}%` : formatVnd(v.amount)} · qty {v.quantity}
+                  {' · used '}{v.usedCount ?? 0}
+                  {v.expiryDate ? ` · exp ${v.expiryDate}` : ''}
+                  {v.active === false ? ' · inactive' : ''}
                 </div>
                 <div className="flex gap-2">
                   <button

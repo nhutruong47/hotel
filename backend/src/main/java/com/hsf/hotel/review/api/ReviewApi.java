@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/v1/reviews")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/reviews")
 public class ReviewApi {
 
     private final ReviewService reviewService;
@@ -60,7 +60,7 @@ public class ReviewApi {
     }
 
     @GetMapping("/room/{roomId}")
-    public ResponseEntity<ApiResponse> forRoom(@PathVariable Integer roomId) {
+    public ResponseEntity<ApiResponse<?>> forRoom(@PathVariable Integer roomId) {
         Room room = roomService.getRoomById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
         List<Review> reviews = reviewService.getReviewsByRoomId(roomId);
@@ -90,13 +90,13 @@ public class ReviewApi {
     }
 
     @GetMapping("/mine")
-    public ResponseEntity<ApiResponse> mine(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> mine(HttpSession session) {
         User user = requireUser(session);
         return ResponseEntity.ok(ApiResponse.ok(reviewService.getReviewsByUser(user)));
     }
 
     @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<ApiResponse> forBooking(@PathVariable Integer bookingId, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> forBooking(@PathVariable Integer bookingId, HttpSession session) {
         User user = requireUser(session);
         Booking booking = bookingService.getBookingById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", bookingId));
@@ -113,7 +113,7 @@ public class ReviewApi {
     }
 
     @PostMapping("/booking/{bookingId}")
-    public ResponseEntity<ApiResponse> submit(@PathVariable Integer bookingId,
+    public ResponseEntity<ApiResponse<?>> submit(@PathVariable Integer bookingId,
                                               @Valid @RequestBody ReviewRequest body,
                                               HttpSession session) {
         User user = requireUser(session);
@@ -127,7 +127,7 @@ public class ReviewApi {
     }
 
     @PutMapping("/{reviewId}")
-    public ResponseEntity<ApiResponse> update(@PathVariable Integer reviewId,
+    public ResponseEntity<ApiResponse<?>> update(@PathVariable Integer reviewId,
                                               @Valid @RequestBody ReviewRequest body,
                                               HttpSession session) {
         User user = requireUser(session);
@@ -139,7 +139,7 @@ public class ReviewApi {
     }
 
     @DeleteMapping("/{reviewId}")
-    public ResponseEntity<ApiResponse> delete(@PathVariable Integer reviewId, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable Integer reviewId, HttpSession session) {
         User user = requireUser(session);
         reviewService.deleteReview(user, reviewId);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã xóa đánh giá!")));

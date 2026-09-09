@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -76,7 +75,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            SessionAuthBridgeFilter sessionAuthBridgeFilter,
-                                           SessionAuthenticationStrategy sessionAuthenticationStrategy) throws Exception {
+                                           SessionAuthenticationStrategy sessionAuthenticationStrategy,
+                                           ApiSecurityErrorWriter securityErrorWriter) throws Exception {
         http
                 .addFilterBefore(sessionAuthBridgeFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -136,16 +136,15 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authException) -> {
                     String uri = request.getRequestURI();
                     if (uri != null && uri.startsWith("/api/")) {
-                        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                        response.getWriter().write(
-                                "{\"data\":null,\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication required\"}}"
-                        );
+                        securityErrorWriter.write(response, HttpStatus.UNAUTHORIZED,
+                                ErrorCodes.UNAUTHORIZED, "Authentication required");
                     } else {
                         response.setStatus(HttpStatus.UNAUTHORIZED.value());
                         response.sendRedirect("/login");
                     }
-                }));
+                }).accessDeniedHandler((request, response, accessDeniedException) ->
+                        securityErrorWriter.write(response, HttpStatus.FORBIDDEN,
+                                ErrorCodes.FORBIDDEN, "You do not have permission to perform this action")));
 
         return http.build();
     }

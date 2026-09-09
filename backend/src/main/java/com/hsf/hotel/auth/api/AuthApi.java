@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/auth")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/auth")
 public class AuthApi {
 
     private final UserService userService;
@@ -73,7 +73,7 @@ public class AuthApi {
     /* ---------- endpoints ---------- */
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse> login(@Valid @RequestBody LoginRequest req,
+    public ResponseEntity<ApiResponse<Map<String, Object>>> login(@Valid @RequestBody LoginRequest req,
                                              HttpServletRequest request,
                                              HttpServletResponse response,
                                              HttpSession session) {
@@ -106,7 +106,7 @@ public class AuthApi {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse> register(@Valid @RequestBody RegisterRequest req,
+    public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest req,
                                                 HttpServletRequest request,
                                                 HttpServletResponse response) {
         User saved = userService.registerUser(req.username, req.password, req.email, req.fullName);
@@ -120,7 +120,7 @@ public class AuthApi {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<ApiResponse> verifyEmail(@RequestParam String token) {
+    public ResponseEntity<ApiResponse<?>> verifyEmail(@RequestParam String token) {
         boolean ok = userService.verifyEmail(token);
         if (ok) {
             return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Email đã được xác thực")));
@@ -131,13 +131,13 @@ public class AuthApi {
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse> resendVerification(@RequestParam String email) {
+    public ResponseEntity<ApiResponse<?>> resendVerification(@RequestParam String email) {
         userService.resendVerificationEmail(email);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Email xác thực đã được gửi lại")));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         User current = null;
         if (session != null) {
@@ -156,7 +156,7 @@ public class AuthApi {
     }
 
     @GetMapping("/session")
-    public ResponseEntity<ApiResponse> session(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> session(HttpServletRequest request) {
         Map<String, Object> out = new LinkedHashMap<>();
         HttpSession session = request.getSession(false);
 
@@ -179,7 +179,7 @@ public class AuthApi {
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<ApiResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req,
+    public ResponseEntity<ApiResponse<?>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest req,
                                                       HttpServletRequest request) {
         // Always return success to avoid leaking whether the email exists.
         profileService.initiatePasswordReset(req.email);
@@ -191,7 +191,7 @@ public class AuthApi {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest req,
+    public ResponseEntity<ApiResponse<?>> resetPassword(@Valid @RequestBody ResetPasswordRequest req,
                                                     HttpServletRequest request) {
         if (!req.newPassword.equals(req.confirmPassword)) {
             return ResponseEntity.badRequest()

@@ -25,6 +25,8 @@ public final class ErrorCodes {
     public static final String DATABASE_ERROR = "DATABASE_ERROR";
     public static final String DUPLICATE_RESOURCE = "DUPLICATE_RESOURCE";
     public static final String CSRF_TOKEN_INVALID = "CSRF_TOKEN_INVALID";
+    public static final String METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED";
+    public static final String UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE";
 
     // ---- Domain-specific ----
     public static final String BOOKING_NOT_FOUND = "BOOKING_NOT_FOUND";

@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Data
-public class RoomDTO {
+public class RoomDTO implements java.io.Serializable {
     private Integer id;
     private String roomNumber;
     private RoomTypeDTO roomType;

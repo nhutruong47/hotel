@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/notifications")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/notifications")
 public class NotificationApi {
 
     private final NotificationService notificationService;
@@ -32,7 +32,7 @@ public class NotificationApi {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> getMyNotifications(
+    public ResponseEntity<ApiResponse<?>> getMyNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             HttpSession session) {
@@ -49,7 +49,7 @@ public class NotificationApi {
     }
 
     @PostMapping("/{id}/read")
-    public ResponseEntity<ApiResponse> markAsRead(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> markAsRead(@PathVariable Integer id, HttpSession session) {
         User user = requireUser(session);
         Notification notification = notificationService.getNotificationById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Notification not found"));
@@ -64,14 +64,14 @@ public class NotificationApi {
     }
 
     @PostMapping("/read-all")
-    public ResponseEntity<ApiResponse> markAllAsRead(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> markAllAsRead(HttpSession session) {
         User user = requireUser(session);
         notificationService.markAllAsRead(user.getId());
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã đánh dấu tất cả đã đọc")));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteNotification(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> deleteNotification(@PathVariable Integer id, HttpSession session) {
         User user = requireUser(session);
         Notification notification = notificationService.getNotificationById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Notification not found"));

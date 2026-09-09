@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/v1/profile")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/profile")
 public class ProfileApi {
 
     private final ProfileService profileService;
@@ -54,7 +54,7 @@ public class ProfileApi {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> get(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> get(HttpServletRequest request) {
         User user = resolveCurrentUser(request)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED,
                         ErrorCodes.UNAUTHORIZED, "Chưa đăng nhập"));
@@ -62,7 +62,7 @@ public class ProfileApi {
     }
 
     @PutMapping
-    public ResponseEntity<ApiResponse> update(@Valid @ModelAttribute ProfileDTO profileDTO,
+    public ResponseEntity<ApiResponse<?>> update(@Valid @ModelAttribute ProfileDTO profileDTO,
                                               @RequestParam(required = false) MultipartFile avatar,
                                               HttpServletRequest request) {
         User current = resolveCurrentUser(request)
@@ -92,7 +92,7 @@ public class ProfileApi {
     }
 
     @PutMapping("/password")
-    public ResponseEntity<ApiResponse> changePassword(@Valid @RequestBody PasswordDTO.UpdatePassword passwordDTO,
+    public ResponseEntity<ApiResponse<?>> changePassword(@Valid @RequestBody PasswordDTO.UpdatePassword passwordDTO,
                                                       HttpServletRequest request) {
         User current = resolveCurrentUser(request)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED,
@@ -111,7 +111,7 @@ public class ProfileApi {
     private static final ObjectMapper PREFERENCES_MAPPER = new ObjectMapper();
 
     @GetMapping("/preferences")
-    public ResponseEntity<ApiResponse> getPreferences(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> getPreferences(HttpServletRequest request) {
         User current = resolveCurrentUser(request)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED,
                         ErrorCodes.UNAUTHORIZED, "Chưa đăng nhập"));
@@ -128,7 +128,7 @@ public class ProfileApi {
     }
 
     @PutMapping("/preferences")
-    public ResponseEntity<ApiResponse> updatePreferences(@RequestBody PreferencesDTO dto,
+    public ResponseEntity<ApiResponse<?>> updatePreferences(@RequestBody PreferencesDTO dto,
                                                          HttpServletRequest request) {
         User current = resolveCurrentUser(request)
                 .orElseThrow(() -> new ApiException(HttpStatus.UNAUTHORIZED,

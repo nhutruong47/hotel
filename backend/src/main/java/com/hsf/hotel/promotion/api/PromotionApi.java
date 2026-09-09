@@ -1,9 +1,11 @@
 package com.hsf.hotel.promotion.api;
 
-import com.hsf.hotel.promotion.model.Promotion;
+import com.hsf.hotel.config.ApiResponse;
+import com.hsf.hotel.config.ApiResponses;
+import com.hsf.hotel.promotion.dto.PromotionResponse;
+import com.hsf.hotel.promotion.dto.PromotionValidationResponse;
 import com.hsf.hotel.promotion.model.Promotion.PromotionCategory;
-import com.hsf.hotel.promotion.service.PromotionService;
-import com.hsf.hotel.exception.VoucherException;
+import com.hsf.hotel.promotion.service.PromotionQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,96 +14,60 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/promotions")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/promotions")
 @RequiredArgsConstructor
 public class PromotionApi {
 
-    private final PromotionService promotionService;
+    private final PromotionQueryService promotionQueryService;
 
     @GetMapping
-    public ResponseEntity<List<Promotion>> getActivePromotions() {
-        return ResponseEntity.ok(promotionService.getActivePromotions());
+    public ResponseEntity<ApiResponse<List<PromotionResponse>>> getActivePromotions() {
+        return ApiResponses.ok(promotionQueryService.active());
     }
 
     @GetMapping("/featured")
-    public ResponseEntity<List<Promotion>> getFeaturedPromotions() {
-        return ResponseEntity.ok(promotionService.getFeaturedPromotions());
+    public ResponseEntity<ApiResponse<List<PromotionResponse>>> getFeaturedPromotions() {
+        return ApiResponses.ok(promotionQueryService.featured());
     }
 
     @GetMapping("/category/{category}")
-    public ResponseEntity<List<Promotion>> getByCategory(@PathVariable PromotionCategory category) {
-        return ResponseEntity.ok(promotionService.getPromotionsByCategory(category));
+    public ResponseEntity<ApiResponse<List<PromotionResponse>>> getByCategory(@PathVariable PromotionCategory category) {
+        return ApiResponses.ok(promotionQueryService.byCategory(category));
     }
 
     @GetMapping("/expired")
-    public ResponseEntity<List<Promotion>> getExpiredPromotions() {
-        return ResponseEntity.ok(promotionService.getExpiredPromotions());
+    public ResponseEntity<ApiResponse<List<PromotionResponse>>> getExpiredPromotions() {
+        return ApiResponses.ok(promotionQueryService.expired());
     }
 
     @GetMapping("/upcoming")
-    public ResponseEntity<List<Promotion>> getUpcomingPromotions() {
-        return ResponseEntity.ok(promotionService.getUpcomingPromotions());
+    public ResponseEntity<ApiResponse<List<PromotionResponse>>> getUpcomingPromotions() {
+        return ApiResponses.ok(promotionQueryService.upcoming());
     }
 
     @GetMapping("/countdown")
-    public ResponseEntity<List<Promotion>> getPromotionsWithCountdown() {
-        return ResponseEntity.ok(promotionService.getPromotionsWithCountdown());
+    public ResponseEntity<ApiResponse<List<PromotionResponse>>> getPromotionsWithCountdown() {
+        return ApiResponses.ok(promotionQueryService.countdown());
     }
 
     @GetMapping("/grouped")
-    public ResponseEntity<Map<PromotionCategory, List<Promotion>>> getGroupedPromotions() {
-        return ResponseEntity.ok(promotionService.getPromotionsGroupedByCategory());
+    public ResponseEntity<ApiResponse<Map<PromotionCategory, List<PromotionResponse>>>> getGroupedPromotions() {
+        return ApiResponses.ok(promotionQueryService.grouped());
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<Map<String, Object>> validatePromoCode(
+    public ResponseEntity<ApiResponse<PromotionValidationResponse>> validatePromoCode(
             @RequestParam String code,
             @RequestParam BigDecimal amount,
             @RequestParam int nights) {
-        try {
-            Promotion promo = promotionService.validatePromoCode(code, amount, nights);
-            BigDecimal discount = promotionService.calculateDiscount(promo, amount);
-            return ResponseEntity.ok(Map.of(
-                "valid", true,
-                "promotion", promo,
-                "discount", discount,
-                "finalAmount", amount.subtract(discount)
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.ok(Map.of(
-                "valid", false,
-                "error", e.getMessage()
-            ));
-        }
+        return ApiResponses.ok(promotionQueryService.validate(code, amount, nights));
     }
 
     @GetMapping("/preview")
-    public ResponseEntity<Map<String, Object>> previewDiscount(
+    public ResponseEntity<ApiResponse<PromotionValidationResponse>> previewDiscount(
             @RequestParam String code,
             @RequestParam BigDecimal subtotal) {
-        try {
-            List<Promotion> allPromos = promotionService.getAllPromotions();
-            Promotion promo = allPromos.stream()
-                    .filter(p -> code.equalsIgnoreCase(p.getPromoCode()))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("Promo code not found"));
-
-            BigDecimal discount = promotionService.calculateDiscount(promo, subtotal);
-            return ResponseEntity.ok(Map.of(
-                "valid", true,
-                "code", code,
-                "discountType", promo.getDiscountPercent() != null ? "percent" : "fixed",
-                "discountValue", promo.getDiscountPercent() != null ? promo.getDiscountPercent() : promo.getDiscountAmount(),
-                "discount", discount,
-                "finalAmount", subtotal.subtract(discount),
-                "promotion", promo
-            ));
-        } catch (RuntimeException e) {
-            return ResponseEntity.ok(Map.of(
-                "valid", false,
-                "error", e.getMessage()
-            ));
-        }
+        return ApiResponses.ok(promotionQueryService.preview(code, subtotal));
     }
 }

@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1)
 public class HealthApi {
 
     @GetMapping("/health")
-    public ResponseEntity<ApiResponse> healthCheck() {
+    public ResponseEntity<ApiResponse<?>> healthCheck() {
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "status", "UP",
                 "message", "Spring Boot API is running"

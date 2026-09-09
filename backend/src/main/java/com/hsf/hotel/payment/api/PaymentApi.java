@@ -46,8 +46,8 @@ import java.util.Map;
  *   <li>Refund processing</li>
  * </ul>
  */
-@RestController
-@RequestMapping("/api/v1/payments")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/payments")
 public class PaymentApi {
 
     private static final Logger log = LoggerFactory.getLogger(PaymentApi.class);
@@ -141,7 +141,7 @@ public class PaymentApi {
      * Create a manual payment record (for bank transfer, cash, etc.)
      */
     @PostMapping
-    public ResponseEntity<ApiResponse> create(@Valid @RequestBody CreatePaymentRequest req,
+    public ResponseEntity<ApiResponse<?>> create(@Valid @RequestBody CreatePaymentRequest req,
                                               HttpSession session) {
         User user = requireUser(session);
         Booking booking = getBookingOrThrow(req.bookingId);
@@ -165,7 +165,7 @@ public class PaymentApi {
      * Returns the session ID and checkout URL.
      */
     @PostMapping("/stripe-checkout")
-    public ResponseEntity<ApiResponse> createStripeCheckout(
+    public ResponseEntity<ApiResponse<?>> createStripeCheckout(
             @Valid @RequestBody StripeCheckoutRequest req,
             HttpSession session) {
         User user = requireUser(session);
@@ -248,7 +248,7 @@ public class PaymentApi {
      * Get Stripe checkout session status.
      */
     @GetMapping("/stripe-session/{sessionId}")
-    public ResponseEntity<ApiResponse> getStripeSession(
+    public ResponseEntity<ApiResponse<?>> getStripeSession(
             @PathVariable String sessionId,
             HttpSession session) {
         User user = requireUser(session);
@@ -303,7 +303,7 @@ public class PaymentApi {
      * Create a payment intent (for custom Stripe integration).
      */
     @PostMapping("/intent")
-    public ResponseEntity<ApiResponse> createIntent(
+    public ResponseEntity<ApiResponse<?>> createIntent(
             @Valid @RequestBody CreatePaymentRequest req,
             HttpSession session) {
         User user = requireUser(session);
@@ -333,7 +333,7 @@ public class PaymentApi {
      * This endpoint should be called by Stripe after payment completion.
      */
     @PostMapping("/webhook/stripe")
-    public ResponseEntity<ApiResponse> handleStripeWebhook(
+    public ResponseEntity<ApiResponse<?>> handleStripeWebhook(
             @RequestBody String payload,
             @RequestHeader(value = "Stripe-Signature", required = false) String signature,
             HttpServletRequest request) {
@@ -382,7 +382,7 @@ public class PaymentApi {
      * Handle generic gateway webhooks (legacy).
      */
     @PostMapping("/webhook/{gateway}")
-    public ResponseEntity<ApiResponse> handleGenericWebhook(
+    public ResponseEntity<ApiResponse<?>> handleGenericWebhook(
             @PathVariable String gateway,
             @RequestBody Map<String, Object> payload) {
         
@@ -403,7 +403,7 @@ public class PaymentApi {
      * Mark payment as complete (manual confirmation).
      */
     @PostMapping("/{id}/complete")
-    public ResponseEntity<ApiResponse> markComplete(
+    public ResponseEntity<ApiResponse<?>> markComplete(
             @PathVariable Integer id,
             HttpSession session) {
         User user = requireUser(session);
@@ -425,7 +425,7 @@ public class PaymentApi {
      * Mark payment as failed.
      */
     @PostMapping("/{id}/fail")
-    public ResponseEntity<ApiResponse> markFailed(
+    public ResponseEntity<ApiResponse<?>> markFailed(
             @PathVariable Integer id,
             @RequestBody(required = false) Map<String, String> body,
             HttpSession session) {
@@ -445,7 +445,7 @@ public class PaymentApi {
      * Process refund.
      */
     @PostMapping("/{id}/refund")
-    public ResponseEntity<ApiResponse> refund(
+    public ResponseEntity<ApiResponse<?>> refund(
             @PathVariable Integer id,
             @Valid @RequestBody RefundRequest req,
             HttpSession session) {
@@ -469,7 +469,7 @@ public class PaymentApi {
      * Get payments for a booking.
      */
     @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<ApiResponse> forBooking(
+    public ResponseEntity<ApiResponse<?>> forBooking(
             @PathVariable Integer bookingId,
             HttpSession session) {
         User user = requireUser(session);
@@ -484,7 +484,7 @@ public class PaymentApi {
      * Get all payments (admin only).
      */
     @GetMapping
-    public ResponseEntity<ApiResponse> all(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> all(HttpSession session) {
         User user = requireUser(session);
         requireAdmin(user);
         

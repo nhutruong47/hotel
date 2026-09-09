@@ -12,8 +12,8 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/vouchers")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/vouchers")
 public class VoucherApi {
 
     private final VoucherService voucherService;
@@ -23,7 +23,7 @@ public class VoucherApi {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<ApiResponse> validate(@RequestParam String code) {
+    public ResponseEntity<ApiResponse<?>> validate(@RequestParam String code) {
         VoucherService.VoucherValidationResult res = voucherService.validateVoucher(code);
         Map<String, Object> data = new HashMap<>();
         data.put("valid", res.valid);
@@ -43,7 +43,7 @@ public class VoucherApi {
      * preview the price impact before submitting a booking.
      */
     @GetMapping("/preview")
-    public ResponseEntity<ApiResponse> preview(@RequestParam String code,
+    public ResponseEntity<ApiResponse<?>> preview(@RequestParam String code,
                                               @RequestParam BigDecimal subtotal) {
         VoucherService.VoucherValidationResult res = voucherService.validateVoucher(code);
         Map<String, Object> data = new HashMap<>();

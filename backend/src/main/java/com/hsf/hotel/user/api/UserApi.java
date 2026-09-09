@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@RestController
-@RequestMapping("/api/v1/users")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/users")
 public class UserApi {
 
     private static final Set<String> ALLOWED_ROLES = Set.of("USER", "ADMIN");
@@ -58,7 +58,7 @@ public class UserApi {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<ApiResponse> updatePassword(@Valid @RequestBody PasswordDTO.UpdatePassword req,
+    public ResponseEntity<ApiResponse<?>> updatePassword(@Valid @RequestBody PasswordDTO.UpdatePassword req,
                                                       HttpSession session,
                                                       HttpServletRequest request) {
         User user = requireUser(session);
@@ -78,7 +78,7 @@ public class UserApi {
 
     @GetMapping
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse> list(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> list(HttpSession session) {
         requireAdmin(session);
         List<UserSummaryDTO> users = userRepository.findAll().stream()
                 .map(UserSummaryDTO::from)
@@ -88,7 +88,7 @@ public class UserApi {
 
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse> get(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> get(@PathVariable Integer id, HttpSession session) {
         requireAdmin(session);
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
@@ -96,7 +96,7 @@ public class UserApi {
     }
 
     @PutMapping("/{id}/role")
-    public ResponseEntity<ApiResponse> updateRole(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> updateRole(@PathVariable Integer id,
                                                  @Valid @RequestBody PasswordDTO.UpdateRole body,
                                                  HttpSession session,
                                                  HttpServletRequest request) {
@@ -122,7 +122,7 @@ public class UserApi {
     }
 
     @PatchMapping("/{id}/disabled")
-    public ResponseEntity<ApiResponse> setDisabled(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> setDisabled(@PathVariable Integer id,
                                                    @RequestBody DisableUserRequest body,
                                                    HttpSession session,
                                                    HttpServletRequest request) {
@@ -145,7 +145,7 @@ public class UserApi {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> delete(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> delete(@PathVariable Integer id,
                                               HttpSession session,
                                               HttpServletRequest request) {
         User currentUser = requireUser(session);

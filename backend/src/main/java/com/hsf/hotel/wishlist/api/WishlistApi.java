@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/wishlist")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/wishlist")
 public class WishlistApi {
 
     private final WishlistService wishlistService;
@@ -24,13 +24,13 @@ public class WishlistApi {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> list(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> list(HttpSession session) {
         User user = requireUser(session);
         return ResponseEntity.ok(ApiResponse.ok(wishlistService.getUserWishlist(user.getId())));
     }
 
     @PostMapping("/toggle")
-    public ResponseEntity<ApiResponse> toggle(@RequestBody Map<String, Integer> body, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> toggle(@RequestBody Map<String, Integer> body, HttpSession session) {
         User user = requireUser(session);
         Integer roomId = body.get("roomId");
         if (roomId == null) {

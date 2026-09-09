@@ -34,8 +34,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/bookings")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/bookings")
 public class BookingApi {
 
     private final BookingService bookingService;
@@ -109,7 +109,7 @@ public class BookingApi {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse> myBookings(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> myBookings(HttpSession session) {
         User user = currentUser(session);
         List<Booking> bookings = bookingService.getUserBookings(user);
         List<BookingDTO> dtos = bookingMapper.bookingsToBookingDTOs(bookings);
@@ -117,7 +117,7 @@ public class BookingApi {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse> get(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> get(@PathVariable Integer id, HttpSession session) {
         User user = currentUser(session);
         Booking b = bookingService.getBookingById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
@@ -129,7 +129,7 @@ public class BookingApi {
 
 
     @PostMapping
-    public ResponseEntity<ApiResponse> create(@Valid @RequestBody CreateBookingRequest req,
+    public ResponseEntity<ApiResponse<?>> create(@Valid @RequestBody CreateBookingRequest req,
                                               HttpSession session,
                                               HttpServletRequest request) {
         User user = currentUser(session);
@@ -153,7 +153,7 @@ public class BookingApi {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<ApiResponse> cancel(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> cancel(@PathVariable Integer id,
                                               @RequestBody(required = false) CancelBookingRequest req,
                                               HttpSession session,
                                               HttpServletRequest request) {
@@ -171,7 +171,7 @@ public class BookingApi {
     }
 
     @PostMapping("/{id}/payment")
-    public ResponseEntity<ApiResponse> submitPayment(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> submitPayment(@PathVariable Integer id,
                                                      @Valid @RequestBody PaymentConfirmationRequest req,
                                                      HttpSession session,
                                                      HttpServletRequest request) {
@@ -205,7 +205,7 @@ public class BookingApi {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<ApiResponse> modify(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> modify(@PathVariable Integer id,
                                                @Valid @RequestBody ModifyBookingRequest req,
                                                HttpSession session) {
         User user = currentUser(session);
@@ -219,7 +219,7 @@ public class BookingApi {
     /* ---------- timeline ---------- */
 
     @GetMapping("/{id}/timeline")
-    public ResponseEntity<ApiResponse> timeline(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> timeline(@PathVariable Integer id, HttpSession session) {
         User user = currentUser(session);
         Booking b = bookingService.getBookingById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
@@ -253,7 +253,7 @@ public class BookingApi {
     /* ---------- pricing preview ---------- */
 
     @GetMapping("/pricing-preview")
-    public ResponseEntity<ApiResponse> pricingPreview(
+    public ResponseEntity<ApiResponse<?>> pricingPreview(
             @RequestParam Integer roomId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut) {
@@ -269,7 +269,7 @@ public class BookingApi {
     }
 
     @GetMapping("/vouchers/validate")
-    public ResponseEntity<ApiResponse> validateVoucher(
+    public ResponseEntity<ApiResponse<?>> validateVoucher(
             @RequestParam String code,
             @RequestParam(required = false) Integer roomId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,

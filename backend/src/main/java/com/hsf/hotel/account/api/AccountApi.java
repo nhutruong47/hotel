@@ -19,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
  * size, and unread notification count into a single payload so the SPA does
  * not have to fire three parallel requests just to render the home shell.
  */
-@RestController
-@RequestMapping("/api/v1/account")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/account")
 public class AccountApi {
 
     private final BookingService bookingService;
@@ -44,7 +44,7 @@ public class AccountApi {
     }
 
     @GetMapping("/dashboard")
-    public ResponseEntity<ApiResponse> dashboard(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> dashboard(HttpSession session) {
         User user = requireUser(session);
         int wishlistCount = wishlistService.getUserWishlist(user.getId()).size();
         long unreadNotifications = notificationService.getUnreadCount(user.getId());

@@ -32,6 +32,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,8 +42,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestController
-@RequestMapping("/api/v1/admin")
+@com.hsf.hotel.config.ApiController
+@RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/admin")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminApi {
 
     private final BookingService bookingService;
@@ -103,7 +105,7 @@ public class AdminApi {
     /* ---------------- dashboard ---------------- */
 
     @GetMapping("/dashboard")
-    public ResponseEntity<ApiResponse> dashboard(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> dashboard(HttpSession session) {
         requireStaffOrAdmin(session);
         List<Booking> todayBookings = bookingService.getTodayBookings();
         BigDecimal monthlyRevenue = bookingService.getMonthlyRevenue();
@@ -128,7 +130,7 @@ public class AdminApi {
 
     @GetMapping("/bookings")
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse> bookings(@RequestParam(required = false) String status,
+    public ResponseEntity<ApiResponse<?>> bookings(@RequestParam(required = false) String status,
                                                HttpSession session) {
         requireStaffOrAdmin(session);
         List<Booking> bookings;
@@ -148,7 +150,7 @@ public class AdminApi {
     }
 
     @PostMapping("/bookings/{id}/approve")
-    public ResponseEntity<ApiResponse> approve(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> approve(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
         User admin = requireAdmin(session);
         Booking booking = bookingService.approveBooking(id, admin);
         auditLogService.log(admin, AuditActions.ADMIN_ROOM_CHANGE, "Booking", id,
@@ -160,7 +162,7 @@ public class AdminApi {
     }
 
     @PostMapping("/bookings/{id}/reject")
-    public ResponseEntity<ApiResponse> reject(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> reject(@PathVariable Integer id,
                                               @RequestBody(required = false) Map<String, String> body,
                                               HttpSession session,
                                               HttpServletRequest request) {
@@ -176,7 +178,7 @@ public class AdminApi {
     }
 
     @PostMapping("/bookings/{id}/complete")
-    public ResponseEntity<ApiResponse> complete(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> complete(@PathVariable Integer id, HttpSession session) {
         User admin = requireStaffOrAdmin(session);
         Booking booking = bookingService.markAsCompleted(id, admin);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
@@ -186,7 +188,7 @@ public class AdminApi {
     }
 
     @PostMapping("/bookings/{id}/cancel")
-    public ResponseEntity<ApiResponse> adminCancel(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> adminCancel(@PathVariable Integer id, HttpSession session) {
         User admin = requireAdmin(session);
         Booking booking = bookingService.cancelBooking(id, admin);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
@@ -198,7 +200,7 @@ public class AdminApi {
     }
 
     @PutMapping("/bookings/{id}/status")
-    public ResponseEntity<ApiResponse> updateBookingStatus(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> updateBookingStatus(@PathVariable Integer id,
                                                           @RequestBody Map<String, String> body,
                                                           HttpSession session) {
         requireAdmin(session);
@@ -218,7 +220,7 @@ public class AdminApi {
 
     @GetMapping("/rooms")
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse> rooms(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> rooms(HttpSession session) {
         requireAdmin(session);
         Map<String, Object> data = new HashMap<>();
         data.put("rooms", roomService.getAllRooms());
@@ -251,7 +253,7 @@ public class AdminApi {
 
     @PostMapping("/rooms")
     @Transactional
-    public ResponseEntity<ApiResponse> saveRoom(@RequestBody RoomPayload p, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> saveRoom(@RequestBody RoomPayload p, HttpSession session) {
         requireAdmin(session);
         if (p.roomNumber == null || p.roomNumber.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST, "Thiếu số phòng");
@@ -310,7 +312,7 @@ public class AdminApi {
     }
 
     @DeleteMapping("/rooms/{id}")
-    public ResponseEntity<ApiResponse> deleteRoom(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> deleteRoom(@PathVariable Integer id, HttpSession session) {
         requireAdmin(session);
         try {
             roomService.deleteRoom(id);
@@ -323,7 +325,7 @@ public class AdminApi {
     /* ---------------- vouchers ---------------- */
 
     @GetMapping("/vouchers")
-    public ResponseEntity<ApiResponse> listVouchers(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> listVouchers(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("vouchers", voucherRepository.findAll())));
     }
@@ -338,7 +340,7 @@ public class AdminApi {
     }
 
     @PostMapping("/vouchers")
-    public ResponseEntity<ApiResponse> saveVoucher(@RequestBody VoucherPayload p, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> saveVoucher(@RequestBody VoucherPayload p, HttpSession session) {
         requireAdmin(session);
         if (p == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST, "Thiếu payload");
@@ -375,7 +377,7 @@ public class AdminApi {
     }
 
     @DeleteMapping("/vouchers/{id}")
-    public ResponseEntity<ApiResponse> deleteVoucher(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> deleteVoucher(@PathVariable Integer id, HttpSession session) {
         requireAdmin(session);
         try {
             voucherRepository.deleteById(id);
@@ -388,7 +390,7 @@ public class AdminApi {
     /* ---------------- room types ---------------- */
 
     @GetMapping("/room-types")
-    public ResponseEntity<ApiResponse> roomTypes(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> roomTypes(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("roomTypes", roomTypeService.getAllRoomTypes())));
     }
@@ -400,7 +402,7 @@ public class AdminApi {
     }
 
     @PostMapping("/room-types")
-    public ResponseEntity<ApiResponse> saveRoomType(@RequestBody RoomTypePayload p, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> saveRoomType(@RequestBody RoomTypePayload p, HttpSession session) {
         requireAdmin(session);
         if (p == null || p.name == null || p.name.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST, "Thiếu tên loại phòng");
@@ -415,7 +417,7 @@ public class AdminApi {
     }
 
     @DeleteMapping("/room-types/{id}")
-    public ResponseEntity<ApiResponse> deleteRoomType(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> deleteRoomType(@PathVariable Integer id, HttpSession session) {
         requireAdmin(session);
         try {
             roomTypeService.deleteRoomType(id);
@@ -429,7 +431,7 @@ public class AdminApi {
     /* ---------------- amenities ---------------- */
 
     @GetMapping("/amenities")
-    public ResponseEntity<ApiResponse> amenities(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> amenities(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of("amenities", amenityService.getAllAmenities())));
     }
@@ -441,7 +443,7 @@ public class AdminApi {
     }
 
     @PostMapping("/amenities")
-    public ResponseEntity<ApiResponse> saveAmenity(@RequestBody AmenityPayload p, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> saveAmenity(@RequestBody AmenityPayload p, HttpSession session) {
         requireAdmin(session);
         if (p == null || p.name == null || p.name.isBlank()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST, "Thiếu tên tiện ích");
@@ -456,7 +458,7 @@ public class AdminApi {
     }
 
     @DeleteMapping("/amenities/{id}")
-    public ResponseEntity<ApiResponse> deleteAmenity(@PathVariable Integer id, HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> deleteAmenity(@PathVariable Integer id, HttpSession session) {
         requireAdmin(session);
         try {
             amenityService.deleteAmenity(id);
@@ -470,7 +472,7 @@ public class AdminApi {
     /* ---------------- reports ---------------- */
 
     @GetMapping("/reports")
-    public ResponseEntity<ApiResponse> reports(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> reports(HttpSession session) {
         requireAdmin(session);
         Map<String, Object> data = new HashMap<>();
         data.put("mostBookedRooms", bookingService.getMostBookedRooms());
@@ -483,7 +485,7 @@ public class AdminApi {
     /* ---------------- check-in / check-out ---------------- */
 
     @PostMapping("/bookings/{id}/checkin")
-    public ResponseEntity<ApiResponse> checkIn(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> checkIn(@PathVariable Integer id,
                                                HttpSession session,
                                                HttpServletRequest request) {
         User admin = requireStaffOrAdmin(session);
@@ -496,7 +498,7 @@ public class AdminApi {
     }
 
     @PostMapping("/bookings/{id}/checkout")
-    public ResponseEntity<ApiResponse> checkOut(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> checkOut(@PathVariable Integer id,
                                                 HttpSession session,
                                                 HttpServletRequest request) {
         User admin = requireStaffOrAdmin(session);
@@ -511,7 +513,7 @@ public class AdminApi {
     /* ---------------- today's operations ---------------- */
 
     @GetMapping("/bookings/today-checkin")
-    public ResponseEntity<ApiResponse> todayCheckIns(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> todayCheckIns(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "bookings", bookingService.getTodayCheckIns()
@@ -519,7 +521,7 @@ public class AdminApi {
     }
 
     @GetMapping("/bookings/today-checkout")
-    public ResponseEntity<ApiResponse> todayCheckOuts(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> todayCheckOuts(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "bookings", bookingService.getTodayCheckOuts()
@@ -529,7 +531,7 @@ public class AdminApi {
     /* ---------------- promotions (admin CRUD) ---------------- */
 
     @GetMapping("/promotions")
-    public ResponseEntity<ApiResponse> listPromotions(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> listPromotions(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "promotions", promotionService.getAllPromotions()
@@ -537,7 +539,7 @@ public class AdminApi {
     }
 
     @PostMapping("/promotions")
-    public ResponseEntity<ApiResponse> savePromotion(@RequestBody Promotion promo,
+    public ResponseEntity<ApiResponse<?>> savePromotion(@RequestBody Promotion promo,
                                                       HttpSession session,
                                                       HttpServletRequest request) {
         User admin = requireAdmin(session);
@@ -555,7 +557,7 @@ public class AdminApi {
     }
 
     @DeleteMapping("/promotions/{id}")
-    public ResponseEntity<ApiResponse> deletePromotion(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> deletePromotion(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
         User admin = requireAdmin(session);
         promotionService.deletePromotion(id);
         auditLogService.log(admin, AuditActions.ADMIN_PROMOTION_CHANGE, "Promotion", id, "Deleted promotion", request);
@@ -565,7 +567,7 @@ public class AdminApi {
     /* ---------------- review moderation ---------------- */
 
     @GetMapping("/reviews")
-    public ResponseEntity<ApiResponse> listReviews(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> listReviews(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "reviews", reviewService.getAllReviews()
@@ -573,7 +575,7 @@ public class AdminApi {
     }
 
     @PostMapping("/reviews/{id}/reply")
-    public ResponseEntity<ApiResponse> replyToReview(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> replyToReview(@PathVariable Integer id,
                                                       @RequestBody Map<String, String> body,
                                                       HttpSession session,
                                                       HttpServletRequest request) {
@@ -588,7 +590,7 @@ public class AdminApi {
     }
 
     @PostMapping("/reviews/{id}/hide")
-    public ResponseEntity<ApiResponse> hideReview(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> hideReview(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
         User admin = requireAdmin(session);
         reviewService.hideReview(id);
         auditLogService.log(admin, AuditActions.ADMIN_REVIEW_MODERATE, "Review", id, "Admin hid review", request);
@@ -596,7 +598,7 @@ public class AdminApi {
     }
 
     @DeleteMapping("/reviews/{id}")
-    public ResponseEntity<ApiResponse> deleteReview(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<?>> deleteReview(@PathVariable Integer id, HttpSession session, HttpServletRequest request) {
         User admin = requireAdmin(session);
         reviewService.deleteReview(admin, id);
         auditLogService.log(admin, AuditActions.ADMIN_REVIEW_MODERATE, "Review", id, "Admin deleted review", request);
@@ -606,7 +608,7 @@ public class AdminApi {
     /* ---------------- contact messages ---------------- */
 
     @GetMapping("/contacts")
-    public ResponseEntity<ApiResponse> listContacts(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> listContacts(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "contacts", contactService.getAllContacts()
@@ -620,7 +622,7 @@ public class AdminApi {
     }
 
     @PutMapping("/contacts/{id}/status")
-    public ResponseEntity<ApiResponse> updateContactStatus(@PathVariable Integer id,
+    public ResponseEntity<ApiResponse<?>> updateContactStatus(@PathVariable Integer id,
                                                             @RequestBody(required = false) ContactStatusPayload body,
                                                             HttpSession session,
                                                             HttpServletRequest request) {
@@ -644,7 +646,7 @@ public class AdminApi {
     /* ---------------- audit logs ---------------- */
 
     @GetMapping("/audit-logs")
-    public ResponseEntity<ApiResponse> auditLogs(
+    public ResponseEntity<ApiResponse<?>> auditLogs(
             @RequestParam(required = false) Integer userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "25") int size,
@@ -672,7 +674,7 @@ public class AdminApi {
     /* ---------------- analytics: revenue / occupancy ---------------- */
 
     @GetMapping("/revenue")
-    public ResponseEntity<ApiResponse> revenueTimeseries(
+    public ResponseEntity<ApiResponse<?>> revenueTimeseries(
             @RequestParam("startDate") String startDateStr,
             @RequestParam("endDate") String endDateStr,
             HttpSession session) {
@@ -692,7 +694,7 @@ public class AdminApi {
     }
 
     @GetMapping("/occupancy")
-    public ResponseEntity<ApiResponse> occupancyTimeseries(
+    public ResponseEntity<ApiResponse<?>> occupancyTimeseries(
             @RequestParam("startDate") String startDateStr,
             @RequestParam("endDate") String endDateStr,
             HttpSession session) {
@@ -716,7 +718,7 @@ public class AdminApi {
     /* ---------------- refunds ---------------- */
 
     @GetMapping("/refunds")
-    public ResponseEntity<ApiResponse> listRefunds(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> listRefunds(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "bookings", bookingService.getRefundedBookings()

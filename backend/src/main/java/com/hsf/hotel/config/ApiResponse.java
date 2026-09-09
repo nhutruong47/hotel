@@ -15,31 +15,31 @@ import java.util.Map;
  * {@link com.hsf.hotel.observability.RequestIdFilter}).
  */
 @JsonInclude(Include.NON_NULL)
-public final class ApiResponse {
+public final class ApiResponse<T> {
 
-    private final Object data;
+    private final T data;
     private final ErrorBody error;
     private final Map<String, Object> meta;
 
-    private ApiResponse(Object data, ErrorBody error, Map<String, Object> meta) {
+    private ApiResponse(T data, ErrorBody error, Map<String, Object> meta) {
         this.data = data;
         this.error = error;
         this.meta = meta;
     }
 
-    public static ApiResponse ok(Object data) {
-        return new ApiResponse(data, null, Meta.now());
+    public static <T> ApiResponse<T> ok(T data) {
+        return new ApiResponse<>(data, null, Meta.now());
     }
 
-    public static ApiResponse error(String code, String message) {
-        return new ApiResponse(null, new ErrorBody(code, message, null), Meta.now());
+    public static <T> ApiResponse<T> error(String code, String message) {
+        return new ApiResponse<>(null, new ErrorBody(code, message, null), Meta.now());
     }
 
-    public static ApiResponse error(String code, String message, List<String> details) {
-        return new ApiResponse(null, new ErrorBody(code, message, details), Meta.now());
+    public static <T> ApiResponse<T> error(String code, String message, List<String> details) {
+        return new ApiResponse<>(null, new ErrorBody(code, message, details), Meta.now());
     }
 
-    public Object getData() {
+    public T getData() {
         return data;
     }
 
@@ -59,6 +59,7 @@ public final class ApiResponse {
         static Map<String, Object> now() {
             Map<String, Object> meta = new LinkedHashMap<>();
             meta.put("timestamp", Instant.now().toString());
+            meta.put("apiVersion", ApiPaths.VERSION);
             String requestId = org.slf4j.MDC.get(com.hsf.hotel.observability.RequestIdFilter.MDC_KEY);
             if (requestId != null && !requestId.isBlank()) {
                 meta.put("requestId", requestId);

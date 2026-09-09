@@ -40,11 +40,13 @@ public class CacheConfig {
         cacheConfigurations.put("roomTypes", longTtlConfig);
         cacheConfigurations.put("amenities", longTtlConfig);
         cacheConfigurations.put("promotions", longTtlConfig);
+        cacheConfigurations.put("promotionViews", longTtlConfig);
         cacheConfigurations.put("faqs", longTtlConfig);
 
         // Real-time Availability (TTL: 5m)
         RedisCacheConfiguration shortTtlConfig = defaultConfig.entryTtl(Duration.ofMinutes(5));
         cacheConfigurations.put("rooms", shortTtlConfig);
+        cacheConfigurations.put("roomViews", shortTtlConfig);
 
         return RedisCacheManager.builder(redisConnectionFactory)
                 .cacheDefaults(defaultConfig)

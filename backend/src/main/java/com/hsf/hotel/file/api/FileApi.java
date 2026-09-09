@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-@RestController
+@com.hsf.hotel.config.ApiController
 @RequestMapping("/uploads")
 public class FileApi {
 

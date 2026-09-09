@@ -217,6 +217,11 @@ html.lenis, html.lenis body {
   to   { transform: scaleX(1); }
 }
 
+@keyframes promotion-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
 @layer utilities {
   .ambient-layers {
     contain: strict;
@@ -367,11 +372,31 @@ html.lenis, html.lenis body {
     will-change: transform;
   }
 
+  .promotion-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: promotion-marquee 28s linear infinite;
+    will-change: transform;
+  }
+
+  .promotion-marquee-group {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2rem;
+    padding-right: 2rem;
+  }
+
+  .group:hover .promotion-marquee-track {
+    animation-play-state: paused;
+  }
+
   /* Reduced motion short-circuit (React also gates via JS, this is the catch-all). */
   @media (prefers-reduced-motion: reduce) {
     .ambient-layers,
     .ambient-layers *,
-    .hero-reflection {
+    .hero-reflection,
+    .promotion-marquee-track {
       animation: none !important;
     }
     .navbar-pill,

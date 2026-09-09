@@ -7,7 +7,6 @@ import com.hsf.hotel.room.model.RoomTypeEntity;
 import com.hsf.hotel.booking.repository.BookingRepository;
 import com.hsf.hotel.room.repository.RoomRepository;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,13 +27,11 @@ public class RoomService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "rooms", key = "'all'")
     public List<Room> getAllRooms() {
         return roomRepository.findAll();
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(cacheNames = "rooms", key = "'available'")
     public List<Room> getAvailableRooms() {
         return roomRepository.findByIsAvailableTrue();
     }
@@ -83,13 +80,13 @@ public class RoomService {
         return bookingRepository.findConflictingBookings(room, checkIn, checkOut).isEmpty();
     }
 
-    @CacheEvict(cacheNames = "rooms", allEntries = true)
+    @CacheEvict(cacheNames = {"rooms", "roomViews"}, allEntries = true)
     public Room saveRoom(Room room) {
         return roomRepository.save(room);
     }
 
     @Transactional
-    @CacheEvict(cacheNames = "rooms", allEntries = true)
+    @CacheEvict(cacheNames = {"rooms", "roomViews"}, allEntries = true)
     public void deleteRoom(Integer id) {
         Room room = roomRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", id));

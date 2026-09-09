@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { Hero } from './components/Hero';
+import { PromotionMarquee } from './components/PromotionMarquee';
 import { Reveal } from '../../shared/components/Reveal';
 import { api, API_PATHS } from '../../shared/api/client';
 import { fallbackVillas } from '../villas/villaFallbacks';
@@ -508,7 +509,7 @@ function FinalCtaSection() {
         <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage-light">
           {t('home.ctaEyebrow')}
         </p>
-        <h2 className="font-serif text-4xl leading-[1.08] sm:text-5xl lg:text-7xl">
+        <h2 className="font-serif text-4xl leading-[1.08] !text-white sm:text-5xl lg:text-7xl">
           {t('home.ctaTitle')}
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-brand-paper/76">
@@ -535,6 +536,7 @@ export const HomePage = () => {
   return (
     <>
       <Hero />
+      <PromotionMarquee />
       <StorySection />
       <FeaturedResidences />
       <VillaCollectionSection />
