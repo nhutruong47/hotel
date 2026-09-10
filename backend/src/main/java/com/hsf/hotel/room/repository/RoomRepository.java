@@ -18,6 +18,8 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecificationExecutor<Room> {
     List<Room> findByIsAvailableTrue();
     long countByIsAvailableTrue();
+    java.util.Optional<Room> findBySlug(String slug);
+    java.util.Optional<Room> findByRoomNumber(String roomNumber);
 
 
     List<Room> findByRoomType(RoomTypeEntity roomType);

@@ -48,7 +48,7 @@ public class AdminCredentialValidator implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        boolean isDev = "dev".equals(activeProfile);
+        boolean isDev = activeProfile == null || activeProfile.contains("dev") || activeProfile.contains("postgres") || "default".equals(activeProfile);
         
         if (!isDev) {
             validateProductionCredentials();

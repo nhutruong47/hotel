@@ -65,6 +65,7 @@ public class BookingService {
     private final VoucherService voucherService;
     private final EntityManager entityManager;
     private final NotificationService notificationService;
+    private final com.hsf.hotel.room.repository.VillaMaintenanceRepository maintenanceRepository;
     private final int paymentDeadlineHours;
     private final String adminEmail;
 
@@ -74,6 +75,8 @@ public class BookingService {
                           VoucherService voucherService,
                           EntityManager entityManager,
                           NotificationService notificationService,
+                          @org.springframework.beans.factory.annotation.Autowired(required = false)
+                          com.hsf.hotel.room.repository.VillaMaintenanceRepository maintenanceRepository,
                           @Value("${app.booking.payment-deadline-hours:24}") int paymentDeadlineHours,
                           @Value("${app.admin.email:admin@hotel.com}") String adminEmail) {
         this.bookingRepository = bookingRepository;
@@ -82,6 +85,7 @@ public class BookingService {
         this.voucherService = voucherService;
         this.entityManager = entityManager;
         this.notificationService = notificationService;
+        this.maintenanceRepository = maintenanceRepository;
         this.paymentDeadlineHours = paymentDeadlineHours;
         this.adminEmail = adminEmail;
     }
@@ -157,12 +161,34 @@ public class BookingService {
 
     /** Full pricing breakdown: subtotal + service fee + tax = total. */
     public PricingBreakdown calculatePricing(Room room, LocalDate checkIn, LocalDate checkOut) {
+        return calculatePricing(room, checkIn, checkOut, null);
+    }
+
+    public PricingBreakdown calculatePricing(Room room, LocalDate checkIn, LocalDate checkOut, Integer guests) {
         long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
-        BigDecimal subtotal;
+        BigDecimal subtotal = BigDecimal.ZERO;
         if (nights == 0) {
             subtotal = room.getPricePerNight().multiply(DAY_USE_PRICE_FACTOR);
         } else {
-            subtotal = room.getPricePerNight().multiply(BigDecimal.valueOf(nights));
+            LocalDate current = checkIn;
+            while (current.isBefore(checkOut)) {
+                java.time.DayOfWeek dow = current.getDayOfWeek();
+                BigDecimal nightRate = room.getPricePerNight();
+                // Weekend surcharge (+15% on Friday and Saturday nights)
+                if (dow == java.time.DayOfWeek.FRIDAY || dow == java.time.DayOfWeek.SATURDAY) {
+                    nightRate = nightRate.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
+                }
+                subtotal = subtotal.add(nightRate);
+                current = current.plusDays(1);
+            }
+            // Extra guest fee ($25/night/guest for guests beyond base 2)
+            if (guests != null && guests > 2 && room.getCapacity() != null && room.getCapacity() > 2) {
+                int extraGuests = guests - 2;
+                BigDecimal extraGuestFee = BigDecimal.valueOf(extraGuests)
+                        .multiply(new BigDecimal("25"))
+                        .multiply(BigDecimal.valueOf(nights));
+                subtotal = subtotal.add(extraGuestFee);
+            }
         }
         BigDecimal serviceFee = subtotal.multiply(SERVICE_FEE_RATE).setScale(0, RoundingMode.HALF_UP);
         BigDecimal taxAmount = subtotal.multiply(TAX_RATE).setScale(0, RoundingMode.HALF_UP);
@@ -173,13 +199,20 @@ public class BookingService {
     /**
      * Re-checks availability inside a transaction with a pessimistic write lock
      * on the room row to prevent the classic "two users book the same dates"
-     * race condition.
+     * race condition. Also checks against scheduled villa maintenance.
      */
     public boolean isRoomAvailable(Room room, LocalDate checkIn, LocalDate checkOut) {
         if (!Boolean.TRUE.equals(room.getIsAvailable())) {
             return false;
         }
-        return bookingRepository.findConflictingBookings(room, checkIn, checkOut).isEmpty();
+        boolean hasBookingConflict = !bookingRepository.findConflictingBookings(room, checkIn, checkOut).isEmpty();
+        if (hasBookingConflict) return false;
+
+        if (maintenanceRepository != null) {
+            boolean hasMaintenanceConflict = !maintenanceRepository.findConflictingMaintenances(room, checkIn, checkOut).isEmpty();
+            if (hasMaintenanceConflict) return false;
+        }
+        return true;
     }
 
     /* ---------------- mutations ---------------- */
@@ -206,12 +239,19 @@ public class BookingService {
             throw new BusinessRuleException("ROOM_UNAVAILABLE", "Phòng đã được đặt trong khoảng thời gian này");
         }
 
+        if (maintenanceRepository != null) {
+            var maintConflicts = maintenanceRepository.findConflictingMaintenances(lockedRoom, checkIn, checkOut);
+            if (!maintConflicts.isEmpty()) {
+                throw new BusinessRuleException("ROOM_IN_MAINTENANCE", "Phòng đang trong lịch bảo trì vào thời gian này");
+            }
+        }
+
         if (guests != null && lockedRoom.getCapacity() != null && guests > lockedRoom.getCapacity()) {
             throw new BusinessRuleException("GUEST_LIMIT_EXCEEDED",
                     "Số khách vượt quá sức chứa của phòng (tối đa " + lockedRoom.getCapacity() + ")");
         }
 
-        PricingBreakdown pricing = calculatePricing(lockedRoom, checkIn, checkOut);
+        PricingBreakdown pricing = calculatePricing(lockedRoom, checkIn, checkOut, guests);
         String appliedCode = null;
         BigDecimal discount = BigDecimal.ZERO;
 
@@ -498,6 +538,12 @@ public class BookingService {
 
     @Transactional
     public Booking cancelBooking(Integer bookingId, User user, String reason) {
+        return cancelBooking(bookingId, user, reason, null, null, null);
+    }
+
+    @Transactional
+    public Booking cancelBooking(Integer bookingId, User user, String reason,
+                                 String refundBankName, String refundAccountNumber, String refundAccountName) {
         Booking booking = loadOrThrow(bookingId);
         if (!booking.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
             throw new ForbiddenException("Bạn không có quyền hủy đơn này");
@@ -525,6 +571,9 @@ public class BookingService {
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancelledAt(LocalDateTime.now());
         booking.setCancelledBy(user != null ? user.getUsername() : "system");
+        if (refundBankName != null) booking.setRefundBankName(refundBankName);
+        if (refundAccountNumber != null) booking.setRefundAccountNumber(refundAccountNumber);
+        if (refundAccountName != null) booking.setRefundAccountName(refundAccountName);
         calculateRefund(booking);
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, oldStatus, BookingStatus.CANCELLED, user, reason);

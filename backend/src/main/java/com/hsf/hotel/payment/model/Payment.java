@@ -32,6 +32,8 @@ public class Payment {
     public enum PaymentGateway {
         STRIPE("Stripe"),
         VNPAY("VNPay"),
+        VIETQR("VietQR"),
+        SEPAY("SePay"),
         MOCK("Mock Gateway");
 
         private final String displayName;

@@ -14,6 +14,7 @@ export type VillaPromotion = {
 export type Villa = {
   id: number;
   name: string;
+  slug?: string;
   roomNumber: string;
   roomType: string;
   description: string;

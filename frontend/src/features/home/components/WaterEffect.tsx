@@ -121,18 +121,19 @@ export function WaterEffect({ imageUrl, className }: WaterEffectProps) {
     if (!canvas) return;
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isMobile = window.innerWidth < 768;
+
+    if (reduce || isMobile) {
+      if (fallback) fallback.style.opacity = '1';
+      canvas.style.display = 'none';
+      return;
+    }
 
     const gl =
       (canvas.getContext('webgl', { antialias: true, premultipliedAlpha: false }) as WebGLRenderingContext | null) ||
       (canvas.getContext('experimental-webgl') as WebGLRenderingContext | null);
 
     if (!gl) {
-      if (fallback) fallback.style.opacity = '1';
-      canvas.style.display = 'none';
-      return;
-    }
-
-    if (reduce) {
       if (fallback) fallback.style.opacity = '1';
       canvas.style.display = 'none';
       return;

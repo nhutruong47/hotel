@@ -74,6 +74,9 @@ public class Booking {
     private Integer guests;
     private String notes;
     private String cancellationReason;
+    private String refundBankName;
+    private String refundAccountNumber;
+    private String refundAccountName;
 
     // Store applied voucher code (if any) and discount amount
     @Column(name = "applied_voucher_code")
@@ -307,6 +310,13 @@ public class Booking {
     public void setCancelledAt(LocalDateTime cancelledAt) { this.cancelledAt = cancelledAt; }
     public String getCancelledBy() { return cancelledBy; }
     public void setCancelledBy(String cancelledBy) { this.cancelledBy = cancelledBy; }
+
+    public String getRefundBankName() { return refundBankName; }
+    public void setRefundBankName(String refundBankName) { this.refundBankName = refundBankName; }
+    public String getRefundAccountNumber() { return refundAccountNumber; }
+    public void setRefundAccountNumber(String refundAccountNumber) { this.refundAccountNumber = refundAccountNumber; }
+    public String getRefundAccountName() { return refundAccountName; }
+    public void setRefundAccountName(String refundAccountName) { this.refundAccountName = refundAccountName; }
 
     /**
      * Ensure {@code createdAt} is set from the server clock at insert time, and

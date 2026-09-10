@@ -57,6 +57,9 @@ class BookingServiceTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private com.hsf.hotel.room.repository.VillaMaintenanceRepository villaMaintenanceRepository;
+
     private BookingService bookingService;
 
     private User testUser;
@@ -73,6 +76,7 @@ class BookingServiceTest {
                 voucherService,
                 entityManager,
                 notificationService,
+                villaMaintenanceRepository,
                 24,
                 "admin@hotel.com");
 
@@ -119,10 +123,11 @@ class BookingServiceTest {
     class PricingTests {
 
         @Test
-        @DisplayName("Should calculate total price correctly for multi-night stay")
+        @DisplayName("Should calculate total price correctly for multi-night stay on weekdays")
         void testCalculatePricingMultiNight() {
-            LocalDate checkIn = LocalDate.now().plusDays(1);
-            LocalDate checkOut = LocalDate.now().plusDays(4); // 3 nights
+            // Monday to Thursday (3 weekday nights)
+            LocalDate checkIn = LocalDate.of(2026, 10, 5);
+            LocalDate checkOut = LocalDate.of(2026, 10, 8);
 
             var pricing = bookingService.calculatePricing(testRoom, checkIn, checkOut);
 
@@ -139,7 +144,7 @@ class BookingServiceTest {
         @Test
         @DisplayName("Should apply day-use price for same-day booking")
         void testCalculatePricingDayUse() {
-            LocalDate sameDay = LocalDate.now().plusDays(1);
+            LocalDate sameDay = LocalDate.of(2026, 10, 5);
 
             var pricing = bookingService.calculatePricing(testRoom, sameDay, sameDay);
 
@@ -148,7 +153,7 @@ class BookingServiceTest {
         }
 
         @Test
-        @DisplayName("Should calculate correct pricing for expensive room")
+        @DisplayName("Should calculate correct pricing for expensive room on weekdays")
         void testCalculatePricingExpensiveRoom() {
             Room expensiveRoom = new Room();
             expensiveRoom.setId(10);
@@ -157,8 +162,9 @@ class BookingServiceTest {
             expensiveRoom.setCapacity(8);
             expensiveRoom.setIsAvailable(true);
 
-            LocalDate checkIn = LocalDate.now().plusDays(1);
-            LocalDate checkOut = LocalDate.now().plusDays(3); // 2 nights
+            // Monday to Wednesday (2 weekday nights)
+            LocalDate checkIn = LocalDate.of(2026, 10, 5);
+            LocalDate checkOut = LocalDate.of(2026, 10, 7);
 
             var pricing = bookingService.calculatePricing(expensiveRoom, checkIn, checkOut);
 
@@ -170,6 +176,25 @@ class BookingServiceTest {
             assertEquals(BigDecimal.valueOf(500), pricing.taxAmount());
             // Total = 5000 + 400 + 500 = 5900
             assertEquals(BigDecimal.valueOf(5900), pricing.total());
+        }
+
+        @Test
+        @DisplayName("Should apply 15% weekend surcharge on Friday and Saturday nights")
+        void testCalculatePricingWeekendSurcharge() {
+            Room room = new Room();
+            room.setId(11);
+            room.setPricePerNight(BigDecimal.valueOf(1000));
+            room.setCapacity(4);
+            room.setIsAvailable(true);
+
+            // Friday to Sunday (2 weekend nights: Friday and Saturday)
+            LocalDate checkIn = LocalDate.of(2026, 10, 9);
+            LocalDate checkOut = LocalDate.of(2026, 10, 11);
+
+            var pricing = bookingService.calculatePricing(room, checkIn, checkOut);
+
+            // Each weekend night = 1000 * 1.15 = 1150. Total 2 nights = 2300
+            assertEquals(BigDecimal.valueOf(2300), pricing.subtotal());
         }
     }
 

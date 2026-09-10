@@ -95,8 +95,9 @@ backup/
 *.tmp
 
 # =========================
-# AI / Generated
+# AI / Generated / Plugins
 # =========================
+.agents/plugins/
 gemini_test.json
 
 # =========================

@@ -72,11 +72,11 @@ public class RoomSpecification {
         return (root, query, cb) -> {
             if (checkIn == null || checkOut == null) return null;
 
-            Subquery<Integer> subquery = query.subquery(Integer.class);
-            Root<Booking> bookingRoot = subquery.from(Booking.class);
-            subquery.select(cb.literal(1));
-
-            subquery.where(
+            // Subquery 1: Check conflicting bookings
+            Subquery<Integer> bookingSubquery = query.subquery(Integer.class);
+            Root<Booking> bookingRoot = bookingSubquery.from(Booking.class);
+            bookingSubquery.select(cb.literal(1));
+            bookingSubquery.where(
                 cb.equal(bookingRoot.get("room").get("id"), root.get("id")),
                 bookingRoot.get("status").in(List.of(BookingStatus.PENDING_PAYMENT, BookingStatus.PAID,
                         BookingStatus.CHECKED_IN, BookingStatus.CHECKED_OUT, BookingStatus.COMPLETED)),
@@ -84,7 +84,21 @@ public class RoomSpecification {
                 cb.greaterThan(bookingRoot.get("checkOutDate"), checkIn)
             );
 
-            return cb.not(cb.exists(subquery));
+            // Subquery 2: Check conflicting maintenances
+            Subquery<Integer> maintenanceSubquery = query.subquery(Integer.class);
+            Root<com.hsf.hotel.room.model.VillaMaintenance> maintRoot = maintenanceSubquery.from(com.hsf.hotel.room.model.VillaMaintenance.class);
+            maintenanceSubquery.select(cb.literal(1));
+            maintenanceSubquery.where(
+                cb.equal(maintRoot.get("room").get("id"), root.get("id")),
+                maintRoot.get("status").in(List.of(
+                    com.hsf.hotel.room.model.VillaMaintenance.MaintenanceStatus.SCHEDULED,
+                    com.hsf.hotel.room.model.VillaMaintenance.MaintenanceStatus.IN_PROGRESS
+                )),
+                cb.lessThan(maintRoot.get("startDate"), checkOut),
+                cb.greaterThan(maintRoot.get("endDate"), checkIn)
+            );
+
+            return cb.and(cb.not(cb.exists(bookingSubquery)), cb.not(cb.exists(maintenanceSubquery)));
         };
     }
 

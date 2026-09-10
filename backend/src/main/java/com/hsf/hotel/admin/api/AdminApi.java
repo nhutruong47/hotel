@@ -643,34 +643,6 @@ public class AdminApi {
         return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Cập nhật liên hệ thành công")));
     }
 
-    /* ---------------- audit logs ---------------- */
-
-    @GetMapping("/audit-logs")
-    public ResponseEntity<ApiResponse<?>> auditLogs(
-            @RequestParam(required = false) Integer userId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int size,
-            HttpSession session) {
-        requireAdmin(session);
-        if (size <= 0 || size > 200) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST,
-                    "size phải trong khoảng 1..200");
-        }
-        org.springframework.data.domain.Pageable pageable =
-                org.springframework.data.domain.PageRequest.of(page, size);
-        org.springframework.data.domain.Page<com.hsf.hotel.admin.model.AuditLog> result =
-                (userId != null)
-                        ? auditLogService.getLogsByUser(userId, pageable)
-                        : auditLogService.getRecentLogs(pageable);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "logs", result.getContent(),
-                "page", result.getNumber(),
-                "size", result.getSize(),
-                "totalElements", result.getTotalElements(),
-                "totalPages", result.getTotalPages()
-        )));
-    }
-
     /* ---------------- analytics: revenue / occupancy ---------------- */
 
     @GetMapping("/revenue")
@@ -715,6 +687,33 @@ public class AdminApi {
         )));
     }
 
+    /* ---------------- audit logs ---------------- */
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<ApiResponse<?>> auditLogs(
+            @RequestParam(required = false) Integer userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            HttpSession session) {
+        requireAdmin(session);
+        if (size <= 0 || size > 200) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST,
+                    "size phải trong khoảng 1..200");
+        }
+        org.springframework.data.domain.Pageable pageable =
+                org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<com.hsf.hotel.admin.model.AuditLog> result =
+                (userId != null)
+                        ? auditLogService.getLogsByUser(userId, pageable)
+                        : auditLogService.getRecentLogs(pageable);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "logs", result.getContent(),
+                "page", result.getNumber(),
+                "size", result.getSize(),
+                "totalElements", result.getTotalElements(),
+                "totalPages", result.getTotalPages()
+        )));
+    }
     /* ---------------- refunds ---------------- */
 
     @GetMapping("/refunds")
@@ -723,5 +722,58 @@ public class AdminApi {
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "bookings", bookingService.getRefundedBookings()
         )));
+    }
+
+    /* ---------------- villa maintenances ---------------- */
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.hsf.hotel.room.service.VillaMaintenanceService villaMaintenanceService;
+
+    public static class ScheduleMaintenanceRequest {
+        public Integer roomId;
+        public LocalDate startDate;
+        public LocalDate endDate;
+        public String reason;
+    }
+
+    @GetMapping("/maintenances")
+    public ResponseEntity<ApiResponse<?>> listMaintenances(
+            @RequestParam(required = false) Integer roomId,
+            HttpSession session) {
+        requireAdmin(session);
+        if (villaMaintenanceService == null) {
+            return ResponseEntity.ok(ApiResponse.ok(List.of()));
+        }
+        var list = roomId != null
+                ? villaMaintenanceService.getMaintenancesForRoom(roomId)
+                : villaMaintenanceService.getAllMaintenances();
+        return ResponseEntity.ok(ApiResponse.ok(list));
+    }
+
+    @PostMapping("/maintenances")
+    public ResponseEntity<ApiResponse<?>> scheduleMaintenance(
+            @RequestBody ScheduleMaintenanceRequest req,
+            HttpSession session) {
+        User admin = requireAdmin(session);
+        if (villaMaintenanceService == null) {
+            throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE", "Maintenance service unavailable");
+        }
+        var maint = villaMaintenanceService.scheduleMaintenance(
+                req.roomId, req.startDate, req.endDate, req.reason, admin);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "message", "Đã lên lịch bảo trì biệt thự thành công",
+                "maintenance", maint
+        )));
+    }
+
+    @DeleteMapping("/maintenances/{id}")
+    public ResponseEntity<ApiResponse<?>> cancelMaintenance(
+            @PathVariable Integer id,
+            HttpSession session) {
+        requireAdmin(session);
+        if (villaMaintenanceService != null) {
+            villaMaintenanceService.cancelMaintenance(id);
+        }
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã hủy lịch bảo trì")));
     }
 }

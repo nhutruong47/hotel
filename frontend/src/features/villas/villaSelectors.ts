@@ -2,13 +2,23 @@ import { fallbackVillas } from './villaFallbacks';
 import type { Villa } from './types';
 
 export function findVillaById(villas: Villa[] | undefined, villaId: string | undefined) {
-  const id = Number(villaId);
-
-  if (!Number.isFinite(id)) {
-    return null;
+  if (!villaId) return null;
+  const list = villas ?? fallbackVillas;
+  const numId = Number(villaId);
+  if (Number.isFinite(numId)) {
+    const found = list.find((v) => v.id === numId);
+    if (found) return found;
   }
-
-  return (villas ?? fallbackVillas).find((villa) => villa.id === id) ?? null;
+  const clean = decodeURIComponent(villaId).toLowerCase().trim().replace(/[-_]/g, '');
+  return (
+    list.find((v) => v.slug?.toLowerCase().replace(/[-_]/g, '') === clean) ||
+    list.find((v) => v.roomNumber?.toLowerCase() === villaId.toLowerCase().trim()) ||
+    list.find((v) => {
+      const vSlug = v.slug?.toLowerCase().replace(/[-_]/g, '') || '';
+      return vSlug && (clean.startsWith(vSlug) || vSlug.startsWith(clean));
+    }) ||
+    null
+  );
 }
 
 export function getSimilarVillas(currentVilla: Villa, villas: Villa[] | undefined) {

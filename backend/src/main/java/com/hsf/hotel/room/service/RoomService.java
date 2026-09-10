@@ -73,6 +73,24 @@ public class RoomService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<Room> getRoomBySlug(String slug) {
+        return roomRepository.findBySlug(slug);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Room> getRoomByIdOrSlug(String idOrSlug) {
+        if (idOrSlug == null || idOrSlug.isBlank()) return Optional.empty();
+        try {
+            int id = Integer.parseInt(idOrSlug);
+            Optional<Room> byId = roomRepository.findById(id);
+            if (byId.isPresent()) return byId;
+        } catch (NumberFormatException ignored) {}
+        Optional<Room> bySlug = roomRepository.findBySlug(idOrSlug);
+        if (bySlug.isPresent()) return bySlug;
+        return roomRepository.findByRoomNumber(idOrSlug);
+    }
+
+    @Transactional(readOnly = true)
     public boolean isRoomAvailableForDates(Room room, LocalDate checkIn, LocalDate checkOut) {
         if (!Boolean.TRUE.equals(room.getIsAvailable())) {
             return false;

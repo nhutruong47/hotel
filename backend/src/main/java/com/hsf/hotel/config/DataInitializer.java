@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
  * migrations and / or admin tools.
  */
 @Component
-@Profile({"default", "dev"})
+@Profile({"default", "dev", "postgres"})
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
@@ -37,6 +37,7 @@ public class DataInitializer implements CommandLineRunner {
     public void run(String... args) {
         initializeFaqs();
         initializeRooms();
+        ensureRoomSlugs();
         initializePromotions();
     }
 
@@ -80,6 +81,7 @@ public class DataInitializer implements CommandLineRunner {
         // Seed Room 1
         com.hsf.hotel.room.model.Room r1 = new com.hsf.hotel.room.model.Room();
         r1.setRoomNumber("GV-01");
+        r1.setSlug("garden-pool-villa-da-lat");
         r1.setRoomType(poolVilla);
         r1.setDescription("A one-bedroom garden villa with a private pool, shaded terrace, and open-air living room.");
         r1.setImageUrl("/images/nhu-garden-pool-villa.jpg");
@@ -96,6 +98,7 @@ public class DataInitializer implements CommandLineRunner {
         // Seed Room 2
         com.hsf.hotel.room.model.Room r2 = new com.hsf.hotel.room.model.Room();
         r2.setRoomNumber("TF-02");
+        r2.setSlug("two-bedroom-family-villa");
         r2.setRoomType(familyVilla);
         r2.setDescription("Two quiet bedrooms, generous living space, and a terrace prepared for slow family days.");
         r2.setImageUrl("/images/nhu-villa-interior.jpg");
@@ -111,6 +114,7 @@ public class DataInitializer implements CommandLineRunner {
         // Seed Room 3
         com.hsf.hotel.room.model.Room r3 = new com.hsf.hotel.room.model.Room();
         r3.setRoomNumber("HR-03");
+        r3.setSlug("hillside-residence-private-pool");
         r3.setRoomType(residence);
         r3.setDescription("A larger private residence for hosted dinners, longer retreats, and sunset pool rituals.");
         r3.setImageUrl("/images/nhu-infinity-pool.jpg");
@@ -126,6 +130,7 @@ public class DataInitializer implements CommandLineRunner {
         // Seed Room 4
         com.hsf.hotel.room.model.Room r4 = new com.hsf.hotel.room.model.Room();
         r4.setRoomNumber("SE-04");
+        r4.setSlug("signature-four-bedroom-estate");
         r4.setRoomType(signature);
         r4.setDescription("The largest estate in our collection, offering panoramic views, four bedrooms, and complete privacy.");
         r4.setImageUrl("/images/nhu-private-dining.jpg");
@@ -139,6 +144,19 @@ public class DataInitializer implements CommandLineRunner {
         r4.setAvgRating(BigDecimal.valueOf(5.0));
         r4.setReviewCount(12L);
         roomRepository.save(r4);
+    }
+
+    private void ensureRoomSlugs() {
+        for (com.hsf.hotel.room.model.Room r : roomRepository.findAll()) {
+            if (r.getSlug() == null || r.getSlug().isBlank()) {
+                if ("GV-01".equalsIgnoreCase(r.getRoomNumber())) r.setSlug("garden-pool-villa-da-lat");
+                else if ("TF-02".equalsIgnoreCase(r.getRoomNumber())) r.setSlug("two-bedroom-family-villa");
+                else if ("HR-03".equalsIgnoreCase(r.getRoomNumber())) r.setSlug("hillside-residence-private-pool");
+                else if ("SE-04".equalsIgnoreCase(r.getRoomNumber())) r.setSlug("signature-four-bedroom-estate");
+                else r.setSlug("villa-" + r.getRoomNumber().toLowerCase().replace(" ", "-"));
+                roomRepository.save(r);
+            }
+        }
     }
 
     private void initializeFaqs() {

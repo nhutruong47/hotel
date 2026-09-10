@@ -52,22 +52,38 @@ public class GeminiService {
 
         String roomsContext = availableRooms.stream()
                 .map(room -> String.format(
-                        "- Phòng %s (%s): %s - Giá: %s VNĐ/đêm",
+                        "- Biệt thự %s (Mã %s, Loại %s): Sức chứa tối đa %d khách, %d phòng ngủ. Giá gốc: %s USD/đêm. Slug: /villas/%s. Tiện ích: %s. Mô tả: %s",
+                        room.getRoomTypeDisplayName() != null ? room.getRoomTypeDisplayName() : "Villa",
                         room.getRoomNumber(),
-                        room.getRoomType().getDisplayName(),
-                        room.getDescription() != null ? room.getDescription() : "",
-                        room.getPricePerNight().toString()))
+                        room.getRoomType() != null ? room.getRoomType().getName() : "",
+                        room.getCapacity() != null ? room.getCapacity() : 2,
+                        room.getBedrooms() != null ? room.getBedrooms() : 1,
+                        room.getPricePerNight().toString(),
+                        room.getSlug() != null ? room.getSlug() : room.getId().toString(),
+                        room.getAmenities() != null ? room.getAmenities().stream().map(com.hsf.hotel.room.model.Amenity::getName).collect(Collectors.joining(", ")) : "Đầy đủ",
+                        room.getDescription() != null ? room.getDescription() : ""))
                 .collect(Collectors.joining("\n"));
 
         String prompt = String.format("""
-                Bạn là trợ lý AI của khách sạn Như Hotel. Giúp khách chọn phòng phù hợp.
-
-                PHÒNG TRỐNG:
+                Bạn là Nhu AI Concierge — Chuyên viên tư vấn lưu trú cao cấp tại Nhu Villas (Khu nghỉ dưỡng biệt thự riêng tư tại Hồ Tuyền Lâm, Đà Lạt).
+                
+                THÔNG TIN VILLA HIỆN CÓ:
                 %s
 
-                KHÁCH CẦN: %s
+                CHÍNH SÁCH LƯU TRÚ & DỊCH VỤ:
+                - Check-in: 14:00 | Check-out: 12:00
+                - Giá đã bao gồm bữa sáng buffet/a la carte và dịch vụ dọn phòng hàng ngày.
+                - Phụ thu cuối tuần (Thứ 6, Thứ 7) +15%%. Phụ thu thêm khách: 25 USD/người/đêm.
+                - Hủy phòng trước 3 ngày được hoàn tiền 100%%, từ 1-3 ngày hoàn 50%%, dưới 24h không hoàn tiền.
 
-                Gợi ý 1-2 phòng phù hợp nhất, giải thích ngắn gọn. Trả lời tiếng Việt.
+                YÊU CẦU CỦA KHÁCH HÀNG:
+                %s
+
+                HƯỚNG DẪN TRẢ LỜI:
+                1. Tư vấn lịch thiệp, sang trọng, ấm áp bằng tiếng Việt.
+                2. Gợi ý 1-2 căn biệt thự phù hợp nhất với nhu cầu, nêu rõ ưu điểm, sức chứa và giá cả.
+                3. Đính kèm đường dẫn xem chi tiết (ví dụ: /villas/garden-pool-villa-da-lat).
+                4. Tuyệt đối không bịa đặt biệt thự hoặc giá cả không có trong danh sách trên.
                 """, roomsContext, userRequest);
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {

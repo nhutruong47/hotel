@@ -1,6 +1,4 @@
 package com.hsf.hotel.room.dto;
-import com.hsf.hotel.room.dto.RoomTypeDTO;
-import com.hsf.hotel.room.dto.AmenityDTO;
 
 import lombok.Data;
 import java.math.BigDecimal;
@@ -10,6 +8,7 @@ import java.util.List;
 public class RoomDTO implements java.io.Serializable {
     private Integer id;
     private String roomNumber;
+    private String slug;
     private RoomTypeDTO roomType;
     private List<AmenityDTO> amenities;
     private BigDecimal pricePerNight;

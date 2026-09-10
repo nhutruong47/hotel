@@ -27,6 +27,9 @@ public class Room implements java.io.Serializable {
     @Column(nullable = false, unique = true)
     private String roomNumber;
 
+    @Column(unique = true, length = 255)
+    private String slug;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_type_id", nullable = false)
     private RoomTypeEntity roomType;
@@ -277,4 +280,7 @@ public class Room implements java.io.Serializable {
 
     public List<Promotion> getPromotions() { return promotions; }
     public void setPromotions(List<Promotion> promotions) { this.promotions = promotions; }
+
+    public String getSlug() { return slug; }
+    public void setSlug(String slug) { this.slug = slug; }
 }

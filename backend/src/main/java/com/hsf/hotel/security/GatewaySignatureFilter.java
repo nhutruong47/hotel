@@ -39,6 +39,7 @@ public class GatewaySignatureFilter extends OncePerRequestFilter {
 
     private static final String WEBHOOK_PREFIX = "/api/v1/payments/webhook";
     private static final String STRIPE_WEBHOOK_PATH = "/api/v1/payments/webhook/stripe";
+    private static final String SEPAY_WEBHOOK_PATH = "/api/v1/payments/webhook/sepay";
     private static final long MAX_SKEW_SECONDS = 300;
 
     private final ObjectMapper objectMapper;
@@ -59,7 +60,8 @@ public class GatewaySignatureFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         return path == null
                 || !path.startsWith(WEBHOOK_PREFIX)
-                || path.equals(STRIPE_WEBHOOK_PATH);
+                || path.equals(STRIPE_WEBHOOK_PATH)
+                || path.equals(SEPAY_WEBHOOK_PATH);
     }
 
     @Override
