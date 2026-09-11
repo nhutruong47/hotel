@@ -16,7 +16,9 @@ import java.util.Optional;
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     // Find reviews by room, ordered by newest first
-    List<Review> findByRoomOrderByCreatedAtDesc(Room room);
+    @Query("SELECT r FROM Review r WHERE r.room = :room " +
+            "AND (r.isHidden = false OR r.isHidden IS NULL) ORDER BY r.createdAt DESC")
+    List<Review> findByRoomOrderByCreatedAtDesc(@Param("room") Room room);
 
     // Find reviews by user
     List<Review> findByUserOrderByCreatedAtDesc(User user);
@@ -31,11 +33,14 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     boolean existsByUserAndRoom(User user, Room room);
 
     // Get average rating for a room
-    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.room = :room")
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.room = :room " +
+            "AND (r.isHidden = false OR r.isHidden IS NULL)")
     Double getAverageRatingByRoom(@Param("room") Room room);
 
     // Count reviews for a room
-    long countByRoom(Room room);
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.room = :room " +
+            "AND (r.isHidden = false OR r.isHidden IS NULL)")
+    long countByRoom(@Param("room") Room room);
 
     // Get all reviews with pagination
     @Query("SELECT r FROM Review r ORDER BY r.createdAt DESC")

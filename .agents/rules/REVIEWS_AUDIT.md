@@ -1,5 +1,7 @@
 # REVIEWS_AUDIT
 
+> Resolution update (2026-09-11): public room reviews now use a dedicated projection, exclude hidden reviews, and visible rating/count aggregates are recomputed when moderation hides a review. Both review-entry UIs now restrict eligibility to `CHECKED_OUT`/`COMPLETED`.
+
 ## Tính năng
 
 | Tính năng | Hoàn thành | Thiếu gì | Cần làm để production |

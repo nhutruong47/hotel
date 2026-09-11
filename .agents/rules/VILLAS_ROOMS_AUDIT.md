@@ -1,5 +1,7 @@
 # VILLAS_ROOMS_AUDIT
 
+> Resolution update (2026-09-11): public room responses now use DTOs, catalogue queries are bounded and expose stable pagination metadata, and sorting is restricted to an explicit allowlist. The frontend currently requests a bounded page of at most 100 rooms for compatibility with its local filters.
+
 ## Tính năng
 
 | Tính năng | Hoàn thành | Thiếu gì | Cần làm để production |

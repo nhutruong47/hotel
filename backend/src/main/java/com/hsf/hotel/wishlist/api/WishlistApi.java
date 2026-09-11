@@ -42,6 +42,20 @@ public class WishlistApi {
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 
+    @PutMapping("/{roomId}")
+    public ResponseEntity<ApiResponse<?>> add(@PathVariable Integer roomId, HttpSession session) {
+        User user = requireUser(session);
+        boolean changed = wishlistService.addToWishlist(user.getId(), roomId);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("isAdded", true, "changed", changed)));
+    }
+
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<ApiResponse<?>> remove(@PathVariable Integer roomId, HttpSession session) {
+        User user = requireUser(session);
+        boolean changed = wishlistService.removeFromWishlist(user.getId(), roomId);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("isAdded", false, "changed", changed)));
+    }
+
     private static User requireUser(HttpSession session) {
         User user = (User) session.getAttribute("user");
         if (user == null) {

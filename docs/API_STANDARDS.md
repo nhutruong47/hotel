@@ -50,6 +50,22 @@ public class ResourceApi {
 10. Collection endpoints that can grow must use `PageResponse<T>` and enforce a
     bounded page size. Do not expose Spring Data `Page` JSON directly.
 
+## Room catalogue contract
+
+`GET /api/v1/rooms` accepts zero-based `page`, bounded `size` (`1..100`) and an
+allowlisted `sort`: `recommended`, `price-asc`, `price-desc`, `capacity-desc`,
+or `rating-desc`. When dates are supplied, both `checkIn` and `checkOut` are
+required and the interval is interpreted as `[checkIn, checkOut)`.
+
+For compatibility, the response keeps `rooms` and `roomTypes` at the top level
+of `data`, with stable page metadata alongside them: `page`, `size`,
+`totalItems`, `totalPages`, `first`, `last`, and `sort`. An empty search is a
+real empty result; clients must not replace it with sample inventory.
+
+Public reviews use `PublicReviewResponse`. Hidden reviews, moderation state,
+booking data, credentials, tokens and private account fields must never appear
+in that response.
+
 ## Wire format
 
 Success:

@@ -43,8 +43,8 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
             "/api/v1/auth/reset-password",
             "/api/v1/auth/verify",
             "/api/v1/auth/resend-verification",
-            "/api/v1/payments/webhook",
-            "/api/v1/payments/webhook/stripe" // gateway signatures are the real auth
+            "/api/v1/payments/webhook/stripe",
+            "/api/v1/payments/webhook/sepay" // provider signatures/API keys are the real auth
     );
 
     @Override
@@ -76,11 +76,7 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
     }
 
     private boolean isExempt(String path) {
-        if (path == null) return false;
-        for (String exempt : CSRF_EXEMPT_PATHS) {
-            if (path.equals(exempt) || path.startsWith(exempt + "/")) return true;
-        }
-        return false;
+        return path != null && CSRF_EXEMPT_PATHS.contains(path);
     }
 
     private List<Cookie> ensureCookie(HttpServletRequest request, HttpServletResponse response, boolean secure) {

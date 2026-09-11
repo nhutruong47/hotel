@@ -4,6 +4,7 @@ import com.hsf.hotel.room.model.RoomTypeEntity;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.review.service.ReviewService;
 import com.hsf.hotel.review.model.Review;
+import com.hsf.hotel.review.dto.PublicReviewResponse;
 import com.hsf.hotel.booking.model.BookingStatus;
 import com.hsf.hotel.booking.model.Booking;
 
@@ -215,6 +216,32 @@ class ReviewServiceTest {
 
         assertEquals(1, result.size());
         assertEquals(testReview, result.get(0));
+    }
+
+    @Test
+    void getPublicReviewsMapsToSafeProjection() {
+        when(reviewRepository.findByRoomOrderByCreatedAtDesc(testRoom)).thenReturn(List.of(testReview));
+
+        List<PublicReviewResponse> result = reviewService.getPublicReviewsByRoom(testRoom);
+
+        assertEquals(1, result.size());
+        assertEquals("Test User", result.get(0).user().fullName());
+        assertEquals("101", result.get(0).room().roomNumber());
+    }
+
+    @Test
+    void hideReviewRecomputesVisibleRoomRating() {
+        when(reviewRepository.findById(1)).thenReturn(Optional.of(testReview));
+        when(reviewRepository.save(testReview)).thenReturn(testReview);
+        when(reviewRepository.countByRoom(testRoom)).thenReturn(2L);
+        when(reviewRepository.getAverageRatingByRoom(testRoom)).thenReturn(4.0);
+
+        reviewService.hideReview(1);
+
+        assertTrue(testReview.getIsHidden());
+        assertEquals(2L, testRoom.getReviewCount());
+        assertEquals(new BigDecimal("4.0"), testRoom.getAvgRating());
+        verify(roomRepository).save(testRoom);
     }
 
     @Test

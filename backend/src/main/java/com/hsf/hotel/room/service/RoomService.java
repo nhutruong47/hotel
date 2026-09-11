@@ -7,6 +7,8 @@ import com.hsf.hotel.room.model.RoomTypeEntity;
 import com.hsf.hotel.booking.repository.BookingRepository;
 import com.hsf.hotel.room.repository.RoomRepository;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,6 +67,24 @@ public class RoomService {
             .and(com.hsf.hotel.room.repository.RoomSpecification.hasPromotion(promotion));
 
         return roomRepository.findAll(spec);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Room> searchRooms(LocalDate checkIn, LocalDate checkOut, BigDecimal minPrice,
+                                  BigDecimal maxPrice, Integer roomTypeId,
+                                  Integer capacity, Integer bedrooms, List<String> amenities,
+                                  String promotion, Pageable pageable) {
+        org.springframework.data.jpa.domain.Specification<Room> spec = org.springframework.data.jpa.domain.Specification
+                .where(com.hsf.hotel.room.repository.RoomSpecification.isAvailable())
+                .and(com.hsf.hotel.room.repository.RoomSpecification.priceBetween(minPrice, maxPrice))
+                .and(com.hsf.hotel.room.repository.RoomSpecification.hasRoomType(roomTypeId))
+                .and(com.hsf.hotel.room.repository.RoomSpecification.hasCapacityGreaterThanEqual(capacity))
+                .and(com.hsf.hotel.room.repository.RoomSpecification.hasBedroomsGreaterThanEqual(bedrooms))
+                .and(com.hsf.hotel.room.repository.RoomSpecification.hasAmenities(amenities))
+                .and(com.hsf.hotel.room.repository.RoomSpecification.isNotBooked(checkIn, checkOut))
+                .and(com.hsf.hotel.room.repository.RoomSpecification.hasPromotion(promotion));
+
+        return roomRepository.findAll(spec, pageable);
     }
 
     @Transactional(readOnly = true)

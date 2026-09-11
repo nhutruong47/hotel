@@ -1,5 +1,6 @@
 package com.hsf.hotel.common.dto;
-import com.hsf.hotel.user.model.User;
+
+import jakarta.validation.constraints.Pattern;
 
 /**
  * User-controlled UI / notification preferences. Stored on the
@@ -13,12 +14,15 @@ import com.hsf.hotel.user.model.User;
 public class PreferencesDTO {
 
     /** "light" | "dark" | "system". */
+    @Pattern(regexp = "light|dark|system", message = "must be light, dark, or system")
     private String theme;
 
     /** "vi" | "en". */
+    @Pattern(regexp = "vi|en", message = "must be vi or en")
     private String language;
 
     /** "VND" | "USD". */
+    @Pattern(regexp = "VND|USD", message = "must be VND or USD")
     private String currency;
 
     private Boolean emailBooking;

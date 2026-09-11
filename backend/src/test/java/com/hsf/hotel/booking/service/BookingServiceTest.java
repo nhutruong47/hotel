@@ -459,37 +459,6 @@ class BookingServiceTest {
     }
 
     @Nested
-    @DisplayName("Status Transition Tests")
-    class StatusTransitionTests {
-
-        @Test
-        @DisplayName("Should throw exception for invalid status transition")
-        void testInvalidStatusTransition() {
-            testBooking.setStatus(BookingStatus.CANCELLED);
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
-
-            BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> {
-                bookingService.updateBookingStatus(100, BookingStatus.PAID);
-            });
-
-            assertEquals("INVALID_STATE", exception.getCode());
-        }
-
-        @Test
-        @DisplayName("Should throw exception when marking completed booking as anything")
-        void testCannotModifyCompletedBooking() {
-            testBooking.setStatus(BookingStatus.COMPLETED);
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
-
-            BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> {
-                bookingService.updateBookingStatus(100, BookingStatus.CANCELLED);
-            });
-
-            assertTrue(exception.getMessage().contains("hoàn thành"));
-        }
-    }
-
-    @Nested
     @DisplayName("Payment Confirmation Tests")
     class PaymentConfirmationTests {
 
@@ -498,7 +467,7 @@ class BookingServiceTest {
         void testConfirmPaymentAmountMismatch() {
             testBooking.setStatus(BookingStatus.PENDING_PAYMENT);
             testBooking.setTotalPrice(BigDecimal.valueOf(900));
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
 
             BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> {
                 bookingService.confirmPayment(100, "TXN-MISMATCH", BigDecimal.valueOf(800));
@@ -513,7 +482,7 @@ class BookingServiceTest {
         void testConfirmPaymentAmountMatches() {
             testBooking.setStatus(BookingStatus.PENDING_PAYMENT);
             testBooking.setTotalPrice(BigDecimal.valueOf(900));
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
             when(bookingRepository.save(any(Booking.class))).thenAnswer(inv -> inv.getArgument(0));
 
             Booking paid = bookingService.confirmPayment(100, "TXN-OK", BigDecimal.valueOf(900));

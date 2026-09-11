@@ -98,16 +98,6 @@ public class BookingApi {
         public String reason;
     }
 
-    public static class PaymentConfirmationRequest {
-        @Size(max = 100, message = "Mã giao dịch quá dài")
-        public String transactionRef;
-
-        @NotNull(message = "Thiếu số tiền thanh toán")
-        public BigDecimal amount;
-
-        public String paymentMethod;
-    }
-
     @GetMapping
     public ResponseEntity<ApiResponse<?>> myBookings(HttpSession session) {
         User user = currentUser(session);
@@ -167,27 +157,6 @@ public class BookingApi {
         data.put("refundPercentage", booking.getRefundPercentage());
         data.put("refundAmount", booking.getRefundAmount());
         data.put("booking", bookingMapper.bookingToBookingDTO(booking));
-        return ResponseEntity.ok(ApiResponse.ok(data));
-    }
-
-    @PostMapping("/{id}/payment")
-    public ResponseEntity<ApiResponse<?>> submitPayment(@PathVariable Integer id,
-                                                     @Valid @RequestBody PaymentConfirmationRequest req,
-                                                     HttpSession session,
-                                                     HttpServletRequest request) {
-        User user = currentUser(session);
-        Booking booking = bookingService.getBookingById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
-        if (!booking.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN,
-                    "Bạn không có quyền thanh toán cho đơn này");
-        }
-        Booking updated = bookingService.confirmPayment(id, req.transactionRef, req.amount);
-        auditLogService.log(user, AuditActions.PAYMENT_CONFIRM, "Payment", updated.getId(),
-                "amount=" + req.amount + " ref=" + req.transactionRef, request);
-        Map<String, Object> data = new HashMap<>();
-        data.put("message", "Thanh toán thành công. Đơn đặt phòng của bạn đã được xác nhận.");
-        data.put("booking", bookingMapper.bookingToBookingDTO(updated));
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 

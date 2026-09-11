@@ -23,4 +23,12 @@ public interface PaymentGateway {
      * @return true if successfully refunded, false otherwise.
      */
     boolean refund(Payment payment, BigDecimal amount);
+
+    /**
+     * Refunds with a provider-level idempotency key. Gateways that do not
+     * support it may fall back to the legacy operation.
+     */
+    default boolean refund(Payment payment, BigDecimal amount, String idempotencyKey) {
+        return refund(payment, amount);
+    }
 }

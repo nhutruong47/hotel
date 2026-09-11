@@ -143,23 +143,6 @@ function BookingActions({ booking, onCancelled }: { booking: Booking; onCancelle
     );
   }
 
-  if (status === 'AWAITING_APPROVAL') {
-    return (
-      <div className="flex flex-wrap gap-2">
-        <span className="inline-flex items-center rounded-full bg-blue-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-blue-500">
-          Under Review
-        </span>
-        <button
-          onClick={() => { if (confirm('Cancel this booking?')) cancelMutation.mutate(); }}
-          disabled={cancelMutation.isPending}
-          className="inline-flex items-center rounded-full border border-red-200 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-red-600 transition hover:bg-red-50 disabled:opacity-50"
-        >
-          {t('bookings.cancel')}
-        </button>
-      </div>
-    );
-  }
-
   if (status === 'PAID') {
     return (
       <div className="flex flex-wrap gap-2">

@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { useSettings, Theme, Currency, Lang } from '../../shared/settings/SettingsContext';
+import { useSettings, Theme, Currency, Lang, Settings } from '../../shared/settings/SettingsContext';
 import { useTranslation } from '../../shared/i18n/hooks';
-import { api, API_PATHS } from '../../shared/api/client';
+import { api, API_PATHS, ApiError } from '../../shared/api/client';
+
+type PreferencesPayload = Partial<Omit<Settings, 'lang'>> & { language?: Lang };
 
 function SectionCard({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -79,16 +81,13 @@ export function SettingsPage() {
     retry: false,
   });
 
-  const savePreferences = useMutation({
-    mutationFn: (payload: typeof settings) => api.put(API_PATHS.profilePreferences, {
-      theme: payload.theme,
-      language: payload.lang,
-      currency: payload.currency,
-      emailBooking: payload.emailBooking,
-      emailReminders: payload.emailReminders,
-      emailMarketing: payload.emailMarketing,
-      smsBooking: payload.smsBooking,
-    }),
+  const savePreferences = useMutation<PreferencesPayload, ApiError, PreferencesPayload>({
+    mutationFn: (payload) => api.patch<PreferencesPayload>(API_PATHS.profilePreferences, payload),
+    scope: { id: 'profile-preferences' },
+    onSuccess: () => {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
   });
 
   useEffect(() => {
@@ -106,11 +105,11 @@ export function SettingsPage() {
   }, [preferencesQuery.data, settings, updateSetting]);
 
   function update<K extends keyof typeof settings>(key: K, value: typeof settings[K]) {
-    const next = { ...settings, [key]: value };
     updateSetting(key, value);
-    savePreferences.mutate(next);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    const payload: PreferencesPayload = key === 'lang'
+      ? { language: value as Lang }
+      : { [key]: value } as PreferencesPayload;
+    savePreferences.mutate(payload);
   }
 
   return (
@@ -124,6 +123,12 @@ export function SettingsPage() {
         <div className="mb-4 flex items-center gap-2 rounded-2xl bg-brand-forest/10 px-5 py-3.5 text-sm text-brand-forest">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           {t('settings.saved')}
+        </div>
+      )}
+
+      {savePreferences.error && (
+        <div className="mb-4 rounded-2xl bg-brand-coral/10 px-5 py-3.5 text-sm text-brand-coral">
+          {savePreferences.error.message}
         </div>
       )}
 

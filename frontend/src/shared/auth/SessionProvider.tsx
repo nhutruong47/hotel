@@ -8,7 +8,7 @@ export interface SessionUser {
     username: string;
     email?: string | null;
     fullName?: string | null;
-    role: 'USER' | 'ADMIN';
+    role: 'USER' | 'STAFF' | 'MANAGER' | 'ADMIN';
     avatarFilename?: string | null;
     emailVerified?: boolean;
 }

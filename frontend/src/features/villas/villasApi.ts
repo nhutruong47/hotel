@@ -122,6 +122,9 @@ export type VillaFiltersParams = {
   roomTypeId?: string;
   amenities?: string;
   promotion?: string;
+  page?: string;
+  size?: string;
+  sort?: 'recommended' | 'price-asc' | 'price-desc' | 'capacity-desc' | 'rating-desc';
 };
 
 function buildQuery(params: VillaFiltersParams = {}): string {
@@ -134,12 +137,14 @@ function buildQuery(params: VillaFiltersParams = {}): string {
 }
 
 export async function fetchVillas(filters: VillaFiltersParams = {}): Promise<Villa[]> {
-  const data = await api.get<RoomListResponse>(`${API_PATHS.rooms}${buildQuery(filters)}`);
+  // The current catalogue applies its final UI filters locally, so request the
+  // largest bounded API page while the server contract remains paginated.
+  const data = await api.get<RoomListResponse>(`${API_PATHS.rooms}${buildQuery({ size: '100', ...filters })}`);
   const rooms = Array.isArray(data?.rooms) ? data.rooms : [];
   const villas = rooms
     .map((item, index) => normalizeRoom(item, index))
     .filter((item): item is Villa => item !== null);
-  return villas.length > 0 ? villas : fallbackVillas;
+  return villas;
 }
 
 export async function fetchVillaById(id: string | number): Promise<Villa | null> {

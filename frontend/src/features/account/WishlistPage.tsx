@@ -36,8 +36,8 @@ export function WishlistPage() {
     retry: false,
   });
 
-  const toggleMutation = useMutation<{ isAdded: boolean }, ApiError, number>({
-    mutationFn: (roomId) => api.post<{ isAdded: boolean }>(API_PATHS.wishlistToggle, { roomId }),
+  const removeMutation = useMutation<{ isAdded: boolean; changed: boolean }, ApiError, number>({
+    mutationFn: (roomId) => api.delete<{ isAdded: boolean; changed: boolean }>(API_PATHS.wishlistItem(roomId)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wishlist'] }),
   });
 
@@ -87,8 +87,8 @@ export function WishlistPage() {
                 </Link>
                 {/* Remove button */}
                 <button
-                  onClick={() => toggleMutation.mutate(item.room.id)}
-                  disabled={toggleMutation.isPending}
+                  onClick={() => removeMutation.mutate(item.room.id)}
+                  disabled={removeMutation.isPending}
                   title="Remove from wishlist"
                   className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-brand-paper/90 text-red-500 shadow-sm backdrop-blur-sm transition hover:bg-brand-paper hover:text-red-600 disabled:opacity-50"
                 >

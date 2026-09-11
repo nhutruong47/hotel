@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,4 +21,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     @Transactional
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.user.id = :userId AND n.isRead = false")
     void markAllAsRead(Integer userId);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Notification n SET n.isRead = true WHERE n.id = :id AND n.user.id = :userId")
+    int markAsReadByOwner(@Param("id") Integer id, @Param("userId") Integer userId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Notification n WHERE n.id = :id AND n.user.id = :userId")
+    int deleteByIdAndOwner(@Param("id") Integer id, @Param("userId") Integer userId);
 }

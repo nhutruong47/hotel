@@ -32,7 +32,9 @@ public class User {
     @JsonIgnore
     private String email;
     @JsonIgnore
-    private String role = "USER";
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private UserRole role = UserRole.USER;
 
     // Email verification fields
     @JsonIgnore
@@ -141,9 +143,10 @@ public class User {
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-    public void setRole(UserRole role) { this.role = role != null ? role.name() : null; }
+    public String getRole() { return role != null ? role.name() : UserRole.USER.name(); }
+    public UserRole getRoleEnum() { return role != null ? role : UserRole.USER; }
+    public void setRole(String role) { this.role = UserRole.from(role); }
+    public void setRole(UserRole role) { this.role = role != null ? role : UserRole.USER; }
     public Boolean getEmailVerified() { return emailVerified; }
     public void setEmailVerified(Boolean emailVerified) { this.emailVerified = emailVerified; }
     public String getVerificationToken() { return verificationToken; }

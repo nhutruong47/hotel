@@ -1,5 +1,14 @@
 # PROJECT_BUG_SUMMARY
 
+> Historical discovery snapshot; do not use this table as current defect
+> status. The canonical implemented booking/payment decisions and verification
+> cases are in `docs/BOOKING_LIFECYCLE_AND_RBAC.md`.
+>
+> Resolution update (2026-09-11): DB-003 and AUTH-001 are closed by canonical
+> case-insensitive email handling plus migration V9. Registration no longer
+> authenticates unverified accounts, and the session bridge invalidates stale
+> unverified sessions.
+
 | ID | Severity | Module | Lỗi | File chính |
 |---|---|---|---|---|
 | SEC-001 | Critical | Security/Frontend | CSRF filter yêu cầu header nhưng API client không gửi | `CsrfCookieFilter.java:58`, `client.ts:28` |

@@ -1,5 +1,10 @@
 # DATABASE_MIGRATIONS_AUDIT
 
+> Resolution update (2026-09-11): the invalid H2 migration indexes were
+> replaced earlier; V9 enforces canonical unique email and V10 removes the
+> PostgreSQL-only `password_hash` column that conflicts with the User entity.
+> Clean PostgreSQL validation remains a release gate.
+
 ## Tính năng
 
 | Tính năng | Hoàn thành | Thiếu gì | Cần làm để production |

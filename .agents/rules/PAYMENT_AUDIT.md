@@ -1,5 +1,10 @@
 # PAYMENT_AUDIT
 
+> Historical audit snapshot. PAYMENT-001 through PAYMENT-004 were addressed
+> by the current provider-specific webhook, payment-correlation, and browser
+> flow implementation. See `docs/BOOKING_LIFECYCLE_AND_RBAC.md` for the
+> accepted payment rules.
+
 ## Tính năng
 
 | Tính năng | Hoàn thành | Thiếu gì | Cần làm để production |

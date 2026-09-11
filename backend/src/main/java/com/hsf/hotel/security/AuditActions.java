@@ -29,6 +29,7 @@ public final class AuditActions {
     public static final String BOOKING_CHECKIN = "BOOKING_CHECKIN";
     public static final String BOOKING_CHECKOUT = "BOOKING_CHECKOUT";
     public static final String BOOKING_COMPLETE = "BOOKING_COMPLETE";
+    public static final String BOOKING_NO_SHOW = "BOOKING_NO_SHOW";
 
     // Payments
     public static final String PAYMENT_CREATE = "PAYMENT_CREATE";

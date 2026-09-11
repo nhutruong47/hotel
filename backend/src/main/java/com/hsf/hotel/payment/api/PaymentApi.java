@@ -2,6 +2,7 @@ package com.hsf.hotel.payment.api;
 import com.hsf.hotel.room.model.Room;
 
 import com.hsf.hotel.config.ApiResponse;
+import com.hsf.hotel.admin.service.AuditLogService;
 import com.hsf.hotel.exception.ApiException;
 import com.hsf.hotel.exception.BusinessRuleException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
@@ -9,16 +10,15 @@ import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.payment.model.Payment;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.repository.BookingRepository;
-import com.hsf.hotel.booking.service.BookingService;
 import com.hsf.hotel.payment.service.PaymentService;
 import com.hsf.hotel.service.payment.StripePaymentAdapter;
+import com.hsf.hotel.security.AuditActions;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
@@ -53,19 +53,19 @@ public class PaymentApi {
     private static final Logger log = LoggerFactory.getLogger(PaymentApi.class);
 
     private final PaymentService paymentService;
-    private final BookingService bookingService;
+    private final AuditLogService auditLogService;
     private final BookingRepository bookingRepository;
     private final StripePaymentAdapter stripeAdapter;
     private final String baseUrl;
 
     public PaymentApi(
             PaymentService paymentService,
-            BookingService bookingService,
+            AuditLogService auditLogService,
             BookingRepository bookingRepository,
             StripePaymentAdapter stripeAdapter,
             @Value("${app.base-url:http://localhost:5173}") String baseUrl) {
         this.paymentService = paymentService;
-        this.bookingService = bookingService;
+        this.auditLogService = auditLogService;
         this.bookingRepository = bookingRepository;
         this.stripeAdapter = stripeAdapter;
         this.baseUrl = baseUrl;
@@ -142,7 +142,8 @@ public class PaymentApi {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<?>> create(@Valid @RequestBody CreatePaymentRequest req,
-                                              HttpSession session) {
+                                              HttpSession session,
+                                              HttpServletRequest request) {
         User user = requireUser(session);
         Booking booking = getBookingOrThrow(req.bookingId);
         checkBookingAccess(user, booking);
@@ -151,6 +152,9 @@ public class PaymentApi {
 
         Payment payment = paymentService.createPayment(booking, req.amount, method,
                 req.transactionRef, req.notes);
+        auditLogService.log(user, AuditActions.PAYMENT_CREATE, "Payment", payment.getId(),
+                "booking=" + booking.getId() + " amount=" + payment.getAmount()
+                        + " method=" + payment.getMethod(), request);
 
         Map<String, Object> data = new HashMap<>();
         data.put("payment", payment);
@@ -223,8 +227,11 @@ public class PaymentApi {
 
             Session stripeSession = Session.create(paramsBuilder.build());
 
-            // Create payment intent in our system
-            Payment payment = paymentService.createPaymentIntent(booking, Payment.PaymentMethod.CARD);
+            // Correlate our payment with the actual Checkout Session. Creating
+            // a second independent PaymentIntent here would make the webhook
+            // impossible to reconcile reliably.
+            Payment payment = paymentService.createCheckoutPayment(
+                    booking, stripeSession.getId(), stripeSession.getPaymentIntent());
 
             log.info("Created Stripe Checkout Session: {} for booking #{}", 
                     stripeSession.getId(), booking.getId());
@@ -232,7 +239,8 @@ public class PaymentApi {
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
                     "sessionId", stripeSession.getId(),
                     "checkoutUrl", stripeSession.getUrl(),
-                    "paymentIntentId", payment.getIntentId(),
+                    "paymentIntentId", payment.getIntentId() != null
+                            ? payment.getIntentId() : stripeSession.getId(),
                     "amount", booking.getTotalPrice(),
                     "currency", "VND"
             )));
@@ -252,11 +260,14 @@ public class PaymentApi {
             @PathVariable String sessionId,
             HttpSession session) {
         User user = requireUser(session);
+        Payment localPayment = paymentService.getPaymentByTransactionRef(sessionId);
+        checkBookingAccess(user, localPayment.getBooking());
 
         if (!stripeAdapter.isRealStripeEnabled()) {
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
                     "mode", "mock",
-                    "sessionId", sessionId
+                    "sessionId", sessionId,
+                    "bookingId", localPayment.getBooking().getId()
             )));
         }
 
@@ -378,25 +389,6 @@ public class PaymentApi {
         }
     }
 
-    /**
-     * Handle generic gateway webhooks (legacy).
-     */
-    @PostMapping("/webhook/{gateway}")
-    public ResponseEntity<ApiResponse<?>> handleGenericWebhook(
-            @PathVariable String gateway,
-            @RequestBody Map<String, Object> payload) {
-        
-        String intentId = (String) payload.get("intentId");
-        String status = (String) payload.get("status");
-        
-        Payment payment = paymentService.handleWebhook(intentId, status, payload.toString());
-        
-        return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "status", "received",
-                "paymentId", payment.getId()
-        )));
-    }
-
     // ============== Admin Operations ==============
 
     /**
@@ -405,15 +397,14 @@ public class PaymentApi {
     @PostMapping("/{id}/complete")
     public ResponseEntity<ApiResponse<?>> markComplete(
             @PathVariable Integer id,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletRequest request) {
         User user = requireUser(session);
         requireAdmin(user);
         
         Payment payment = paymentService.markCompleted(id, user);
-        bookingService.confirmPayment(
-                payment.getBooking().getId(),
-                payment.getTransactionRef(),
-                payment.getAmount());
+        auditLogService.log(user, AuditActions.PAYMENT_CONFIRM, "Payment", id,
+                "booking=" + payment.getBooking().getId() + " amount=" + payment.getAmount(), request);
         
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "payment", payment,
@@ -428,12 +419,15 @@ public class PaymentApi {
     public ResponseEntity<ApiResponse<?>> markFailed(
             @PathVariable Integer id,
             @RequestBody(required = false) Map<String, String> body,
-            HttpSession session) {
+            HttpSession session,
+            HttpServletRequest request) {
         User user = requireUser(session);
         requireAdmin(user);
         
         String reason = body != null ? body.get("reason") : null;
         Payment payment = paymentService.markFailed(id, reason);
+        auditLogService.log(user, AuditActions.PAYMENT_FAIL, "Payment", id,
+                "reason=" + reason, request);
         
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "payment", payment,
@@ -448,12 +442,16 @@ public class PaymentApi {
     public ResponseEntity<ApiResponse<?>> refund(
             @PathVariable Integer id,
             @Valid @RequestBody RefundRequest req,
-            HttpSession session) {
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            HttpSession session,
+            HttpServletRequest request) {
         User user = requireUser(session);
         requireAdmin(user);
         
         try {
-            Payment payment = paymentService.refund(id, req.amount, req.reason, user);
+            Payment payment = paymentService.refund(id, req.amount, req.reason, user, idempotencyKey);
+            auditLogService.log(user, AuditActions.PAYMENT_REFUND, "Payment", id,
+                    "amount=" + req.amount + " reason=" + req.reason, request);
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
                     "payment", payment,
                     "message", "Đã hoàn tiền " + req.amount + " VNĐ"
@@ -573,14 +571,12 @@ public class PaymentApi {
             log.info("Checkout completed for booking #{}", bookingId);
 
             // Update payment status
-            String paymentIntentId = session.getPaymentIntent();
-            if (paymentIntentId != null) {
-                paymentService.handleWebhook(paymentIntentId, "succeeded",
-                        "{\"type\": \"checkout.session.completed\", \"session_id\": \"" + session.getId() + "\"}");
-            }
+            paymentService.handleCheckoutWebhook(session.getId(), session.getPaymentIntent(),
+                    "{\"type\": \"checkout.session.completed\", \"session_id\": \"" + session.getId() + "\"}");
 
         } catch (Exception e) {
             log.error("Error handling checkout.session.completed: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to reconcile checkout session", e);
         }
     }
 
@@ -597,6 +593,7 @@ public class PaymentApi {
 
         } catch (Exception e) {
             log.error("Error handling payment_intent.succeeded: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to reconcile successful payment intent", e);
         }
     }
 
@@ -617,6 +614,7 @@ public class PaymentApi {
 
         } catch (Exception e) {
             log.error("Error handling payment_intent.payment_failed: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to reconcile failed payment intent", e);
         }
     }
 

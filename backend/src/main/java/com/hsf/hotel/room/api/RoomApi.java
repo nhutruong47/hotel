@@ -11,7 +11,11 @@ import com.hsf.hotel.room.service.RoomQueryService;
 import com.hsf.hotel.room.service.RoomTypeService;
 import com.hsf.hotel.room.dto.RoomMapper;
 import com.hsf.hotel.room.dto.RoomDTO;
+import com.hsf.hotel.room.dto.RoomCatalogResponse;
 import com.hsf.hotel.room.dto.RoomTypeDTO;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -48,7 +52,7 @@ public class RoomApi {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> getRooms(
+    public ResponseEntity<ApiResponse<RoomCatalogResponse>> getRooms(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
             @RequestParam(required = false) BigDecimal minPrice,
@@ -57,23 +61,24 @@ public class RoomApi {
             @RequestParam(required = false) Integer capacity,
             @RequestParam(required = false) Integer bedrooms,
             @RequestParam(required = false) List<String> amenities,
-            @RequestParam(required = false) String promotion) {
+            @RequestParam(required = false) String promotion,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "24") int size,
+            @RequestParam(defaultValue = "recommended") String sort) {
 
-        boolean unfiltered = checkIn == null && checkOut == null
-                && minPrice == null && maxPrice == null && roomTypeId == null
-                && capacity == null && bedrooms == null && (amenities == null || amenities.isEmpty())
-                && (promotion == null || promotion.isEmpty());
-                
-        List<RoomDTO> roomDTOs = unfiltered
-                ? roomQueryService.available()
-                : roomQueryService.search(checkIn, checkOut, minPrice, maxPrice, roomTypeId,
-                        capacity, bedrooms, amenities, promotion);
+        validateSearch(checkIn, checkOut, minPrice, maxPrice, capacity, bedrooms, page, size);
+        String canonicalSort = canonicalSort(sort);
+        List<String> normalizedAmenities = amenities == null ? List.of() : amenities.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+        PageRequest pageable = PageRequest.of(page, size, resolveSort(canonicalSort));
+        Page<RoomDTO> roomDTOs = roomQueryService.search(
+                checkIn, checkOut, minPrice, maxPrice, roomTypeId,
+                capacity, bedrooms, normalizedAmenities, promotion, pageable);
         List<RoomTypeDTO> roomTypeDTOs = roomMapper.roomTypesToRoomTypeDTOs(roomTypeService.getAllRoomTypes());
-
-        Map<String, Object> data = new HashMap<>();
-        data.put("rooms", roomDTOs);
-        data.put("roomTypes", roomTypeDTOs);
-        return ResponseEntity.ok(ApiResponse.ok(data));
+        return ResponseEntity.ok(ApiResponse.ok(RoomCatalogResponse.from(roomDTOs, roomTypeDTOs, canonicalSort)));
     }
 
     @GetMapping("/{id}")
@@ -88,7 +93,7 @@ public class RoomApi {
         detail.put("room", roomDTO);
         detail.put("avgRating", reviewService.getAverageRating(room));
         detail.put("reviewCount", reviewService.getReviewCount(room));
-        detail.put("reviews", reviewService.getReviewsByRoom(room));
+        detail.put("reviews", reviewService.getPublicReviewsByRoom(room));
         detail.put("roomTypes", roomTypeDTOs);
         return ResponseEntity.ok(ApiResponse.ok(detail));
     }
@@ -104,5 +109,55 @@ public class RoomApi {
             return r;
         }).toList();
         return ResponseEntity.ok(ApiResponse.ok(ranges));
+    }
+
+    private static void validateSearch(
+            LocalDate checkIn,
+            LocalDate checkOut,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Integer capacity,
+            Integer bedrooms,
+            int page,
+            int size
+    ) {
+        if ((checkIn == null) != (checkOut == null)) {
+            throw new IllegalArgumentException("checkIn and checkOut must be provided together");
+        }
+        if (checkIn != null && !checkOut.isAfter(checkIn)) {
+            throw new IllegalArgumentException("checkOut must be after checkIn");
+        }
+        if (minPrice != null && minPrice.signum() < 0
+                || maxPrice != null && maxPrice.signum() < 0
+                || minPrice != null && maxPrice != null && minPrice.compareTo(maxPrice) > 0) {
+            throw new IllegalArgumentException("Invalid price range");
+        }
+        if (capacity != null && capacity < 1 || bedrooms != null && bedrooms < 1) {
+            throw new IllegalArgumentException("Capacity and bedrooms must be positive");
+        }
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("page must be non-negative and size must be between 1 and 100");
+        }
+    }
+
+    private static String canonicalSort(String sort) {
+        String value = sort == null ? "recommended" : sort.trim().toLowerCase();
+        return switch (value) {
+            case "recommended", "price-asc", "price-desc", "capacity-desc", "rating-desc" -> value;
+            default -> throw new IllegalArgumentException("Unsupported room sort");
+        };
+    }
+
+    private static Sort resolveSort(String sort) {
+        return switch (sort) {
+            case "price-asc" -> Sort.by(Sort.Order.asc("pricePerNight"), Sort.Order.asc("id"));
+            case "price-desc" -> Sort.by(Sort.Order.desc("pricePerNight"), Sort.Order.asc("id"));
+            case "capacity-desc" -> Sort.by(Sort.Order.desc("capacity"), Sort.Order.asc("id"));
+            case "rating-desc", "recommended" -> Sort.by(
+                    Sort.Order.desc("avgRating").nullsLast(),
+                    Sort.Order.desc("reviewCount"),
+                    Sort.Order.asc("id"));
+            default -> throw new IllegalArgumentException("Unsupported room sort");
+        };
     }
 }

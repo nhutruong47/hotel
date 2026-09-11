@@ -1,16 +1,19 @@
 package com.hsf.hotel.payment.service;
 import com.hsf.hotel.notification.service.NotificationProducer;
-import com.hsf.hotel.booking.service.BookingService;
 
 import com.hsf.hotel.notification.dto.NotificationEvent;
 import com.hsf.hotel.exception.BusinessRuleException;
+import com.hsf.hotel.exception.ExternalServiceException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.booking.model.BookingStatus;
+import com.hsf.hotel.booking.model.BookingStateMachine;
 import com.hsf.hotel.payment.model.Payment;
+import com.hsf.hotel.payment.model.PaymentRefund;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.repository.BookingRepository;
 import com.hsf.hotel.payment.repository.PaymentRepository;
+import com.hsf.hotel.payment.repository.PaymentRefundRepository;
 import com.hsf.hotel.booking.model.BookingStatusTransition;
 import com.hsf.hotel.booking.repository.BookingStatusTransitionRepository;
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ public class PaymentService {
     private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
 
     private final PaymentRepository paymentRepository;
+    private final PaymentRefundRepository paymentRefundRepository;
     private final BookingRepository bookingRepository;
     private final BookingStatusTransitionRepository transitionRepository;
     private final PaymentGateway paymentGateway;
@@ -40,11 +44,13 @@ public class PaymentService {
     private String adminEmail = "admin@hotel.com";
 
     public PaymentService(PaymentRepository paymentRepository,
+                          PaymentRefundRepository paymentRefundRepository,
                           BookingRepository bookingRepository,
                           BookingStatusTransitionRepository transitionRepository,
                           PaymentGateway paymentGateway,
                           NotificationProducer notificationProducer) {
         this.paymentRepository = paymentRepository;
+        this.paymentRefundRepository = paymentRefundRepository;
         this.bookingRepository = bookingRepository;
         this.transitionRepository = transitionRepository;
         this.paymentGateway = paymentGateway;
@@ -92,31 +98,68 @@ public class PaymentService {
 
     @Transactional
     public Payment handleWebhook(String intentId, String status, String rawResponse) {
-        Payment payment = paymentRepository.findByIntentId(intentId)
+        Payment payment = paymentRepository.findByIntentIdForUpdate(intentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", intentId));
+        return processWebhook(payment, status, rawResponse, intentId);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment getPaymentByTransactionRef(String transactionRef) {
+        if (transactionRef == null || transactionRef.isBlank()) {
+            throw new ResourceNotFoundException("Payment", transactionRef);
+        }
+        return paymentRepository.findByTransactionRef(transactionRef)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", transactionRef));
+    }
+
+    @Transactional
+    public Payment handleCheckoutWebhook(String sessionId, String discoveredIntentId, String rawResponse) {
+        Payment payment = paymentRepository.findByTransactionRefForUpdate(sessionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", sessionId));
+        if (discoveredIntentId != null && !discoveredIntentId.isBlank()) {
+            if (payment.getIntentId() != null && !payment.getIntentId().equals(discoveredIntentId)) {
+                throw new BusinessRuleException("PAYMENT_CORRELATION_MISMATCH",
+                        "Checkout session is linked to a different payment intent");
+            }
+            payment.setIntentId(discoveredIntentId);
+        }
+        return processWebhook(payment, "succeeded", rawResponse, sessionId);
+    }
+
+    private Payment processWebhook(Payment payment, String status, String rawResponse, String correlationId) {
 
         payment.setRawResponse(rawResponse);
 
         // Idempotency: gateways routinely retry webhooks. If we have already
         // moved this payment to a terminal state, do not record the duplicate.
+        boolean succeeded = "succeeded".equalsIgnoreCase(status);
+        boolean failed = "failed".equalsIgnoreCase(status);
+        if (!succeeded && !failed) {
+            throw new BusinessRuleException("INVALID_PAYMENT_STATUS",
+                    "Unsupported gateway payment status");
+        }
         if (payment.getStatus() == Payment.PaymentStatus.PAID
                 || payment.getStatus() == Payment.PaymentStatus.REFUNDED
                 || payment.getStatus() == Payment.PaymentStatus.PARTIALLY_REFUNDED
-                || payment.getStatus() == Payment.PaymentStatus.FAILED) {
+                || (payment.getStatus() == Payment.PaymentStatus.FAILED && failed)) {
             log.info("Webhook for payment #{} ignored — already in terminal state {}",
                     payment.getId(), payment.getStatus());
             return payment;
         }
 
-        if ("succeeded".equalsIgnoreCase(status)) {
+        if (succeeded) {
             payment.setStatus(Payment.PaymentStatus.PAID);
             payment.setCompletedAt(LocalDateTime.now());
-            // Delegate to BookingService.confirmPayment so the booking gets the
-            // proper BookingStatusTransition row + email notification. We
-            // pass null for amount because the booking already carries the
-            // authoritative total price.
-            Booking booking = payment.getBooking();
+            Booking bookingRef = payment.getBooking();
+            Booking booking = bookingRef != null
+                    ? bookingRepository.findByIdForUpdate(bookingRef.getId()).orElse(bookingRef)
+                    : null;
             if (booking != null && booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
+                if (booking.getTotalPrice() == null || booking.getTotalPrice().compareTo(payment.getAmount()) != 0) {
+                    throw new BusinessRuleException("PAYMENT_AMOUNT_MISMATCH",
+                            "Gateway payment amount does not match the booking total");
+                }
+                BookingStateMachine.requireTransition(booking.getStatus(), BookingStatus.PAID);
                 booking.setStatus(BookingStatus.PAID);
                 booking.setPaidAt(LocalDateTime.now());
                 bookingRepository.save(booking);
@@ -125,7 +168,7 @@ public class PaymentService {
                         BookingStatus.PENDING_PAYMENT,
                         BookingStatus.PAID,
                         null,
-                        "Webhook payment confirmation: " + intentId));
+                        "Webhook payment confirmation: " + correlationId));
                 
                 NotificationEvent customerEvent = new NotificationEvent("PAYMENT_CUSTOMER", booking.getId());
                 notificationProducer.sendEmailNotification(customerEvent);
@@ -133,15 +176,47 @@ public class PaymentService {
                 NotificationEvent adminEvent = new NotificationEvent("PAYMENT_ADMIN", booking.getId());
                 adminEvent.setAdminEmail(adminEmail);
                 notificationProducer.sendEmailNotification(adminEvent);
+            } else if (booking != null) {
+                payment.setNotes(appendNote(payment.getNotes(),
+                        "Late payment received while booking was " + booking.getStatus()
+                                + "; manual review/refund required"));
+                recordPaymentTransition(payment,
+                        "Late payment received for booking in " + booking.getStatus());
             }
             log.info("Payment {} completed successfully via webhook.", payment.getId());
-        } else if ("failed".equalsIgnoreCase(status)) {
+        } else if (failed) {
             payment.setStatus(Payment.PaymentStatus.FAILED);
             recordPaymentTransition(payment, "Webhook reported failure for intent "
-                    + intentId);
+                    + correlationId);
             log.warn("Payment {} failed via webhook.", payment.getId());
         }
 
+        return paymentRepository.save(payment);
+    }
+
+    @Transactional
+    public Payment createCheckoutPayment(Booking booking, String sessionId, String intentId) {
+        if (booking == null || booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new BusinessRuleException("INVALID_STATE",
+                    "Booking is not in a valid state for checkout payment");
+        }
+        if (sessionId == null || sessionId.isBlank()) {
+            throw new BusinessRuleException("INVALID_PAYMENT_SESSION", "Checkout session ID is required");
+        }
+        Payment existing = paymentRepository.findByTransactionRef(sessionId).orElse(null);
+        if (existing != null) {
+            if (existing.getBooking().getId().equals(booking.getId())) {
+                return existing;
+            }
+            throw new BusinessRuleException("PAYMENT_CORRELATION_MISMATCH",
+                    "Checkout session is already linked to another booking");
+        }
+        Payment payment = new Payment(booking, booking.getTotalPrice(), Payment.PaymentMethod.CARD,
+                Payment.PaymentStatus.PENDING, sessionId);
+        payment.setGateway(Payment.PaymentGateway.STRIPE);
+        payment.setCurrency("VND");
+        payment.setIntentId(intentId);
+        payment.setCreatedAt(LocalDateTime.now());
         return paymentRepository.save(payment);
     }
 
@@ -169,8 +244,32 @@ public class PaymentService {
         if (amount == null || amount.signum() <= 0) {
             throw new BusinessRuleException("INVALID_AMOUNT", "Số tiền thanh toán phải lớn hơn 0");
         }
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new BusinessRuleException("INVALID_STATE",
+                    "Booking is not in a valid state for payment");
+        }
+        if (booking.getTotalPrice() == null || booking.getTotalPrice().compareTo(amount) != 0) {
+            throw new BusinessRuleException("PAYMENT_AMOUNT_MISMATCH",
+                    "Payment amount must equal the booking total");
+        }
+        if (method == null) {
+            throw new BusinessRuleException("INVALID_PAYMENT_METHOD", "Payment method is required");
+        }
+        if (transactionRef != null && !transactionRef.isBlank()) {
+            Payment existing = paymentRepository.findByTransactionRef(transactionRef.trim()).orElse(null);
+            if (existing != null) {
+                boolean sameRequest = existing.getBooking().getId().equals(booking.getId())
+                        && existing.getAmount().compareTo(amount) == 0
+                        && existing.getMethod() == method;
+                if (sameRequest) {
+                    return existing;
+                }
+                throw new BusinessRuleException("DUPLICATE_TRANSACTION_REFERENCE",
+                        "Transaction reference is already used by another payment");
+            }
+        }
         Payment payment = new Payment(booking, amount, method, Payment.PaymentStatus.PENDING,
-                transactionRef != null ? transactionRef : generateRef());
+                transactionRef != null && !transactionRef.isBlank() ? transactionRef.trim() : generateRef());
         payment.setNotes(notes);
         payment.setCreatedAt(LocalDateTime.now());
         Payment saved = paymentRepository.save(payment);
@@ -181,7 +280,7 @@ public class PaymentService {
 
     @Transactional
     public Payment markCompleted(Integer paymentId, User processedBy) {
-        Payment payment = loadOrThrow(paymentId);
+        Payment payment = loadForUpdateOrThrow(paymentId);
         if (payment.getStatus() == Payment.PaymentStatus.PAID) {
             return payment;
         }
@@ -189,18 +288,38 @@ public class PaymentService {
             throw new BusinessRuleException("INVALID_STATE",
                     "Không thể hoàn thành thanh toán ở trạng thái " + payment.getStatus());
         }
+        // Keep the booking and the manually confirmed payment in one transaction.
+        Booking bookingRef = payment.getBooking();
+        if (bookingRef == null) {
+            throw new BusinessRuleException("INVALID_BOOKING_STATE",
+                    "Payment is not attached to a booking");
+        }
+        Booking booking = bookingRepository.findByIdForUpdate(bookingRef.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Booking", bookingRef.getId()));
+        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
+            throw new BusinessRuleException("INVALID_BOOKING_STATE",
+                    "The booking is no longer awaiting payment");
+        }
+        if (booking.getTotalPrice() == null || booking.getTotalPrice().compareTo(payment.getAmount()) != 0) {
+            throw new BusinessRuleException("PAYMENT_AMOUNT_MISMATCH",
+                    "Payment amount does not match the booking total");
+        }
+
         payment.setStatus(Payment.PaymentStatus.PAID);
         payment.setCompletedAt(LocalDateTime.now());
         payment.setProcessedBy(processedBy);
         Payment saved = paymentRepository.save(payment);
 
-        // Move the booking to CONFIRMED.
-        Booking booking = payment.getBooking();
-        if (booking.getStatus() == BookingStatus.PENDING_PAYMENT) {
-            booking.setStatus(BookingStatus.PAID);
-            booking.setPaidAt(LocalDateTime.now());
-            bookingRepository.save(booking);
-        }
+        BookingStateMachine.requireTransition(booking.getStatus(), BookingStatus.PAID);
+        booking.setStatus(BookingStatus.PAID);
+        booking.setPaidAt(LocalDateTime.now());
+        bookingRepository.save(booking);
+        transitionRepository.save(new BookingStatusTransition(
+                booking,
+                BookingStatus.PENDING_PAYMENT,
+                BookingStatus.PAID,
+                processedBy,
+                "Manual payment confirmed: " + payment.getTransactionRef()));
         log.info("Payment {} marked PAID by {}", paymentId,
                 processedBy != null ? processedBy.getUsername() : "system");
         return saved;
@@ -208,7 +327,7 @@ public class PaymentService {
 
     @Transactional
     public Payment markFailed(Integer paymentId, String reason) {
-        Payment payment = loadOrThrow(paymentId);
+        Payment payment = loadForUpdateOrThrow(paymentId);
         if (payment.getStatus() == Payment.PaymentStatus.FAILED
                 || payment.getStatus() == Payment.PaymentStatus.REFUNDED) {
             return payment;
@@ -223,21 +342,42 @@ public class PaymentService {
         return saved;
     }
 
-    @Transactional
-    public Payment refund(Integer paymentId, BigDecimal refundAmount, String reason, User processedBy) {
-        Payment payment = loadOrThrow(paymentId);
-        // Idempotency: a fully-refunded payment cannot be refunded again.
+    @Transactional(noRollbackFor = ExternalServiceException.class)
+    public Payment refund(Integer paymentId, BigDecimal refundAmount, String reason,
+                          User processedBy, String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank() || idempotencyKey.length() > 128) {
+            throw new BusinessRuleException("INVALID_IDEMPOTENCY_KEY",
+                    "A valid Idempotency-Key header is required");
+        }
+        if (refundAmount == null || refundAmount.signum() <= 0) {
+            throw new BusinessRuleException("INVALID_AMOUNT", "Số tiền hoàn phải lớn hơn 0");
+        }
+        Payment payment = loadForUpdateOrThrow(paymentId);
+        PaymentRefund previous = paymentRefundRepository
+                .findByPaymentIdAndIdempotencyKey(paymentId, idempotencyKey.trim())
+                .orElse(null);
+        if (previous != null) {
+            if (previous.getAmount().compareTo(refundAmount) != 0) {
+                throw new BusinessRuleException("IDEMPOTENCY_KEY_REUSED",
+                        "Idempotency key was already used with a different refund amount");
+            }
+            if (previous.getStatus() == PaymentRefund.RefundStatus.SUCCEEDED) {
+                return payment;
+            }
+            if (previous.getStatus() == PaymentRefund.RefundStatus.FAILED) {
+                throw new ExternalServiceException("Previous refund attempt failed");
+            }
+            throw new BusinessRuleException("REFUND_IN_PROGRESS", "Refund is already being processed");
+        }
+
+        // A fully-refunded payment cannot be refunded again under a new key.
         if (payment.getStatus() == Payment.PaymentStatus.REFUNDED) {
-            log.info("Refund requested for payment #{} which is already fully refunded", paymentId);
-            return payment;
+            throw new BusinessRuleException("ALREADY_REFUNDED", "Payment is already fully refunded");
         }
         if (payment.getStatus() != Payment.PaymentStatus.PAID
                 && payment.getStatus() != Payment.PaymentStatus.PARTIALLY_REFUNDED) {
             throw new BusinessRuleException("INVALID_STATE",
                     "Chỉ hoàn tiền cho thanh toán đã hoàn thành");
-        }
-        if (refundAmount == null || refundAmount.signum() <= 0) {
-            throw new BusinessRuleException("INVALID_AMOUNT", "Số tiền hoàn phải lớn hơn 0");
         }
         BigDecimal alreadyRefunded = payment.getRefundAmount() != null
                 ? payment.getRefundAmount() : BigDecimal.ZERO;
@@ -246,6 +386,37 @@ public class PaymentService {
             throw new BusinessRuleException("REFUND_OVERFLOW",
                     "Tổng tiền hoàn vượt quá số tiền đã thanh toán");
         }
+        Booking bookingRef = payment.getBooking();
+        Booking booking = null;
+        if (bookingRef != null) {
+            booking = bookingRepository.findByIdForUpdate(bookingRef.getId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Booking", bookingRef.getId()));
+        }
+
+        PaymentRefund refund = new PaymentRefund();
+        refund.setPayment(payment);
+        refund.setIdempotencyKey(idempotencyKey.trim());
+        refund.setAmount(refundAmount);
+        refund.setReason(reason);
+        refund.setProcessedBy(processedBy);
+        paymentRefundRepository.save(refund);
+
+        boolean gatewaySucceeded;
+        try {
+            gatewaySucceeded = paymentGateway.refund(payment, refundAmount, idempotencyKey.trim());
+        } catch (RuntimeException ex) {
+            refund.setStatus(PaymentRefund.RefundStatus.FAILED);
+            refund.setCompletedAt(LocalDateTime.now());
+            paymentRefundRepository.save(refund);
+            throw new ExternalServiceException("Payment gateway refund failed", ex);
+        }
+        if (!gatewaySucceeded) {
+            refund.setStatus(PaymentRefund.RefundStatus.FAILED);
+            refund.setCompletedAt(LocalDateTime.now());
+            paymentRefundRepository.save(refund);
+            throw new ExternalServiceException("Payment gateway rejected the refund");
+        }
+
         payment.setRefundAmount(totalRefund);
         payment.setRefundReason(reason);
         payment.setRefundedAt(LocalDateTime.now());
@@ -253,15 +424,14 @@ public class PaymentService {
         payment.setStatus(totalRefund.compareTo(payment.getAmount()) >= 0
                 ? Payment.PaymentStatus.REFUNDED
                 : Payment.PaymentStatus.PARTIALLY_REFUNDED);
-
-        // Call gateway to refund
-        paymentGateway.refund(payment, refundAmount);
+        refund.setStatus(PaymentRefund.RefundStatus.SUCCEEDED);
+        refund.setCompletedAt(LocalDateTime.now());
+        paymentRefundRepository.save(refund);
 
         Payment saved = paymentRepository.save(payment);
 
         // Sync the booking side: record the refund so the booking summary
         // shows what was returned and persists an audit trail row.
-        Booking booking = payment.getBooking();
         if (booking != null) {
             BigDecimal bookingRefund = booking.getRefundAmount() != null
                     ? booking.getRefundAmount() : BigDecimal.ZERO;
@@ -295,6 +465,15 @@ public class PaymentService {
     private Payment loadOrThrow(Integer id) {
         return paymentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+    }
+
+    private Payment loadForUpdateOrThrow(Integer id) {
+        return paymentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id));
+    }
+
+    private static String appendNote(String current, String note) {
+        return current == null || current.isBlank() ? note : current + "\n" + note;
     }
 
     private String generateRef() {

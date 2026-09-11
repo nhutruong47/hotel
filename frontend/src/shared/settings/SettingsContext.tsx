@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark' | 'system';
 export type Currency = 'VND' | 'USD';
@@ -37,6 +37,16 @@ function loadSettings(): Settings {
   }
 }
 
+function applyTheme(theme: Theme) {
+  const isDark = theme === 'dark'
+    || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.classList.toggle('dark', isDark);
+}
+
+function applyLang(lang: Lang) {
+  document.documentElement.lang = lang;
+}
+
 type SettingsContextType = {
   settings: Settings;
   updateSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
@@ -56,20 +66,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     applyLang(s.lang);
   }, []);
 
-  function applyTheme(theme: Theme) {
-    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }
-
-  function applyLang(lang: Lang) {
-    document.documentElement.lang = lang;
-  }
-
-  const updateSetting = <K extends keyof Settings>(key: K, value: Settings[K]) => {
+  const updateSetting = useCallback(<K extends keyof Settings,>(key: K, value: Settings[K]) => {
     setSettings((prev) => {
       const next = { ...prev, [key]: value };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -82,7 +79,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
       return next;
     });
-  };
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, updateSetting }}>

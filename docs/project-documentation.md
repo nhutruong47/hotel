@@ -1,5 +1,10 @@
 # 📚 Tài Liệu Dự Án Hotel Booking System
 
+> **Historical document:** the booking statuses, payment confirmation examples,
+> and role rules in this file predate the current implementation. Use
+> [BOOKING_LIFECYCLE_AND_RBAC.md](BOOKING_LIFECYCLE_AND_RBAC.md) as the accepted
+> source of truth for booking, payment, refund, and authorization behavior.
+
 ## Mục Lục
 1. [Tổng Quan Kiến Trúc](#tổng-quan-kiến-trúc)
 2. [Workflow 1: Đăng Ký & Đăng Nhập](#workflow-1-đăng-ký--đăng-nhập)

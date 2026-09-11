@@ -7,6 +7,7 @@ import com.hsf.hotel.exception.ForbiddenException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.review.model.Review;
+import com.hsf.hotel.review.dto.PublicReviewResponse;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.service.BookingService;
@@ -63,7 +64,7 @@ public class ReviewApi {
     public ResponseEntity<ApiResponse<?>> forRoom(@PathVariable Integer roomId) {
         Room room = roomService.getRoomById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
-        List<Review> reviews = reviewService.getReviewsByRoomId(roomId);
+        List<PublicReviewResponse> reviews = reviewService.getPublicReviewsByRoomId(roomId);
         Map<String, Object> data = new HashMap<>();
         data.put("room", Map.of("id", room.getId(), "roomNumber", room.getRoomNumber()));
         data.put("reviews", reviews);
@@ -72,11 +73,11 @@ public class ReviewApi {
 
         // Calculate category averages
         if (!reviews.isEmpty()) {
-            double avgC = reviews.stream().filter(r -> r.getRatingCleanliness() != null).mapToInt(Review::getRatingCleanliness).average().orElse(0);
-            double avgS = reviews.stream().filter(r -> r.getRatingService() != null).mapToInt(Review::getRatingService).average().orElse(0);
-            double avgL = reviews.stream().filter(r -> r.getRatingLocation() != null).mapToInt(Review::getRatingLocation).average().orElse(0);
-            double avgV = reviews.stream().filter(r -> r.getRatingValue() != null).mapToInt(Review::getRatingValue).average().orElse(0);
-            double avgA = reviews.stream().filter(r -> r.getRatingAmenities() != null).mapToInt(Review::getRatingAmenities).average().orElse(0);
+            double avgC = reviews.stream().filter(r -> r.ratingCleanliness() != null).mapToInt(PublicReviewResponse::ratingCleanliness).average().orElse(0);
+            double avgS = reviews.stream().filter(r -> r.ratingService() != null).mapToInt(PublicReviewResponse::ratingService).average().orElse(0);
+            double avgL = reviews.stream().filter(r -> r.ratingLocation() != null).mapToInt(PublicReviewResponse::ratingLocation).average().orElse(0);
+            double avgV = reviews.stream().filter(r -> r.ratingValue() != null).mapToInt(PublicReviewResponse::ratingValue).average().orElse(0);
+            double avgA = reviews.stream().filter(r -> r.ratingAmenities() != null).mapToInt(PublicReviewResponse::ratingAmenities).average().orElse(0);
             data.put("categoryAverages", Map.of(
                 "cleanliness", avgC,
                 "service", avgS,

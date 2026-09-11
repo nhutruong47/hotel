@@ -1,14 +1,17 @@
 package com.hsf.hotel.profile.service;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hsf.hotel.notification.service.NotificationProducer;
 
 import com.hsf.hotel.config.ErrorCodes;
 import com.hsf.hotel.notification.dto.NotificationEvent;
 import com.hsf.hotel.common.dto.PasswordDTO;
+import com.hsf.hotel.common.dto.PreferencesDTO;
 import com.hsf.hotel.profile.dto.ProfileDTO;
 import com.hsf.hotel.exception.BusinessRuleException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.user.repository.UserRepository;
+import com.hsf.hotel.user.service.EmailNormalizer;
 import com.hsf.hotel.security.TokenHasher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -43,13 +46,16 @@ public class ProfileService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationProducer notificationProducer;
+    private final ObjectMapper objectMapper;
 
     public ProfileService(UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
-                          NotificationProducer notificationProducer) {
+                          NotificationProducer notificationProducer,
+                          ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.notificationProducer = notificationProducer;
+        this.objectMapper = objectMapper;
     }
 
     public Optional<User> getCurrentUser() {
@@ -81,24 +87,26 @@ public class ProfileService {
         if (dto.getFullName() != null) {
             user.setFullName(dto.getFullName());
         }
-        if (dto.getEmail() != null && !dto.getEmail().equalsIgnoreCase(user.getEmail())) {
-            String email = dto.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (dto.getEmail() != null) {
+            String email = EmailNormalizer.normalize(dto.getEmail());
             if (!EMAIL_PATTERN.matcher(email).matches()) {
                 throw new BusinessRuleException(ErrorCodes.INVALID_EMAIL, "Email khong hop le");
             }
-            Optional<User> existing = userRepository.findByEmail(email);
-            if (existing.isPresent() && !existing.get().getId().equals(user.getId())) {
-                throw new BusinessRuleException(ErrorCodes.EMAIL_TAKEN, "Email da duoc su dung");
+            if (!Objects.equals(email, EmailNormalizer.normalize(user.getEmail()))) {
+                Optional<User> existing = userRepository.findByEmailIgnoreCase(email);
+                if (existing.isPresent() && !existing.get().getId().equals(user.getId())) {
+                    throw new BusinessRuleException(ErrorCodes.EMAIL_TAKEN, "Email da duoc su dung");
+                }
+                user.setEmail(email);
+                user.setEmailVerified(false);
+                String token = TokenHasher.generateToken(24);
+                user.setVerificationToken(TokenHasher.hash(token));
+                user.setTokenExpiry(LocalDateTime.now().plusHours(TOKEN_VALIDITY_HOURS));
+                NotificationEvent event = new NotificationEvent("VERIFICATION", user.getId());
+                event.setUserId(user.getId());
+                event.setRawToken(token);
+                notificationProducer.sendEmailNotification(event);
             }
-            user.setEmail(email);
-            user.setEmailVerified(false);
-            String token = TokenHasher.generateToken(24);
-            user.setVerificationToken(TokenHasher.hash(token));
-            user.setTokenExpiry(LocalDateTime.now().plusHours(TOKEN_VALIDITY_HOURS));
-            NotificationEvent event = new NotificationEvent("VERIFICATION", user.getId());
-            event.setUserId(user.getId());
-            event.setRawToken(token);
-            notificationProducer.sendEmailNotification(event);
         }
         if (avatarFilename != null && !avatarFilename.isEmpty()) {
             user.setAvatarFilename(avatarFilename);
@@ -142,8 +150,8 @@ public class ProfileService {
         if (email == null || email.isBlank()) {
             return;
         }
-        String normalised = email.trim().toLowerCase(Locale.ROOT);
-        var userOpt = userRepository.findByEmail(normalised);
+        String normalised = EmailNormalizer.normalize(email);
+        var userOpt = userRepository.findByEmailIgnoreCase(normalised);
         if (userOpt.isEmpty()) {
             log.info("Password reset requested for unknown email");
             return;
@@ -160,12 +168,28 @@ public class ProfileService {
         notificationProducer.sendEmailNotification(event);
     }
 
-    @Transactional
-    public User updatePreferences(String username, String preferencesJson) {
+    @Transactional(readOnly = true)
+    public PreferencesDTO getPreferences(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User", username));
-        user.setPreferencesJson(preferencesJson);
-        return userRepository.save(user);
+        return readPreferences(user.getPreferencesJson(), user.getId());
+    }
+
+    @Transactional
+    public PreferencesDTO updatePreferences(String username, PreferencesDTO patch) {
+        validatePreferences(patch);
+        User userRef = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User", username));
+        User user = userRepository.findByIdForUpdate(userRef.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User", userRef.getId()));
+        PreferencesDTO merged = mergePreferences(readPreferences(user.getPreferencesJson(), user.getId()), patch);
+        try {
+            user.setPreferencesJson(objectMapper.writeValueAsString(merged));
+        } catch (Exception ex) {
+            throw new IllegalStateException("Cannot serialize user preferences", ex);
+        }
+        userRepository.save(user);
+        return merged;
     }
 
     @Transactional
@@ -192,6 +216,47 @@ public class ProfileService {
     }
 
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        return normalizedEmail == null || normalizedEmail.isBlank()
+                ? Optional.empty()
+                : userRepository.findByEmailIgnoreCase(normalizedEmail);
+    }
+
+    private PreferencesDTO readPreferences(String raw, Integer userId) {
+        if (raw == null || raw.isBlank()) {
+            return new PreferencesDTO();
+        }
+        try {
+            return objectMapper.readValue(raw, PreferencesDTO.class);
+        } catch (Exception ex) {
+            log.warn("Failed to parse preferences for user {}: {}", userId, ex.getMessage());
+            return new PreferencesDTO();
+        }
+    }
+
+    private static PreferencesDTO mergePreferences(PreferencesDTO current, PreferencesDTO patch) {
+        if (patch.getTheme() != null) current.setTheme(patch.getTheme());
+        if (patch.getLanguage() != null) current.setLanguage(patch.getLanguage());
+        if (patch.getCurrency() != null) current.setCurrency(patch.getCurrency());
+        if (patch.getEmailBooking() != null) current.setEmailBooking(patch.getEmailBooking());
+        if (patch.getEmailReminders() != null) current.setEmailReminders(patch.getEmailReminders());
+        if (patch.getEmailMarketing() != null) current.setEmailMarketing(patch.getEmailMarketing());
+        if (patch.getSmsBooking() != null) current.setSmsBooking(patch.getSmsBooking());
+        return current;
+    }
+
+    private static void validatePreferences(PreferencesDTO patch) {
+        if (patch == null) {
+            throw new BusinessRuleException(ErrorCodes.INVALID_PREFERENCES, "Preferences payload is required");
+        }
+        if (patch.getTheme() != null && !java.util.Set.of("light", "dark", "system").contains(patch.getTheme())) {
+            throw new BusinessRuleException(ErrorCodes.INVALID_PREFERENCES, "Invalid theme preference");
+        }
+        if (patch.getLanguage() != null && !java.util.Set.of("vi", "en").contains(patch.getLanguage())) {
+            throw new BusinessRuleException(ErrorCodes.INVALID_PREFERENCES, "Invalid language preference");
+        }
+        if (patch.getCurrency() != null && !java.util.Set.of("VND", "USD").contains(patch.getCurrency())) {
+            throw new BusinessRuleException(ErrorCodes.INVALID_PREFERENCES, "Invalid currency preference");
+        }
     }
 }

@@ -1,14 +1,14 @@
 package com.hsf.hotel.notification.service;
 
 import com.hsf.hotel.notification.model.Notification;
+import com.hsf.hotel.notification.dto.NotificationResponse;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.notification.repository.NotificationRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class NotificationService {
@@ -24,9 +24,17 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    public Page<Notification> getUserNotifications(Integer userId, int page, int size) {
+    @Transactional(readOnly = true)
+    public Page<NotificationResponse> getUserNotifications(Integer userId, int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page must be zero or greater");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page size must be between 1 and 100");
+        }
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId,
-                PageRequest.of(page, size, Sort.by("createdAt").descending()));
+                        PageRequest.of(page, size, Sort.by("createdAt").descending()))
+                .map(NotificationResponse::from);
     }
 
     public long getUnreadCount(Integer userId) {
@@ -37,15 +45,13 @@ public class NotificationService {
         notificationRepository.markAllAsRead(userId);
     }
 
-    public Optional<Notification> getNotificationById(Integer id) {
-        return notificationRepository.findById(id);
+    @Transactional
+    public boolean markAsRead(Integer id, Integer userId) {
+        return notificationRepository.markAsReadByOwner(id, userId) > 0;
     }
 
-    public Notification save(Notification notification) {
-        return notificationRepository.save(notification);
-    }
-
-    public void deleteNotification(Integer id) {
-        notificationRepository.deleteById(id);
+    @Transactional
+    public boolean deleteNotification(Integer id, Integer userId) {
+        return notificationRepository.deleteByIdAndOwner(id, userId) > 0;
     }
 }

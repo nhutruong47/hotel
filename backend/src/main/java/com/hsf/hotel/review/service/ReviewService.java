@@ -6,6 +6,7 @@ import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.booking.model.BookingStatus;
 import com.hsf.hotel.review.model.Review;
+import com.hsf.hotel.review.dto.PublicReviewResponse;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.repository.BookingRepository;
@@ -113,7 +114,8 @@ public class ReviewService {
     public void deleteReview(User user, Integer reviewId) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review", reviewId));
-        if (!review.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        if (!review.getUser().getId().equals(user.getId())
+                && !user.getRoleEnum().includes(com.hsf.hotel.user.model.UserRole.MANAGER)) {
             throw new ForbiddenException("Bạn không có quyền xóa đánh giá này");
         }
         Room room = review.getRoom();
@@ -136,6 +138,20 @@ public class ReviewService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
         return reviewRepository.findByRoomOrderByCreatedAtDesc(room);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicReviewResponse> getPublicReviewsByRoom(Room room) {
+        return reviewRepository.findByRoomOrderByCreatedAtDesc(room).stream()
+                .map(PublicReviewResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicReviewResponse> getPublicReviewsByRoomId(Integer roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
+        return getPublicReviewsByRoom(room);
     }
 
     public List<Review> getReviewsByUser(User user) {
@@ -185,6 +201,14 @@ public class ReviewService {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResourceNotFoundException("Review", reviewId));
         review.setIsHidden(true);
-        return reviewRepository.save(review);
+        Review saved = reviewRepository.save(review);
+        Room room = review.getRoom();
+        room.setReviewCount(reviewRepository.countByRoom(room));
+        Double avg = reviewRepository.getAverageRatingByRoom(room);
+        room.setAvgRating(avg != null
+                ? new java.math.BigDecimal(String.valueOf(avg))
+                : java.math.BigDecimal.ZERO);
+        roomRepository.save(room);
+        return saved;
     }
 }

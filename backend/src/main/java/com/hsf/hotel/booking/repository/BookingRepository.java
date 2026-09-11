@@ -21,6 +21,10 @@ import com.hsf.hotel.room.dto.RoomStatsDto;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
 
+        @Lock(LockModeType.PESSIMISTIC_WRITE)
+        @Query("SELECT b FROM Booking b WHERE b.id = :id")
+        Optional<Booking> findByIdForUpdate(@Param("id") Integer id);
+
         /**
          * Eagerly loads the {@code user} and {@code room} associations in a
          * single query so that the SPA can render the booking list without

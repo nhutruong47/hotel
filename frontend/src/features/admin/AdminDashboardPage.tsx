@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, API_PATHS, ApiError } from '../../shared/api/client';
+import { useSession } from '../../shared/auth/SessionProvider';
 import {
   AnalyticsPanel,
   AuditLogsPanel,
@@ -82,7 +83,7 @@ type AdminUser = {
   createdAt?: string;
 };
 
-type BookingAction = 'approve' | 'reject' | 'complete' | 'cancel' | 'checkin' | 'checkout';
+type BookingAction = 'complete' | 'cancel' | 'checkin' | 'checkout' | 'no-show';
 
 function formatVnd(value: number | string | undefined): string {
   if (value == null) return '—';
@@ -111,20 +112,23 @@ const STATUS_FILTERS: { value: string; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'PENDING_PAYMENT', label: 'Pending Payment' },
   { value: 'PAID', label: 'Paid' },
-  { value: 'AWAITING_APPROVAL', label: 'Awaiting Approval' },
-  { value: 'CONFIRMED', label: 'Confirmed' },
   { value: 'CHECKED_IN', label: 'Checked In' },
   { value: 'CHECKED_OUT', label: 'Checked Out' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' },
-  { value: 'REJECTED', label: 'Rejected' },
   { value: 'EXPIRED', label: 'Expired' },
   { value: 'NO_SHOW', label: 'No Show' }
 ];
 
 export const AdminDashboardPage = () => {
+  const { user } = useSession();
   const [tab, setTab] = useState<TabId>('overview');
   const queryClient = useQueryClient();
+  const visibleTabs = TABS.filter((item) => {
+    if (user?.role === 'ADMIN') return true;
+    if (user?.role === 'MANAGER') return !['audit', 'users'].includes(item.id);
+    return ['overview', 'bookings', 'contacts'].includes(item.id);
+  });
 
   const dashboard = useQuery({
     queryKey: ['admin', 'dashboard'],
@@ -163,24 +167,14 @@ export const AdminDashboardPage = () => {
     retry: false,
   });
 
-  const updateBookingStatus = useMutation<{ message: string }, ApiError, { id: number; status: string }>({
-    mutationFn: ({ id, status }) =>
-      api.put<{ message: string }>(API_PATHS.admin.updateBookingStatus(id), { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
-    },
-  });
-
   const performBookingAction = useMutation<unknown, ApiError, { action: BookingAction; id: number; reason?: string }>({
     mutationFn: ({ action, id, reason }) => {
       const pathByAction: Record<BookingAction, string> = {
-        approve: API_PATHS.admin.approveBooking(id),
-        reject: API_PATHS.admin.rejectBooking(id),
         complete: API_PATHS.admin.completeBooking(id),
         cancel: API_PATHS.admin.cancelBooking(id),
         checkin: API_PATHS.admin.checkInBooking(id),
         checkout: API_PATHS.admin.checkOutBooking(id),
+        'no-show': API_PATHS.admin.noShowBooking(id),
       };
       return api.post<unknown>(pathByAction[action], reason ? { reason } : {});
     },
@@ -220,7 +214,7 @@ export const AdminDashboardPage = () => {
         </h1>
 
         <nav className="mt-10 flex flex-wrap gap-2">
-          {TABS.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.id}
               type="button"
@@ -242,8 +236,8 @@ export const AdminDashboardPage = () => {
           <BookingsPanel
             data={bookingsQuery.data}
             isLoading={bookingsQuery.isLoading}
-            onUpdateStatus={(id, status) => updateBookingStatus.mutate({ id, status })}
             onAction={(action, id, reason) => performBookingAction.mutate({ action, id, reason })}
+            role={user?.role}
           />
         ) : null}
 
@@ -360,16 +354,14 @@ function OverviewPanel({ data, isLoading }: { data?: AdminDashboard; isLoading: 
 }
 
 function BookingsPanel({
-  data, isLoading, onUpdateStatus, onAction,
+  data, isLoading, onAction, role,
 }: {
   data?: { bookings: AdminBooking[]; statuses: string[] };
   isLoading: boolean;
-  onUpdateStatus: (id: number, status: string) => void;
   onAction: (action: BookingAction, id: number, reason?: string) => void;
+  role?: 'USER' | 'STAFF' | 'MANAGER' | 'ADMIN';
 }) {
   const [status, setStatus] = useState('all');
-  const [rejectOpenId, setRejectOpenId] = useState<number | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
 
   const filtered = useMemo(() => {
     if (!data?.bookings) return [];
@@ -437,69 +429,37 @@ function BookingsPanel({
                     </span>
                   </td>
                   <td className="p-4">
-                    <select
-                      defaultValue={b.status}
-                      onChange={(e) => onUpdateStatus(b.id, e.target.value)}
-                      className="mb-2 w-full rounded-full border border-brand-stone bg-brand-white px-3 py-2 text-xs"
-                    >
-                      {(data.statuses ?? ['PENDING_PAYMENT', 'PAID', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED', 'CANCELLED', 'EXPIRED', 'NO_SHOW']).map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => onAction('approve', b.id)} className="rounded-full bg-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-white">
-                        Approve
-                      </button>
-                      <button type="button" onClick={() => onAction('complete', b.id)} className="rounded-full border border-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
-                        Complete
-                      </button>
-                      <button type="button" onClick={() => onAction('checkin', b.id)} className="rounded-full border border-brand-sage px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
-                        Check in
-                      </button>
-                      <button type="button" onClick={() => onAction('checkout', b.id)} className="rounded-full border border-brand-sage px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
-                        Check out
-                      </button>
-                      <button type="button" onClick={() => setRejectOpenId(rejectOpenId === b.id ? null : b.id)} className="rounded-full border border-brand-coral/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-coral">
-                        Reject
-                      </button>
-                      <button type="button" onClick={() => onAction('cancel', b.id, 'Cancelled by admin')} className="rounded-full border border-brand-stone px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/72">
-                        Cancel
-                      </button>
+                      {b.status === 'PAID' ? (
+                        <>
+                          <button type="button" onClick={() => onAction('checkin', b.id)} className="rounded-full border border-brand-sage px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
+                            Check in
+                          </button>
+                          <button type="button" onClick={() => onAction('no-show', b.id)} className="rounded-full border border-brand-coral/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-coral">
+                            No show
+                          </button>
+                        </>
+                      ) : null}
+                      {b.status === 'CHECKED_IN' ? (
+                        <button type="button" onClick={() => onAction('checkout', b.id)} className="rounded-full border border-brand-sage px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
+                          Check out
+                        </button>
+                      ) : null}
+                      {b.status === 'CHECKED_OUT' ? (
+                        <button type="button" onClick={() => onAction('complete', b.id)} className="rounded-full border border-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">
+                          Complete
+                        </button>
+                      ) : null}
+                      {role === 'ADMIN' && ['PENDING_PAYMENT', 'PAID'].includes(b.status) ? (
+                        <button type="button" onClick={() => onAction('cancel', b.id, 'Cancelled by admin')} className="rounded-full border border-brand-stone px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/72">
+                          Cancel
+                        </button>
+                      ) : null}
+                      {!['PAID', 'CHECKED_IN', 'CHECKED_OUT'].includes(b.status)
+                        && !(role === 'ADMIN' && b.status === 'PENDING_PAYMENT') ? (
+                        <span className="text-xs text-brand-ink/48">No available action</span>
+                      ) : null}
                     </div>
-                    {rejectOpenId === b.id ? (
-                      <div className="mt-3 rounded-[1rem] border border-brand-coral/30 bg-brand-coral/5 p-3">
-                        <label className="block text-xs font-semibold text-brand-charcoal">
-                          Rejection reason
-                          <textarea
-                            className="mt-2 w-full rounded-[0.75rem] border border-brand-stone bg-brand-white p-2 text-xs"
-                            value={rejectReason}
-                            onChange={(event) => setRejectReason(event.target.value)}
-                            rows={2}
-                          />
-                        </label>
-                        <div className="mt-2 flex gap-2">
-                          <button
-                            type="button"
-                            disabled={!rejectReason.trim()}
-                            onClick={() => {
-                              onAction('reject', b.id, rejectReason.trim());
-                              setRejectOpenId(null);
-                              setRejectReason('');
-                            }}
-                            className="rounded-full bg-brand-coral px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-50"
-                          >
-                            Confirm reject
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setRejectOpenId(null); setRejectReason(''); }}
-                            className="rounded-full border border-brand-stone px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/72"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
                   </td>
                 </tr>
               </>
@@ -914,6 +874,8 @@ function UsersPanel({
                     className="rounded-full border border-brand-stone bg-brand-white px-3 py-2 text-xs"
                   >
                     <option value="USER">USER</option>
+                    <option value="STAFF">STAFF</option>
+                    <option value="MANAGER">MANAGER</option>
                     <option value="ADMIN">ADMIN</option>
                   </select>
                 </td>
@@ -969,4 +931,3 @@ function UsersPanel({
     </div>
   );
 }
-

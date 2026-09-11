@@ -8,6 +8,7 @@ import com.hsf.hotel.exception.ApiException;
 import com.hsf.hotel.exception.BusinessRuleException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.user.model.User;
+import com.hsf.hotel.user.model.UserRole;
 import com.hsf.hotel.user.repository.UserRepository;
 import com.hsf.hotel.security.AuditActions;
 import com.hsf.hotel.admin.service.AuditLogService;
@@ -28,7 +29,9 @@ import java.util.Set;
 @RequestMapping(com.hsf.hotel.config.ApiPaths.V1 + "/users")
 public class UserApi {
 
-    private static final Set<String> ALLOWED_ROLES = Set.of("USER", "ADMIN");
+    private static final Set<String> ALLOWED_ROLES = java.util.Arrays.stream(UserRole.values())
+            .map(Enum::name)
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     private final UserService userService;
     private final UserRepository userRepository;
@@ -106,7 +109,8 @@ public class UserApi {
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
         String role = body.getRole() != null ? body.getRole().trim().toUpperCase() : "";
         if (!ALLOWED_ROLES.contains(role)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST, "Role must be USER or ADMIN");
+            throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST,
+                    "Role must be USER, STAFF, MANAGER or ADMIN");
         }
         String previousRole = user.getRole();
         user.setRole(role);

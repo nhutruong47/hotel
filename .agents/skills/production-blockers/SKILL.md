@@ -4,6 +4,12 @@ description: List of known blockers for production deployment
 
 # PRODUCTION_BLOCKERS
 
+> Historical discovery list. The CSRF client bridge, provider-specific Stripe
+> and SePay webhooks, canonical booking statuses, exact amount validation, role
+> boundaries, email uniqueness, review eligibility, and contact API issues
+> listed below have been addressed. Re-audit before treating any remaining row
+> as an active blocker.
+
 ## Critical
 
 ### 1. CSRF lÃ m vá»¡ toÃ n bá»™ mutation frontend

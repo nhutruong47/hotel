@@ -1,6 +1,7 @@
 package com.hsf.hotel.config;
 
 import com.hsf.hotel.user.model.User;
+import com.hsf.hotel.user.model.UserRole;
 import com.hsf.hotel.user.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -64,15 +65,15 @@ public class SessionAuthBridgeFilter extends OncePerRequestFilter {
                 User current = user.getId() != null
                         ? userRepository.findById(user.getId()).orElse(null)
                         : userRepository.findByUsername(user.getUsername()).orElse(null);
-                if (current == null || Boolean.TRUE.equals(current.getDisabled())) {
+                if (current == null
+                        || Boolean.TRUE.equals(current.getDisabled())
+                        || !Boolean.TRUE.equals(current.getEmailVerified())) {
                     session.invalidate();
                     // Let the request proceed as an unauthenticated guest.
                     // If the endpoint requires authentication, Spring Security will return 401.
                 } else {
                 session.setAttribute("user", current);
-                List<SimpleGrantedAuthority> authorities = "ADMIN".equals(current.getRole())
-                        ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"))
-                        : List.of(new SimpleGrantedAuthority("ROLE_USER"));
+                List<SimpleGrantedAuthority> authorities = authoritiesFor(current.getRoleEnum());
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(current.getUsername(), null, authorities);
                 SecurityContext context = holderStrategy.createEmptyContext();
@@ -89,5 +90,20 @@ public class SessionAuthBridgeFilter extends OncePerRequestFilter {
         } finally {
             SecurityContextHolder.clearContext();
         }
+    }
+
+    private static List<SimpleGrantedAuthority> authoritiesFor(UserRole role) {
+        return switch (role) {
+            case USER -> roles(UserRole.USER);
+            case STAFF -> roles(UserRole.STAFF, UserRole.USER);
+            case MANAGER -> roles(UserRole.MANAGER, UserRole.STAFF, UserRole.USER);
+            case ADMIN -> roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF, UserRole.USER);
+        };
+    }
+
+    private static List<SimpleGrantedAuthority> roles(UserRole... roles) {
+        return java.util.Arrays.stream(roles)
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
+                .toList();
     }
 }

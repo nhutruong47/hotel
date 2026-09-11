@@ -74,10 +74,14 @@ class BookingFlowIntegrationTest {
     private RabbitTemplate rabbitTemplate;
 
     private User testUser;
+    private User staffUser;
+    private User managerUser;
     private User adminUser;
     private Room testRoom;
     private Voucher testVoucher;
     private MockHttpSession userSession;
+    private MockHttpSession staffSession;
+    private MockHttpSession managerSession;
     private MockHttpSession adminSession;
 
     private static RequestPostProcessor csrfToken() {
@@ -108,6 +112,22 @@ class BookingFlowIntegrationTest {
         testUser.setRole("USER");
         testUser.setEmailVerified(true);
         testUser = userRepository.save(testUser);
+
+        staffUser = new User();
+        staffUser.setUsername("staff_" + System.currentTimeMillis());
+        staffUser.setEmail(staffUser.getUsername() + "@test.com");
+        staffUser.setPasswordHash("$2a$10$dummy");
+        staffUser.setRole(UserRole.STAFF);
+        staffUser.setEmailVerified(true);
+        staffUser = userRepository.save(staffUser);
+
+        managerUser = new User();
+        managerUser.setUsername("manager_" + System.currentTimeMillis());
+        managerUser.setEmail(managerUser.getUsername() + "@test.com");
+        managerUser.setPasswordHash("$2a$10$dummy");
+        managerUser.setRole(UserRole.MANAGER);
+        managerUser.setEmailVerified(true);
+        managerUser = userRepository.save(managerUser);
 
         // Create admin user
         adminUser = new User();
@@ -147,6 +167,12 @@ class BookingFlowIntegrationTest {
         userSession = new MockHttpSession();
         userSession.setAttribute("user", testUser);
 
+        staffSession = new MockHttpSession();
+        staffSession.setAttribute("user", staffUser);
+
+        managerSession = new MockHttpSession();
+        managerSession.setAttribute("user", managerUser);
+
         adminSession = new MockHttpSession();
         adminSession.setAttribute("user", adminUser);
     }
@@ -184,8 +210,8 @@ class BookingFlowIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should create an authenticated session after registration")
-        void testRegisterCreatesSession() throws Exception {
+        @DisplayName("Should not authenticate an account before email verification")
+        void testRegisterRequiresVerificationBeforeSession() throws Exception {
             String username = "newuser_" + System.currentTimeMillis();
 
             var result = mockMvc.perform(post("/api/v1/auth/register")
@@ -204,12 +230,16 @@ class BookingFlowIntegrationTest {
                     .andExpect(jsonPath("$.data.user.emailVerified").value(false))
                     .andReturn();
 
-            MockHttpSession registeredSession = (MockHttpSession) result.getRequest().getSession(false);
-
             mockMvc.perform(get("/api/v1/auth/session")
-                    .session(registeredSession))
+                    .with(csrfToken()))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.user.username").value(username));
+                    .andExpect(jsonPath("$.data.user").doesNotExist());
+
+            User unverified = userRepository.findByUsername(username).orElseThrow();
+            MockHttpSession forgedLegacySession = new MockHttpSession();
+            forgedLegacySession.setAttribute("user", unverified);
+            mockMvc.perform(get("/api/v1/bookings").session(forgedLegacySession))
+                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -537,6 +567,137 @@ class BookingFlowIntegrationTest {
             mockMvc.perform(get("/api/v1/admin/bookings")
                     .session(userSession))
                     .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Staff can view operations but cannot manage rooms")
+        void testStaffPermissionBoundary() throws Exception {
+            mockMvc.perform(get("/api/v1/admin/bookings").session(staffSession))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/v1/admin/rooms").session(staffSession))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Manager can manage rooms but cannot read security audit logs")
+        void testManagerPermissionBoundary() throws Exception {
+            mockMvc.perform(get("/api/v1/admin/rooms").session(managerSession))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/v1/admin/audit-logs").session(managerSession))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("Only admin may confirm a manual payment")
+        void testManualPaymentConfirmationRoleBoundary() throws Exception {
+            mockMvc.perform(post("/api/v1/payments/999999/complete")
+                            .session(userSession).with(csrfToken()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(post("/api/v1/payments/999999/complete")
+                            .session(staffSession).with(csrfToken()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(post("/api/v1/payments/999999/complete")
+                            .session(managerSession).with(csrfToken()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(post("/api/v1/payments/999999/complete")
+                            .session(adminSession).with(csrfToken()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Browser clients cannot directly mark their booking paid")
+        void testDirectBookingPaymentEndpointIsRemoved() throws Exception {
+            mockMvc.perform(post("/api/v1/bookings/999999/payment")
+                            .session(userSession).with(csrfToken()).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"amount\":1}"))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("Payment Endpoint Security Tests")
+    class PaymentEndpointSecurityTests {
+
+        @Test
+        @DisplayName("Stripe session lookup requires a locally correlated payment owned by caller")
+        void testStripeSessionOwnershipUsesLocalPayment() throws Exception {
+            var bookingResult = mockMvc.perform(post("/api/v1/bookings")
+                            .session(userSession)
+                            .with(csrfToken())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "roomId": %d,
+                                    "checkIn": "%s",
+                                    "checkOut": "%s",
+                                    "guestName": "Payment Owner"
+                                }
+                                """.formatted(testRoom.getId(),
+                                    LocalDate.now().plusDays(20),
+                                    LocalDate.now().plusDays(22))))
+                    .andExpect(status().isOk())
+                    .andReturn();
+            var bookingJson = objectMapper.readTree(bookingResult.getResponse().getContentAsString())
+                    .path("data").path("booking");
+            int bookingId = bookingJson.path("id").asInt();
+            BigDecimal amount = bookingJson.path("totalPrice").decimalValue();
+            String sessionRef = "cs_local_" + System.nanoTime();
+
+            mockMvc.perform(post("/api/v1/payments")
+                            .session(userSession)
+                            .with(csrfToken())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                {
+                                    "bookingId": %d,
+                                    "amount": %s,
+                                    "method": "CARD",
+                                    "transactionRef": "%s"
+                                }
+                                """.formatted(bookingId, amount.toPlainString(), sessionRef)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/v1/payments/stripe-session/{sessionId}", sessionRef)
+                            .session(userSession))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.bookingId").value(bookingId));
+
+            mockMvc.perform(get("/api/v1/payments/stripe-session/{sessionId}", sessionRef)
+                            .session(staffSession))
+                    .andExpect(status().isForbidden());
+
+            mockMvc.perform(get("/api/v1/payments/stripe-session/cs_unknown")
+                            .session(userSession))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("Legacy generic payment-status webhook is not exposed")
+        void testGenericWebhookIsRemoved() throws Exception {
+            mockMvc.perform(post("/api/v1/payments/webhook/legacy")
+                            .session(userSession)
+                            .with(csrfToken())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"intentId\":\"pi_fake\",\"status\":\"succeeded\"}"))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("CORS permits the refund idempotency header")
+        void testCorsAllowsIdempotencyKey() throws Exception {
+            mockMvc.perform(options("/api/v1/payments/1/refund")
+                            .header("Origin", "http://localhost:5173")
+                            .header("Access-Control-Request-Method", "POST")
+                            .header("Access-Control-Request-Headers", "Idempotency-Key,X-XSRF-TOKEN"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Access-Control-Allow-Headers",
+                            containsString("Idempotency-Key")));
         }
     }
 

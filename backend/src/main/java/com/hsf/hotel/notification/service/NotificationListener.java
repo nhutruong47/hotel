@@ -77,6 +77,9 @@ public class NotificationListener {
             }
         } catch (Exception e) {
             log.error("Error processing email notification event: {}", e.getMessage(), e);
+            // Let the container reject/requeue the message. Swallowing this
+            // exception acknowledges the delivery and permanently loses email.
+            throw new IllegalStateException("Email notification failed", e);
         }
     }
 }

@@ -242,8 +242,8 @@ export const WishlistPage = () => {
     if (query.isFetched && query.isError) router.push('/login');
   }, [query.isFetched, query.isError, router]);
 
-  const toggle = useMutation<{ isAdded: boolean }, ApiError, number>({
-    mutationFn: (roomId) => api.post<{ isAdded: boolean }>(API_PATHS.wishlistToggle, { roomId }),
+  const remove = useMutation<{ isAdded: boolean; changed: boolean }, ApiError, number>({
+    mutationFn: (roomId) => api.delete<{ isAdded: boolean; changed: boolean }>(API_PATHS.wishlistItem(roomId)),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wishlist'] }),
   });
 
@@ -275,7 +275,7 @@ export const WishlistPage = () => {
                 <p className="mt-2 text-sm text-brand-ink/62">{formatCurrency(item.room.pricePerNight)} {t('villas.perNight')}</p>
                 <button
                   type="button"
-                  onClick={() => toggle.mutate(item.room.id)}
+                  onClick={() => remove.mutate(item.room.id)}
                   className="mt-4 rounded-full border border-brand-stone px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink hover:bg-brand-white"
                 >
                   {t('common.remove')}
@@ -337,7 +337,7 @@ export const ReviewsPage = () => {
   });
 
   const eligible = (bookingsQuery.data ?? []).filter((b) => 
-    ['PAID', 'CHECKED_IN', 'CHECKED_OUT', 'COMPLETED'].includes(b.status)
+    ['CHECKED_OUT', 'COMPLETED'].includes(b.status)
   );
 
   return (

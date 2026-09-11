@@ -239,7 +239,11 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(
-    reason === 'login_required' ? t('errors.somethingWentWrong') : null
+    reason === 'login_required'
+      ? t('errors.somethingWentWrong')
+      : reason === 'verify_email'
+        ? t('auth.verifyLead')
+        : null
   );
   const [staySignedIn, setStaySignedIn] = useState(true);
 
@@ -260,7 +264,7 @@ export const LoginPage = () => {
       if (safeRedirect) {
         router.push(safeRedirect);
       } else {
-        router.push(role === 'ADMIN' ? '/admin' : '/profile');
+        router.push(['STAFF', 'MANAGER', 'ADMIN'].includes(role ?? '') ? '/admin' : '/profile');
       }
     },
     onError: (err) => setErrorMsg(err.message || t('errors.somethingWentWrong')),
@@ -374,7 +378,6 @@ export const LoginPage = () => {
 export const RegisterPage = () => {
   const { t } = useTranslation();
   const router = useRouter();
-  const { refresh } = useSession();
   const params = useSearchParams();
   const redirectTo = params.get('redirect') ?? '';
   const [username, setUsername] = useState('');
@@ -400,15 +403,9 @@ export const RegisterPage = () => {
         fullName: fullName.trim(),
       });
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       setSuccessMsg(data.message);
-      try {
-        window.sessionStorage.setItem('nhu.session', JSON.stringify(data.user));
-      } catch {
-        /* sessionStorage unavailable */
-      }
-      await refresh();
-      router.replace(redirectTo ? redirectTo : '/profile');
+      router.replace('/login?reason=verify_email');
     },
     onError: (err) => setErrorMsg(err.message || t('errors.somethingWentWrong')),
   });

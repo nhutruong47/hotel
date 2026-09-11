@@ -11,6 +11,7 @@ import com.hsf.hotel.exception.ForbiddenException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.booking.model.BookingStatus;
+import com.hsf.hotel.booking.model.BookingStateMachine;
 import com.hsf.hotel.notification.model.NotificationType;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.user.model.User;
@@ -66,7 +67,7 @@ public class BookingService {
     private final EntityManager entityManager;
     private final NotificationService notificationService;
     private final com.hsf.hotel.room.repository.VillaMaintenanceRepository maintenanceRepository;
-    private final int paymentDeadlineHours;
+    private final int holdMinutes;
     private final String adminEmail;
 
     public BookingService(BookingRepository bookingRepository,
@@ -77,7 +78,7 @@ public class BookingService {
                           NotificationService notificationService,
                           @org.springframework.beans.factory.annotation.Autowired(required = false)
                           com.hsf.hotel.room.repository.VillaMaintenanceRepository maintenanceRepository,
-                          @Value("${app.booking.payment-deadline-hours:24}") int paymentDeadlineHours,
+                          @Value("${app.booking.hold-minutes:15}") int holdMinutes,
                           @Value("${app.admin.email:admin@hotel.com}") String adminEmail) {
         this.bookingRepository = bookingRepository;
         this.transitionRepository = transitionRepository;
@@ -86,7 +87,7 @@ public class BookingService {
         this.entityManager = entityManager;
         this.notificationService = notificationService;
         this.maintenanceRepository = maintenanceRepository;
-        this.paymentDeadlineHours = paymentDeadlineHours;
+        this.holdMinutes = holdMinutes;
         this.adminEmail = adminEmail;
     }
 
@@ -332,12 +333,12 @@ public class BookingService {
         booking.setGuests(guests);
         booking.setNotes(notes);
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
-        // HoldExpiresAt bounds the in-memory reservation; paymentDeadline is the
-        // hard deadline after which the scheduler will flip the booking to
-        // EXPIRED. They are intentionally separate: a hold may be released
-        // earlier than payment failure (e.g. abandoned checkout).
-        booking.setHoldExpiresAt(now.plusMinutes(15));
-        booking.setPaymentDeadline(now.plusHours(paymentDeadlineHours));
+        // A single expiry instant governs both payment and inventory hold.
+        LocalDateTime expiresAt = now.plusMinutes(holdMinutes);
+        booking.setHoldExpiresAt(expiresAt);
+        // Kept synchronized during the compatibility window. New code treats
+        // holdExpiresAt as the only inventory/payment expiry source of truth.
+        booking.setPaymentDeadline(expiresAt);
         booking.setSubtotalPrice(pricing.subtotal());
         booking.setServiceFee(pricing.serviceFee());
         booking.setTaxAmount(pricing.taxAmount());
@@ -361,46 +362,6 @@ public class BookingService {
     }
 
     @Transactional
-    public Booking approveBooking(Integer bookingId, User adminUser) {
-        Booking booking = loadOrThrow(bookingId);
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new BusinessRuleException("INVALID_STATE", "Chỉ có thể duyệt đơn đang chờ xử lý hoặc tạm giữ");
-        }
-        BookingStatus oldStatus = booking.getStatus();
-        booking.setStatus(BookingStatus.PAID);
-        booking.setApprovedBy(adminUser);
-        booking.setApprovedAt(LocalDateTime.now());
-        booking.setPaidAt(LocalDateTime.now());
-
-        Booking saved = bookingRepository.save(booking);
-        recordTransition(saved, oldStatus, BookingStatus.PAID, adminUser, "Approved by admin");
-        log.info("Booking #{} approved by {}", bookingId, adminUser.getUsername());
-        NotificationEvent event = new NotificationEvent("BOOKING_APPROVED", saved.getId());
-        notificationProducer.sendEmailNotification(event);
-        return saved;
-    }
-
-    @Transactional
-    public Booking rejectBooking(Integer bookingId, User adminUser, String reason) {
-        Booking booking = loadOrThrow(bookingId);
-        if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
-            throw new BusinessRuleException("INVALID_STATE", "Chỉ có thể từ chối đơn đang chờ xử lý hoặc tạm giữ");
-        }
-        BookingStatus oldStatus = booking.getStatus();
-        booking.setStatus(BookingStatus.CANCELLED);
-        booking.setApprovedBy(adminUser);
-        booking.setApprovedAt(LocalDateTime.now());
-        booking.setRejectionReason(reason != null ? reason : "Không đủ điều kiện");
-
-        Booking saved = bookingRepository.save(booking);
-        recordTransition(saved, oldStatus, BookingStatus.CANCELLED, adminUser, reason != null ? reason : "Không đủ điều kiện");
-        log.info("Booking #{} rejected by {} - {}", bookingId, adminUser.getUsername(), saved.getRejectionReason());
-        NotificationEvent event = new NotificationEvent("BOOKING_REJECTED", saved.getId());
-        notificationProducer.sendEmailNotification(event);
-        return saved;
-    }
-
-    @Transactional
     public Booking markAsCompleted(Integer bookingId, User adminUser) {
         Booking booking = loadOrThrow(bookingId);
         if (booking.getStatus() != BookingStatus.CHECKED_OUT) {
@@ -412,6 +373,7 @@ public class BookingService {
                     "Chưa đến ngày trả phòng, không thể đánh dấu hoàn thành");
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.COMPLETED);
         booking.setStatus(BookingStatus.COMPLETED);
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, oldStatus, BookingStatus.COMPLETED, adminUser, "Marked as completed by admin");
@@ -421,7 +383,7 @@ public class BookingService {
 
     @Transactional
     public Booking confirmPayment(Integer bookingId, String transactionRef, BigDecimal amount) {
-        Booking booking = loadOrThrow(bookingId);
+        Booking booking = loadForUpdateOrThrow(bookingId);
         if (booking.getStatus() != BookingStatus.PENDING_PAYMENT) {
             throw new BusinessRuleException("INVALID_STATE",
                     "Đơn không ở trạng thái hợp lệ để thanh toán (hiện tại: " + booking.getStatus() + ")");
@@ -435,6 +397,7 @@ public class BookingService {
                     "Số tiền thanh toán không khớp với tổng giá trị đơn");
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.PAID);
         booking.setStatus(BookingStatus.PAID);
         booking.setPaidAt(LocalDateTime.now());
         if (transactionRef != null) {
@@ -453,7 +416,7 @@ public class BookingService {
     }
 
     public List<Booking> getExpiredPaymentBookings() {
-        return bookingRepository.findExpiredPaymentBookings(LocalDateTime.now());
+        return bookingRepository.findExpiredHoldBookings(LocalDateTime.now());
     }
 
     /**
@@ -470,6 +433,7 @@ public class BookingService {
             return booking;
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.EXPIRED);
 
         if (booking.getAppliedVoucherCode() != null) {
             try {
@@ -504,6 +468,7 @@ public class BookingService {
             return booking;
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.COMPLETED);
         booking.setStatus(BookingStatus.COMPLETED);
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, oldStatus, BookingStatus.COMPLETED, null,
@@ -524,6 +489,7 @@ public class BookingService {
             return booking;
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.NO_SHOW);
         booking.setStatus(BookingStatus.NO_SHOW);
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, oldStatus, BookingStatus.NO_SHOW, null,
@@ -555,6 +521,7 @@ public class BookingService {
             throw new BusinessRuleException("ALREADY_COMPLETED", "Không thể hủy đơn đã hoàn thành");
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.CANCELLED);
 
         // If the booking consumed a voucher unit but the charge never
         // settled, return the unit so the next user can use the code.
@@ -578,49 +545,6 @@ public class BookingService {
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, oldStatus, BookingStatus.CANCELLED, user, reason);
         return saved;
-    }
-
-    @Transactional
-    public Booking updateBookingStatus(Integer bookingId, BookingStatus newStatus) {
-        return updateBookingStatus(bookingId, newStatus, null);
-    }
-
-    @Transactional
-    public Booking updateBookingStatus(Integer bookingId, BookingStatus newStatus, User actor) {
-        Booking booking = loadOrThrow(bookingId);
-        validateStatusTransition(booking.getStatus(), newStatus);
-        BookingStatus oldStatus = booking.getStatus();
-        booking.setStatus(newStatus);
-        if (newStatus == BookingStatus.CANCELLED) {
-            calculateRefund(booking);
-            booking.setCancelledAt(LocalDateTime.now());
-            booking.setCancelledBy(actor != null ? actor.getUsername() : "system");
-        }
-        if (newStatus == BookingStatus.CHECKED_IN && booking.getCheckedInAt() == null) {
-            booking.setCheckedInAt(LocalDateTime.now());
-        }
-        if (newStatus == BookingStatus.CHECKED_OUT && booking.getCheckedOutAt() == null) {
-            booking.setCheckedOutAt(LocalDateTime.now());
-        }
-        Booking saved = bookingRepository.save(booking);
-        recordTransition(saved, oldStatus, newStatus, actor, "Status manually updated by "
-                + (actor != null ? actor.getUsername() : "system"));
-        return saved;
-    }
-
-    private void validateStatusTransition(BookingStatus from, BookingStatus to) {
-        // Allow no-op transitions.
-        if (from == to) return;
-        // Cancelled and rejected are terminal.
-        if (from == BookingStatus.CANCELLED || from == BookingStatus.EXPIRED || from == BookingStatus.NO_SHOW) {
-            throw new BusinessRuleException("INVALID_STATE",
-                    "Không thể chuyển trạng thái từ " + from + " sang " + to);
-        }
-        // Completed is also terminal.
-        if (from == BookingStatus.COMPLETED) {
-            throw new BusinessRuleException("INVALID_STATE",
-                    "Đơn đã hoàn thành, không thể thay đổi trạng thái");
-        }
     }
 
     private void recordTransition(Booking booking, BookingStatus from, BookingStatus to, User user, String reason) {
@@ -759,6 +683,7 @@ public class BookingService {
                     "Chưa đến ngày nhận phòng");
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.CHECKED_IN);
         booking.setStatus(BookingStatus.CHECKED_IN);
         booking.setCheckedInAt(LocalDateTime.now());
         Booking saved = bookingRepository.save(booking);
@@ -775,6 +700,7 @@ public class BookingService {
                     "Chỉ có thể trả phòng cho đơn đã nhận phòng (hiện tại: " + booking.getStatus() + ")");
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.CHECKED_OUT);
         booking.setStatus(BookingStatus.CHECKED_OUT);
         booking.setCheckedOutAt(LocalDateTime.now());
         Booking saved = bookingRepository.save(booking);
@@ -799,6 +725,7 @@ public class BookingService {
                     "Chỉ có thể đánh dấu không đến sau ngày nhận phòng");
         }
         BookingStatus oldStatus = booking.getStatus();
+        BookingStateMachine.requireTransition(oldStatus, BookingStatus.NO_SHOW);
         booking.setStatus(BookingStatus.NO_SHOW);
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, oldStatus, BookingStatus.NO_SHOW, adminUser, "Guest did not arrive");
@@ -1004,6 +931,11 @@ public class BookingService {
 
     private Booking loadOrThrow(Integer id) {
         return bookingRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
+    }
+
+    private Booking loadForUpdateOrThrow(Integer id) {
+        return bookingRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
     }
 

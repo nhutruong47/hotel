@@ -52,21 +52,22 @@ public class UserService {
 
     @Transactional
     public User registerUser(String username, String password, String email, String fullName) {
+        String normalizedEmail = EmailNormalizer.normalize(email);
         validateUsername(username);
-        validateEmail(email);
+        validateEmail(normalizedEmail);
         validatePassword(password);
 
         if (userRepository.findByUsername(username).isPresent()) {
             throw new BusinessRuleException(ErrorCodes.USERNAME_TAKEN, "Tên đăng nhập đã tồn tại");
         }
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) {
             throw new BusinessRuleException(ErrorCodes.EMAIL_TAKEN, "Email đã được sử dụng");
         }
 
         User user = new User();
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(password));
-        user.setEmail(email);
+        user.setEmail(normalizedEmail);
         user.setFullName(fullName);
         user.setRole("USER");
         user.setEmailVerified(false);
@@ -115,7 +116,11 @@ public class UserService {
 
     @Transactional
     public void resendVerificationEmail(String email) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        if (normalizedEmail == null || normalizedEmail.isBlank()) {
+            return;
+        }
+        Optional<User> userOpt = userRepository.findByEmailIgnoreCase(normalizedEmail);
         if (userOpt.isEmpty()) {
             log.info("Verification resend requested for unknown email");
             return;
@@ -135,7 +140,7 @@ public class UserService {
         event.setRawToken(rawToken);
         notificationProducer.sendEmailNotification(event);
         
-        log.info("Verification email re-sent to {}", email);
+        log.info("Verification email re-sent for user {}", user.getId());
     }
 
     /**
@@ -162,7 +167,10 @@ public class UserService {
     }
 
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        return normalizedEmail == null || normalizedEmail.isBlank()
+                ? Optional.empty()
+                : userRepository.findByEmailIgnoreCase(normalizedEmail);
     }
 
     public Optional<User> findByUsername(String username) {

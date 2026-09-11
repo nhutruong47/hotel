@@ -1,11 +1,20 @@
 # PROJECT_MISSING_FEATURES
 
+> Historical discovery snapshot. Several rows below have since been
+> implemented; use `docs/BOOKING_LIFECYCLE_AND_RBAC.md` and the executable test
+> suite as the current source of truth.
+>
+> Resolution update (2026-09-11): resend verification is enumeration-safe;
+> profile email uniqueness and Settings API synchronization are implemented.
+> Email canonicalization and atomic partial preference updates are covered by
+> migration V9 and regression tests.
+
 | Module | Tính năng/nghiệp vụ thiếu | Bằng chứng | Việc cần làm |
 |---|---|---|---|
 | Auth | Resend verification user-enumeration safe | `UserService.resendVerificationEmail` throw not found tại `UserService.java:111` | Trả response chung, chỉ gửi email nếu tồn tại |
 | Profile | Backend preferences chưa nối frontend settings | `ProfileApi.java:113`, `SettingsContext.tsx:34` | Hydrate/sync settings qua API |
 | Profile | Identity/address fields chưa có update flow | `V1__init.sql:34`, `ProfileService.java:90` | DTO/UI/service mapping hoặc remove |
-| Villas/Rooms | Public DTO/pagination/sorting chưa có | `RoomApi.java:61` trả entity list | DTO + page/filter/sort |
+| Villas/Rooms | Public DTO/pagination/sorting implemented (2026-09-11) | Catalogue remains locally filtered in the current UI | Move UI paging/filter state fully server-side when inventory grows beyond 100 rooms |
 | Villas/Rooms | Admin room form chưa cover amenities/location/policies | `AdminApi.java:279`, `AdminDashboardPage.tsx:587` | Form đầy đủ + validation |
 | Booking | State machine FE-BE chưa thống nhất | `BookingStatus.java:3`, `AdminDashboardPage.tsx:93` | Single enum contract + generated client/types |
 | Booking | Check-in/check-out UI thiếu | `AdminApi.java:473`, `client.ts:145` | Add API paths + admin actions |

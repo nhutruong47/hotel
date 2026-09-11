@@ -113,19 +113,21 @@ export function useCheckout(): UseCheckoutReturn {
     },
   });
 
-  // Submit payment mutation (for mock and bank transfer)
+  // Mock/bank-transfer flows may register a pending payment request, but only
+  // a verified webhook or an admin can confirm it as paid.
   const submitPaymentMutation = useMutation<
-    { booking: any },
+    { payment: any },
     ApiError,
     { bookingId: number; transactionRef?: string; amount: number }
   >({
     mutationFn: async ({ bookingId, transactionRef, amount }) => {
-      return api.post<{ booking: any }>(
-        API_PATHS.bookings.submitPayment(bookingId),
+      return api.post<{ payment: any }>(
+        API_PATHS.payments.create,
         {
+          bookingId,
           transactionRef,
           amount,
-          paymentMethod: checkoutMode === 'stripe' ? 'CARD' : 'BANK_TRANSFER',
+          method: checkoutMode === 'stripe' ? 'CARD' : 'BANK_TRANSFER',
         }
       );
     },
@@ -193,7 +195,8 @@ export function useCheckout(): UseCheckoutReturn {
         return null;
       }
 
-      // Submit payment to backend
+      // Register the attempt. This intentionally leaves the booking pending;
+      // client-side mock success is never trusted as proof of payment.
       await submitPaymentMutation.mutateAsync({
         bookingId,
         transactionRef: mockResult.paymentIntentId,
@@ -211,7 +214,7 @@ export function useCheckout(): UseCheckoutReturn {
         email: booking.guestEmail,
         phone: booking.guestPhone,
         paymentMethod: checkoutMode === 'stripe' ? 'Card' : 'Bank Transfer',
-        status: 'Confirmed',
+        status: 'Pending payment verification',
       };
 
       return successData;

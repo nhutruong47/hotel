@@ -1,0 +1,2 @@
+-- H2 baseline already maps User.password to users.password. This no-op keeps
+-- migration versions aligned with the PostgreSQL production track.

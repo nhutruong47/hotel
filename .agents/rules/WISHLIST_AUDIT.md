@@ -1,5 +1,10 @@
 # WISHLIST_AUDIT
 
+> Resolution update (2026-09-11): WISHLIST-001 is fixed with per-user
+> pessimistic locking plus idempotent PUT/DELETE endpoints and a concurrent
+> integration test. WISHLIST-002 is fixed with `WishlistItemResponse`; the
+> owner entity is no longer serialized by the API.
+
 ## Tính năng
 
 | Tính năng | Hoàn thành | Thiếu gì | Cần làm để production |

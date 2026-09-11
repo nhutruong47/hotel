@@ -48,7 +48,7 @@ public class SecurityConfig {
         // header is required for state-changing requests.
         cfg.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "Accept", "Origin",
-                "X-Request-Id", "X-XSRF-TOKEN"));
+                "X-Request-Id", "X-XSRF-TOKEN", "Idempotency-Key"));
         cfg.setExposedHeaders(List.of("Set-Cookie", "X-Request-Id"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
@@ -110,10 +110,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/vouchers/validate").permitAll()
                         // Public contact form
                         .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
-                        // Webhooks (Authenticated via GatewaySignatureFilter or Stripe Adapter)
-                        .requestMatchers(HttpMethod.POST, "/api/v1/payments/webhook/**").permitAll()
+                        // Only provider-specific, internally authenticated webhook routes are public.
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/payments/webhook/stripe",
+                                "/api/v1/payments/webhook/sepay").permitAll()
                         // Admin endpoints require ADMIN role (defense-in-depth even if service-layer checks are forgotten)
-                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/**").hasAnyRole("STAFF", "MANAGER", "ADMIN")
                         // User self-service endpoints must NOT require ADMIN. They
                         // are reachable by any authenticated user but ownership is
                         // re-checked in the service layer.
@@ -121,6 +123,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/me").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/users/*").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/users/*").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/users/*").hasRole("ADMIN")
                         // All other API endpoints require an authenticated user
                         .requestMatchers("/api/v1/**").authenticated()

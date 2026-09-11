@@ -3,8 +3,8 @@
 A direct-booking experience for private villa stays. This repository contains
 two tightly coupled deliverables:
 
-- **`frontend/`** — React 19 + Vite SPA with a premium editorial aesthetic.
-- **`hotel/`** — Spring Boot 3.4 (Java 21) REST API backed by JPA / Hibernate.
+- **`frontend/`** — React 19 + Next.js 15 application with a premium editorial aesthetic.
+- **`backend/`** — Spring Boot 3.4 (Java 21) REST API backed by JPA / Hibernate.
 
 > The project uses externalised configuration so the **same artifact** can be
 > deployed locally, in containers, or against a hosted database with zero
@@ -16,7 +16,7 @@ two tightly coupled deliverables:
 
 ```
 ┌───────────────────────┐       JSON over HTTP        ┌──────────────────────────┐
-│  React 19 SPA (Vite)  │  ─────────────────────────▶ │  Spring Boot REST API    │
+│ React 19 + Next.js 15 │  ─────────────────────────▶ │  Spring Boot REST API    │
 │  - TanStack Query     │  ◀─────────────────────────  │  - JPA / Hibernate       │
 │  - React Router 7     │      Set-Cookie session       │  - Spring Security       │
 │  - TypeScript strict  │                               │  - Maven build           │
@@ -77,7 +77,7 @@ src/
 └── main.tsx          ← RootProvider composition
 ```
 
-### `hotel/` (Java 21 / Spring Boot)
+### `backend/` (Java 21 / Spring Boot)
 ```
 src/main/java/com/hsf/hotel/
 ├── api/              ← REST controllers (one per resource)
@@ -108,7 +108,7 @@ npm install
 npm run dev            # http://localhost:5173
 
 # Terminal 2 — backend (PostgreSQL profile)
-cd hotel
+cd backend
 cp ../.env.example .env.local          # tweak if needed
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
 # → http://localhost:8080
@@ -138,7 +138,11 @@ list.
 | `APP_BASE_URL` | Used for email links |
 | `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | Bootstrap admin |
 | `APP_ADMIN_EMAIL` | Where admin notifications are sent |
-| `APP_BOOKING_DEADLINE_HOURS` | Hours a guest has to pay after approval |
+| `APP_BOOKING_HOLD_MINUTES` | Minutes a pending payment reserves villa inventory |
+| `SEPAY_API_KEY` | Required to enable authenticated SePay webhook reconciliation |
+| `NOTIFICATION_OUTBOX_ENABLED` | Enable durable post-commit email dispatch (default `true`) |
+| `NOTIFICATION_OUTBOX_POLL_MS` | RabbitMQ outbox polling interval (default `5000`) |
+| `NOTIFICATION_OUTBOX_RETENTION_DAYS` | Days to retain published outbox metadata (default `7`) |
 | `GEMINI_API_KEY` | AI recommendation engine |
 | `SESSION_COOKIE_SECURE` | `true` in production (HTTPS) |
 
@@ -164,13 +168,13 @@ list.
 
 ## 6. Testing Strategy
 
-- **Unit Tests** live under `hotel/src/test/java`. Services are fully
+- **Unit Tests** live under `backend/src/test/java`. Services are fully
   constructor-injected so a Mockito mock can be substituted without
   Spring.
 - **Integration Tests** share the same package layout and boot a slim
   Spring context.
-- **Frontend** uses `tsc --noEmit` and `vite build` as compile-time
-  guardrails. Future iteration: add Vitest for component tests.
+- **Frontend** uses `next build` as its compile-time and production-build
+  guardrail. Component and browser tests are planned for a later phase.
 
 ## 7. Operational Runbook
 

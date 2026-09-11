@@ -1,15 +1,21 @@
 package com.hsf.hotel.notification.api;
 
 import com.hsf.hotel.config.ApiResponse;
+import com.hsf.hotel.config.ErrorCodes;
 import com.hsf.hotel.exception.ApiException;
-import com.hsf.hotel.notification.model.Notification;
-import com.hsf.hotel.user.model.User;
+import com.hsf.hotel.notification.dto.NotificationResponse;
 import com.hsf.hotel.notification.service.NotificationService;
+import com.hsf.hotel.user.model.User;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
@@ -23,27 +29,19 @@ public class NotificationApi {
         this.notificationService = notificationService;
     }
 
-    private User requireUser(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
-            throw new ApiException(HttpStatus.UNAUTHORIZED, com.hsf.hotel.config.ErrorCodes.UNAUTHORIZED, "Vui lòng đăng nhập");
-        }
-        return user;
-    }
-
     @GetMapping
     public ResponseEntity<ApiResponse<?>> getMyNotifications(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             HttpSession session) {
         User user = requireUser(session);
-        Page<Notification> notifs = notificationService.getUserNotifications(user.getId(), page, size);
+        Page<NotificationResponse> notifications = notificationService.getUserNotifications(user.getId(), page, size);
         long unreadCount = notificationService.getUnreadCount(user.getId());
-        
+
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "notifications", notifs.getContent(),
-                "totalPages", notifs.getTotalPages(),
-                "totalElements", notifs.getTotalElements(),
+                "notifications", notifications.getContent(),
+                "totalPages", notifications.getTotalPages(),
+                "totalElements", notifications.getTotalElements(),
                 "unreadCount", unreadCount
         )));
     }
@@ -51,36 +49,39 @@ public class NotificationApi {
     @PostMapping("/{id}/read")
     public ResponseEntity<ApiResponse<?>> markAsRead(@PathVariable Integer id, HttpSession session) {
         User user = requireUser(session);
-        Notification notification = notificationService.getNotificationById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Notification not found"));
-        
-        if (!notification.getUser().getId().equals(user.getId())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN, "Access denied");
+        if (!notificationService.markAsRead(id, user.getId())) {
+            throw notFound();
         }
-        
-        notification.setIsRead(true);
-        notificationService.save(notification);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã đánh dấu đã đọc")));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Notification marked as read")));
     }
 
     @PostMapping("/read-all")
     public ResponseEntity<ApiResponse<?>> markAllAsRead(HttpSession session) {
         User user = requireUser(session);
         notificationService.markAllAsRead(user.getId());
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã đánh dấu tất cả đã đọc")));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "All notifications marked as read")));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<?>> deleteNotification(@PathVariable Integer id, HttpSession session) {
         User user = requireUser(session);
-        Notification notification = notificationService.getNotificationById(id)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Notification not found"));
-        
-        if (!notification.getUser().getId().equals(user.getId())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN, "Access denied");
+        if (!notificationService.deleteNotification(id, user.getId())) {
+            throw notFound();
         }
-        
-        notificationService.deleteNotification(id);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Đã xóa thông báo")));
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("message", "Notification deleted")));
+    }
+
+    private static User requireUser(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) {
+            throw new ApiException(HttpStatus.UNAUTHORIZED, ErrorCodes.UNAUTHORIZED, "Authentication required");
+        }
+        return user;
+    }
+
+    private static ApiException notFound() {
+        // Use the same response for a missing row and another user's row so
+        // notification IDs cannot be used as an account-enumeration oracle.
+        return new ApiException(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Notification not found");
     }
 }

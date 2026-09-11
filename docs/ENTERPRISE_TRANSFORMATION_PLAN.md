@@ -53,7 +53,8 @@ A complete roadmap summary is at the bottom (§12).
   - `bookings.currency` column; switch `totalPrice` to scale 2.
 - **API changes.**
   - `POST /api/v1/payments/intent` → returns client secret / redirect URL.
-  - `POST /api/v1/payments/webhook/{gateway}` (public, signature-checked).
+  - Provider-specific callbacks only: `POST /api/v1/payments/webhook/stripe`
+    (Stripe signature) and `/sepay` (exact API key). No generic status webhook.
   - `POST /api/v1/payments/{id}/capture` (admin).
   - `POST /api/v1/payments/{id}/refund` (admin or auto by cancellation policy).
   - `GET /api/v1/payments?bookingId=…` (owner / admin).

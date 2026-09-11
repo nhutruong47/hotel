@@ -167,8 +167,10 @@ export function AnalyticsPanel() {
     onSuccess: () => payments.refetch(),
   });
   const refundPayment = useMutation({
-    mutationFn: ({ id, amount, reason }: { id: number; amount: number; reason?: string }) =>
-      api.post(API_PATHS.payments.refund(id), { amount, reason }),
+    mutationFn: ({ id, amount, reason, idempotencyKey }: { id: number; amount: number; reason?: string; idempotencyKey: string }) =>
+      api.post(API_PATHS.payments.refund(id), { amount, reason }, {
+        headers: { 'Idempotency-Key': idempotencyKey },
+      }),
     onSuccess: () => {
       payments.refetch();
       refunds.refetch();
@@ -299,7 +301,7 @@ export function AnalyticsPanel() {
                       <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => completePayment.mutate(p.id)} className="rounded-full border border-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">Complete</button>
                         <button type="button" onClick={() => failPayment.mutate({ id: p.id, reason: 'Marked failed by admin' })} className="rounded-full border border-brand-stone px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/70">Fail</button>
-                        <button type="button" onClick={() => refundPayment.mutate({ id: p.id, amount: Number(p.amount ?? 0), reason: 'Refunded by admin' })} className="rounded-full border border-brand-coral/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-coral">Refund</button>
+                        <button type="button" onClick={() => refundPayment.mutate({ id: p.id, amount: Number(p.amount ?? 0), reason: 'Refunded by admin', idempotencyKey: `admin-full-refund-${p.id}` })} className="rounded-full border border-brand-coral/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-coral">Refund</button>
                       </div>
                     </td>
                   </tr>

@@ -5,6 +5,8 @@ import com.hsf.hotel.room.dto.RoomDTO;
 import com.hsf.hotel.room.dto.RoomMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,24 @@ public class RoomQueryService {
         return roomMapper.roomsToRoomDTOs(roomService.searchRooms(
                 checkIn, checkOut, minPrice, maxPrice, roomTypeId,
                 capacity, bedrooms, amenities, promotion));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<RoomDTO> search(
+            LocalDate checkIn,
+            LocalDate checkOut,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            Integer roomTypeId,
+            Integer capacity,
+            Integer bedrooms,
+            List<String> amenities,
+            String promotion,
+            Pageable pageable) {
+        return roomService.searchRooms(
+                        checkIn, checkOut, minPrice, maxPrice, roomTypeId,
+                        capacity, bedrooms, amenities, promotion, pageable)
+                .map(roomMapper::roomToRoomDTO);
     }
 
     @Transactional(readOnly = true)

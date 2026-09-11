@@ -105,6 +105,7 @@ public class RoomSpecification {
     public static Specification<Room> hasPromotion(String promotion) {
         return (root, query, cb) -> {
             if (promotion == null || promotion.trim().isEmpty()) return null;
+            query.distinct(true);
             Join<Object, Object> promotionJoin = root.join("promotions");
             String cleanPromo = promotion.trim().toLowerCase();
             String spacePromo = cleanPromo.replace("-", " ");

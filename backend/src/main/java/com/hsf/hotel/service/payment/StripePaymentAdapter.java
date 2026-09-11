@@ -8,6 +8,7 @@ import com.stripe.exception.StripeException;
 import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
+import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentConfirmParams;
 import com.stripe.param.PaymentIntentCreateParams;
 import com.stripe.param.RefundCreateParams;
@@ -177,6 +178,11 @@ public class StripePaymentAdapter implements PaymentGateway {
 
     @Override
     public boolean refund(Payment payment, BigDecimal amount) {
+        return refund(payment, amount, null);
+    }
+
+    @Override
+    public boolean refund(Payment payment, BigDecimal amount, String idempotencyKey) {
         if (!enabled || !stripeConfig.isConfigured()) {
             log.debug("Stripe not configured, mock refund success");
             payment.setRawResponse(String.format(
@@ -209,7 +215,12 @@ public class StripePaymentAdapter implements PaymentGateway {
                     .putMetadata("booking_id", String.valueOf(payment.getBooking().getId()))
                     .build();
 
-            com.stripe.model.Refund refund = com.stripe.model.Refund.create(params);
+            RequestOptions requestOptions = idempotencyKey != null && !idempotencyKey.isBlank()
+                    ? RequestOptions.builder().setIdempotencyKey(idempotencyKey).build()
+                    : null;
+            com.stripe.model.Refund refund = requestOptions != null
+                    ? com.stripe.model.Refund.create(params, requestOptions)
+                    : com.stripe.model.Refund.create(params);
 
             payment.setRawResponse(String.format(
                     "{\"status\": \"%s\", \"amount\": %d, \"refund_id\": \"%s\"}",

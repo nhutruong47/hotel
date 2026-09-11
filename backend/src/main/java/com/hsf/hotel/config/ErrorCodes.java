@@ -52,6 +52,7 @@ public final class ErrorCodes {
     public static final String LOCKED = "LOCKED";
     public static final String RESET_FAILED = "RESET_FAILED";
     public static final String UPDATE_FAILED = "UPDATE_FAILED";
+    public static final String INVALID_PREFERENCES = "INVALID_PREFERENCES";
     public static final String BUSINESS_ERROR = "BUSINESS_ERROR";
     public static final String RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND";
 }

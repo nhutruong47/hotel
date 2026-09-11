@@ -107,10 +107,8 @@ public class AuthApi {
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<?>> register(@Valid @RequestBody RegisterRequest req,
-                                                HttpServletRequest request,
-                                                HttpServletResponse response) {
+                                                HttpServletRequest request) {
         User saved = userService.registerUser(req.username, req.password, req.email, req.fullName);
-        establishSession(saved, request, response);
         auditLogService.log(saved, AuditActions.REGISTER, "User", saved.getId(),
                 "username=" + saved.getUsername(), request);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
