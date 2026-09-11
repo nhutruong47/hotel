@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,8 @@ import {
   AuditLogsPanel,
   CatalogPanel,
   ContactsPanel,
+  DroneInspectionPanel,
+  MaintenancesPanel,
   PromotionsPanel,
   ReviewsModerationPanel,
 } from './AdminExtendedPanels';
@@ -45,18 +47,35 @@ type AdminBooking = {
 type AdminRoom = {
   id: number;
   roomNumber: string;
+  slug?: string;
   pricePerNight: number | string;
   isAvailable: boolean;
   description?: string;
   imageUrl?: string;
   capacity?: number;
   bedrooms?: number;
-  roomType?: { id?: number; name: string };
-  amenities?: { id: number; name: string }[];
+  avgRating?: number;
+  reviewCount?: number;
+  galleryImages?: string[];
+  houseRules?: string;
+  policies?: string;
+  nearbyAttractions?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  latitude?: number;
+  longitude?: number;
+  nearbyRestaurants?: string;
+  nearbyCafes?: string;
+  nearbyAirport?: string;
+  directions?: string;
+  minimumStay?: number;
+  maximumStay?: number;
+  roomType?: { id?: number; name: string; description?: string };
+  amenities?: { id: number; name: string; iconCode?: string }[];
 };
 
 type AdminRoomType = { id: number; name: string; description?: string };
-type AdminAmenity = { id: number; name: string; icon?: string };
+type AdminAmenity = { id: number; name: string; iconCode?: string; icon?: string };
 
 type MostBookedRoom = { roomId: number; roomNumber: string; totalBookings: number };
 
@@ -96,6 +115,8 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'bookings', label: 'Bookings' },
   { id: 'rooms', label: 'Rooms' },
+  { id: 'inspections', label: 'Drone & Inspections' },
+  { id: 'maintenances', label: 'Maintenances' },
   { id: 'catalog', label: 'Catalog' },
   { id: 'vouchers', label: 'Vouchers' },
   { id: 'promotions', label: 'Promotions' },
@@ -127,7 +148,7 @@ export const AdminDashboardPage = () => {
   const visibleTabs = TABS.filter((item) => {
     if (user?.role === 'ADMIN') return true;
     if (user?.role === 'MANAGER') return !['audit', 'users'].includes(item.id);
-    return ['overview', 'bookings', 'contacts'].includes(item.id);
+    return ['overview', 'bookings', 'contacts', 'inspections'].includes(item.id);
   });
 
   const dashboard = useQuery({
@@ -249,6 +270,9 @@ export const AdminDashboardPage = () => {
             onSaved={() => queryClient.invalidateQueries({ queryKey: ['admin', 'rooms'] })}
           />
         ) : null}
+
+        {tab === 'inspections' ? <DroneInspectionPanel /> : null}
+        {tab === 'maintenances' ? <MaintenancesPanel /> : null}
 
         {tab === 'catalog' ? <CatalogPanel /> : null}
 
@@ -583,18 +607,78 @@ function RoomForm({
   onCancel: () => void;
   onSaved: () => void;
 }) {
+  const [formTab, setFormTab] = useState<'basic' | 'amenities' | 'gallery' | 'location' | 'policies'>('basic');
+  
+  // Basic info
   const [roomNumber, setRoomNumber] = useState(existing?.roomNumber ?? '');
   const [roomTypeId, setRoomTypeId] = useState<number | undefined>(existing?.roomType?.id);
   const [pricePerNight, setPricePerNight] = useState(String(existing?.pricePerNight ?? ''));
-  const [capacity, setCapacity] = useState(String(existing?.capacity ?? ''));
-  const [bedrooms, setBedrooms] = useState(String(existing?.bedrooms ?? ''));
+  const [capacity, setCapacity] = useState(String(existing?.capacity ?? '2'));
+  const [bedrooms, setBedrooms] = useState(String(existing?.bedrooms ?? '1'));
   const [description, setDescription] = useState(existing?.description ?? '');
   const [imageUrl, setImageUrl] = useState(existing?.imageUrl ?? '');
   const [isAvailable, setIsAvailable] = useState(existing?.isAvailable ?? true);
+
+  // Amenities
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState<number[]>(
+    existing?.amenities?.map((a) => a.id) ?? []
+  );
+
+  // Gallery
+  const [galleryImages, setGalleryImages] = useState<string[]>(
+    existing?.galleryImages && existing.galleryImages.length > 0
+      ? existing.galleryImages
+      : ['']
+  );
+
+  // Location & Surroundings
+  const [latitude, setLatitude] = useState(String(existing?.latitude ?? '11.9056'));
+  const [longitude, setLongitude] = useState(String(existing?.longitude ?? '108.4389'));
+  const [directions, setDirections] = useState(existing?.directions ?? '');
+  const [nearbyAirport, setNearbyAirport] = useState(existing?.nearbyAirport ?? 'Lien Khuong Airport (DLI) - 30 mins drive');
+  const [nearbyRestaurants, setNearbyRestaurants] = useState(existing?.nearbyRestaurants ?? '');
+  const [nearbyCafes, setNearbyCafes] = useState(existing?.nearbyCafes ?? '');
+  const [nearbyAttractions, setNearbyAttractions] = useState(existing?.nearbyAttractions ?? '');
+
+  // Policies & Stay Rules
+  const [checkInTime, setCheckInTime] = useState(existing?.checkInTime ?? '14:00');
+  const [checkOutTime, setCheckOutTime] = useState(existing?.checkOutTime ?? '12:00');
+  const [minimumStay, setMinimumStay] = useState(String(existing?.minimumStay ?? '1'));
+  const [maximumStay, setMaximumStay] = useState(String(existing?.maximumStay ?? '30'));
+  const [houseRules, setHouseRules] = useState(
+    existing?.houseRules ?? '• No smoking indoors.\n• Quiet hours from 22:00 to 07:00.\n• Pets allowed upon prior request.'
+  );
+  const [policies, setPolicies] = useState(
+    existing?.policies ?? '• Free cancellation up to 3 days before check-in.\n• 50% refund between 1 and 3 days before check-in.\n• Non-refundable under 24 hours.'
+  );
+
   const [error, setError] = useState<string | null>(null);
+
+  const toggleAmenity = (id: number) => {
+    setSelectedAmenityIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleAddGalleryImage = () => {
+    setGalleryImages((prev) => [...prev, '']);
+  };
+
+  const handleUpdateGalleryImage = (index: number, val: string) => {
+    setGalleryImages((prev) => {
+      const copy = [...prev];
+      copy[index] = val;
+      return copy;
+    });
+  };
+
+  const handleRemoveGalleryImage = (index: number) => {
+    setGalleryImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const save = useMutation<{ message: string }, ApiError, void>({
     mutationFn: () => {
+      const cleanGallery = galleryImages.map((s) => s.trim()).filter(Boolean);
       const payload = {
         id: existing?.id,
         roomNumber,
@@ -605,6 +689,21 @@ function RoomForm({
         description,
         imageUrl,
         isAvailable,
+        amenityIds: selectedAmenityIds,
+        galleryImages: cleanGallery,
+        latitude: latitude ? Number(latitude) : undefined,
+        longitude: longitude ? Number(longitude) : undefined,
+        directions,
+        nearbyAirport,
+        nearbyRestaurants,
+        nearbyCafes,
+        nearbyAttractions,
+        checkInTime,
+        checkOutTime,
+        minimumStay: minimumStay ? Number(minimumStay) : undefined,
+        maximumStay: maximumStay ? Number(maximumStay) : undefined,
+        houseRules,
+        policies,
       };
       return api.post<{ message: string }>(API_PATHS.admin.saveRoom, payload);
     },
@@ -614,63 +713,423 @@ function RoomForm({
 
   return (
     <form
-      className="space-y-5 rounded-[1.5rem] bg-brand-paper p-5"
-      onSubmit={(e) => { e.preventDefault(); setError(null); save.mutate(); }}
+      className="space-y-6 rounded-[2rem] border border-brand-stone bg-brand-paper p-6 shadow-xl"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        save.mutate();
+      }}
     >
-      <h3 className="text-xl text-brand-charcoal">{existing ? 'Edit room' : 'New room'}</h3>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="block text-xs font-semibold text-brand-charcoal">
-          Room number
-          <input value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4" required />
-        </label>
-        <label className="block text-xs font-semibold text-brand-charcoal">
-          Room type
-          <select value={roomTypeId ?? ''} onChange={(e) => setRoomTypeId(Number(e.target.value) || undefined)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4">
-            <option value="">— Select —</option>
-            {roomTypes.map((rt) => (
-              <option key={rt.id} value={rt.id}>{rt.name}</option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-xs font-semibold text-brand-charcoal">
-          Price per night (VND)
-          <input type="number" value={pricePerNight} onChange={(e) => setPricePerNight(e.target.value)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4" required />
-        </label>
-        <label className="block text-xs font-semibold text-brand-charcoal">
-          Capacity
-          <input type="number" value={capacity} onChange={(e) => setCapacity(e.target.value)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4" />
-        </label>
-        <label className="block text-xs font-semibold text-brand-charcoal">
-          Bedrooms
-          <input type="number" value={bedrooms} onChange={(e) => setBedrooms(e.target.value)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4" />
-        </label>
-        <label className="block text-xs font-semibold text-brand-charcoal">
-          Image URL
-          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4" />
-        </label>
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand-stone/60 pb-4">
+        <div>
+          <h3 className="text-xl font-medium text-brand-charcoal">
+            {existing ? `Edit Villa #${existing.roomNumber}` : 'New Luxury Villa'}
+          </h3>
+          <p className="text-xs text-brand-ink/55">Configure pricing, amenities, gallery, map location and stay rules.</p>
+        </div>
+        <div className="flex flex-wrap gap-1.5 rounded-full bg-brand-white p-1 shadow-sm">
+          {(
+            [
+              { id: 'basic', label: '1. Basic Info' },
+              { id: 'amenities', label: `2. Amenities (${selectedAmenityIds.length})` },
+              { id: 'gallery', label: `3. Gallery (${galleryImages.filter(Boolean).length})` },
+              { id: 'location', label: '4. Location & Map' },
+              { id: 'policies', label: '5. Policies & Rules' },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setFormTab(t.id)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-all ${
+                formTab === t.id
+                  ? 'bg-brand-forest text-brand-white shadow-sm'
+                  : 'text-brand-ink/65 hover:text-brand-charcoal'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
-      <label className="block text-xs font-semibold text-brand-charcoal">
-        Description
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 w-full rounded-[1rem] border border-brand-stone bg-brand-white p-3" rows={3} />
-      </label>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={isAvailable} onChange={(e) => setIsAvailable(e.target.checked)} />
-        Available for booking
-      </label>
+
+      {/* Tab 1: Basic Info */}
+      {formTab === 'basic' ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Villa Number / Code *
+              <input
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                placeholder="e.g. GV-01"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+                required
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Villa Type *
+              <select
+                value={roomTypeId ?? ''}
+                onChange={(e) => setRoomTypeId(Number(e.target.value) || undefined)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+                required
+              >
+                <option value="">— Select Type —</option>
+                {roomTypes.map((rt) => (
+                  <option key={rt.id} value={rt.id}>
+                    {rt.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Price per Night (VND) *
+              <input
+                type="number"
+                value={pricePerNight}
+                onChange={(e) => setPricePerNight(e.target.value)}
+                placeholder="e.g. 5500000"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+                required
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Capacity (Guests)
+              <input
+                type="number"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Bedrooms
+              <input
+                type="number"
+                value={bedrooms}
+                onChange={(e) => setBedrooms(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Primary Hero Image URL
+              <input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://images.unsplash.com/..."
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+          </div>
+
+          {imageUrl ? (
+            <div className="flex items-center gap-4 rounded-[1.2rem] bg-brand-white p-3">
+              <img
+                src={imageUrl}
+                alt="Preview"
+                className="h-16 w-24 rounded-lg object-cover"
+                onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
+              />
+              <span className="text-xs text-brand-ink/55">Primary Villa Hero Image Preview</span>
+            </div>
+          ) : null}
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Description & Highlights
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="mt-1 w-full rounded-[1.2rem] border border-brand-stone bg-brand-white p-3 text-sm"
+              rows={3}
+              placeholder="Private cliffside retreat with infinity pool, pine forest panoramic views..."
+            />
+          </label>
+
+          <label className="flex items-center gap-2.5 text-sm font-semibold text-brand-charcoal">
+            <input
+              type="checkbox"
+              checked={isAvailable}
+              onChange={(e) => setIsAvailable(e.target.checked)}
+              className="h-4 w-4 rounded border-brand-stone text-brand-forest focus:ring-brand-forest"
+            />
+            Available for immediate booking
+          </label>
+        </div>
+      ) : null}
+
+      {/* Tab 2: Amenities Picker */}
+      {formTab === 'amenities' ? (
+        <div className="space-y-4">
+          <p className="text-xs text-brand-ink/65">
+            Select the luxury amenities and fixtures provided at this villa:
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {amenities.map((a) => {
+              const selected = selectedAmenityIds.includes(a.id);
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => toggleAmenity(a.id)}
+                  className={`flex items-center gap-2.5 rounded-[1rem] p-3 text-left text-xs font-semibold transition-all ${
+                    selected
+                      ? 'border-2 border-brand-forest bg-brand-forest/10 text-brand-forest shadow-sm'
+                      : 'border border-brand-stone bg-brand-white text-brand-charcoal hover:border-brand-forest/50'
+                  }`}
+                >
+                  <span className="text-base">{a.iconCode || a.icon || '✨'}</span>
+                  <span className="truncate">{a.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Tab 3: Gallery Images */}
+      {formTab === 'gallery' ? (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-brand-ink/65">Add multiple high-resolution photo URLs for the villa gallery:</p>
+            <button
+              type="button"
+              onClick={handleAddGalleryImage}
+              className="rounded-full border border-brand-forest bg-brand-white px-3.5 py-1 text-xs font-semibold text-brand-forest hover:bg-brand-forest hover:text-brand-white"
+            >
+              + Add Image URL
+            </button>
+          </div>
+          <div className="space-y-3">
+            {galleryImages.map((url, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <input
+                  value={url}
+                  onChange={(e) => handleUpdateGalleryImage(idx, e.target.value)}
+                  placeholder={`https://images.nhuvillas.com/villa-${idx + 1}.jpg`}
+                  className="h-11 flex-1 rounded-full border border-brand-stone bg-brand-white px-4 text-xs"
+                />
+                {url ? (
+                  <img
+                    src={url}
+                    alt=""
+                    className="h-11 w-11 shrink-0 rounded-lg object-cover"
+                    onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveGalleryImage(idx)}
+                  className="rounded-full border border-brand-coral/40 px-3 py-2 text-xs font-semibold text-brand-coral hover:bg-brand-coral hover:text-brand-white"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Tab 4: Location & Surroundings */}
+      {formTab === 'location' ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Latitude (GPS)
+              <input
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Longitude (GPS)
+              <input
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+          </div>
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Driving Directions / Access Notes
+            <textarea
+              value={directions}
+              onChange={(e) => setDirections(e.target.value)}
+              className="mt-1 w-full rounded-[1.2rem] border border-brand-stone bg-brand-white p-3 text-sm"
+              rows={2}
+              placeholder="From Da Lat city center, take Tran Thanh Tong street towards Tuyen Lam Lake (15 mins)..."
+            />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Nearby Airport
+              <input
+                value={nearbyAirport}
+                onChange={(e) => setNearbyAirport(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Nearby Attractions
+              <input
+                value={nearbyAttractions}
+                onChange={(e) => setNearbyAttractions(e.target.value)}
+                placeholder="Tuyen Lam Lake (500m), Truc Lam Zen Monastery (2km)"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Nearby Fine Dining & Restaurants
+              <input
+                value={nearbyRestaurants}
+                onChange={(e) => setNearbyRestaurants(e.target.value)}
+                placeholder="The Lake House Restaurant, Pine Grill"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Nearby Cafes
+              <input
+                value={nearbyCafes}
+                onChange={(e) => setNearbyCafes(e.target.value)}
+                placeholder="Windmills Cafe, Cheo Veooo"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Tab 5: Policies & Stay Rules */}
+      {formTab === 'policies' ? (
+        <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Check-in Time
+              <input
+                value={checkInTime}
+                onChange={(e) => setCheckInTime(e.target.value)}
+                placeholder="14:00"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Check-out Time
+              <input
+                value={checkOutTime}
+                onChange={(e) => setCheckOutTime(e.target.value)}
+                placeholder="12:00"
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Minimum Stay (Nights)
+              <input
+                type="number"
+                value={minimumStay}
+                onChange={(e) => setMinimumStay(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Maximum Stay (Nights)
+              <input
+                type="number"
+                value={maximumStay}
+                onChange={(e) => setMaximumStay(e.target.value)}
+                className="mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm"
+              />
+            </label>
+          </div>
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            House Rules & Stay Etiquette
+            <textarea
+              value={houseRules}
+              onChange={(e) => setHouseRules(e.target.value)}
+              className="mt-1 w-full rounded-[1.2rem] border border-brand-stone bg-brand-white p-3 text-sm"
+              rows={3}
+            />
+          </label>
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Booking & Cancellation Policies
+            <textarea
+              value={policies}
+              onChange={(e) => setPolicies(e.target.value)}
+              className="mt-1 w-full rounded-[1.2rem] border border-brand-stone bg-brand-white p-3 text-sm"
+              rows={3}
+            />
+          </label>
+        </div>
+      ) : null}
 
       {error ? <p className="text-xs text-brand-coral">{error}</p> : null}
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={save.isPending}
-          className="min-h-11 rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-50"
-        >
-          {save.isPending ? 'Saving...' : existing ? 'Update room' : 'Create room'}
-        </button>
-        <button type="button" onClick={onCancel} className="min-h-11 rounded-full border border-brand-stone px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/72">
-          Cancel
-        </button>
+      <div className="flex items-center justify-between border-t border-brand-stone/60 pt-4">
+        <div className="flex gap-2">
+          {formTab !== 'basic' ? (
+            <button
+              type="button"
+              onClick={() => {
+                const tabs: Array<'basic' | 'amenities' | 'gallery' | 'location' | 'policies'> = [
+                  'basic',
+                  'amenities',
+                  'gallery',
+                  'location',
+                  'policies',
+                ];
+                const prevIdx = tabs.indexOf(formTab) - 1;
+                if (prevIdx >= 0) setFormTab(tabs[prevIdx]);
+              }}
+              className="rounded-full border border-brand-stone px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-brand-ink/72"
+            >
+              ← Previous Section
+            </button>
+          ) : null}
+          {formTab !== 'policies' ? (
+            <button
+              type="button"
+              onClick={() => {
+                const tabs: Array<'basic' | 'amenities' | 'gallery' | 'location' | 'policies'> = [
+                  'basic',
+                  'amenities',
+                  'gallery',
+                  'location',
+                  'policies',
+                ];
+                const nextIdx = tabs.indexOf(formTab) + 1;
+                if (nextIdx < tabs.length) setFormTab(tabs[nextIdx]);
+              }}
+              className="rounded-full border border-brand-forest/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-brand-forest"
+            >
+              Next Section →
+            </button>
+          ) : null}
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 rounded-full border border-brand-stone px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/72"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={save.isPending}
+            className="min-h-11 rounded-full bg-brand-forest px-7 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-50"
+          >
+            {save.isPending ? 'Saving Villa...' : existing ? 'Update Villa' : 'Create Villa'}
+          </button>
+        </div>
       </div>
     </form>
   );

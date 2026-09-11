@@ -8,6 +8,7 @@ import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.review.model.Review;
 import com.hsf.hotel.review.dto.PublicReviewResponse;
+import com.hsf.hotel.review.dto.ReviewDetailResponse;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.service.BookingService;
@@ -93,7 +94,11 @@ public class ReviewApi {
     @GetMapping("/mine")
     public ResponseEntity<ApiResponse<?>> mine(HttpSession session) {
         User user = requireUser(session);
-        return ResponseEntity.ok(ApiResponse.ok(reviewService.getReviewsByUser(user)));
+        List<PublicReviewResponse> list = reviewService.getReviewsByUser(user)
+                .stream()
+                .map(PublicReviewResponse::from)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(list));
     }
 
     @GetMapping("/booking/{bookingId}")
@@ -105,12 +110,13 @@ public class ReviewApi {
             throw new ForbiddenException("Bạn không có quyền đánh giá đơn này");
         }
         Optional<Review> existing = reviewService.getReviewByBooking(booking);
-        Map<String, Object> data = new HashMap<>();
-        data.put("booking", booking);
-        data.put("room", booking.getRoom());
-        data.put("existing", existing.orElse(null));
-        data.put("isEdit", existing.isPresent());
-        return ResponseEntity.ok(ApiResponse.ok(data));
+        ReviewDetailResponse.BookingReviewContext context = new ReviewDetailResponse.BookingReviewContext(
+                ReviewDetailResponse.BookingSummary.from(booking),
+                ReviewDetailResponse.RoomSummary.from(booking.getRoom()),
+                existing.map(PublicReviewResponse::from).orElse(null),
+                existing.isPresent()
+        );
+        return ResponseEntity.ok(ApiResponse.ok(context));
     }
 
     @PostMapping("/booking/{bookingId}")
@@ -120,7 +126,7 @@ public class ReviewApi {
         User user = requireUser(session);
         Review r = reviewService.createReview(user, bookingId, body.rating, body.comment, body.ratingCleanliness, body.ratingService, body.ratingLocation, body.ratingValue, body.ratingAmenities);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "review", r,
+                "review", PublicReviewResponse.from(r),
                 "avgRating", reviewService.getAverageRating(r.getRoom()),
                 "reviewCount", reviewService.getReviewCount(r.getRoom()),
                 "message", "Cảm ơn bạn đã đánh giá!"
@@ -134,7 +140,7 @@ public class ReviewApi {
         User user = requireUser(session);
         Review r = reviewService.updateReview(user, reviewId, body.rating, body.comment, body.ratingCleanliness, body.ratingService, body.ratingLocation, body.ratingValue, body.ratingAmenities);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "review", r,
+                "review", PublicReviewResponse.from(r),
                 "message", "Đã cập nhật đánh giá!"
         )));
     }

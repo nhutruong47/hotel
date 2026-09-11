@@ -681,3 +681,852 @@ function CatalogBox({
     </section>
   );
 }
+
+export type Inspection = {
+  id: number;
+  roomId: number;
+  roomNumber: string;
+  roomTypeName?: string;
+  inspectorId?: number;
+  inspectorName?: string;
+  inspectionType: string;
+  droneModel?: string;
+  flightAltitudeMeters?: number;
+  flightDurationMinutes?: number;
+  batteryCycles?: number;
+  status: string;
+  severityLevel: string;
+  checklistResults?: string;
+  mediaUrls?: string;
+  notes?: string;
+  actionRequired?: string;
+  scheduledDate: string;
+  completedDate?: string;
+  createdAt: string;
+};
+
+export type VillaMaintenance = {
+  id: number;
+  room: { id: number; roomNumber: string };
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  status: string;
+  createdBy?: { id: number; username: string; fullName?: string };
+  createdAt: string;
+};
+
+const DEFAULT_CHECKLIST = [
+  { id: 'roof_integrity', label: 'Roof Integrity & Tile Alignment (Drone Aerial)', passed: true },
+  { id: 'facade_windows', label: 'Exterior Façade & Window Glazing', passed: true },
+  { id: 'pool_filtration', label: 'Private Pool Filtration, Pump & Water Clarity', passed: true },
+  { id: 'hvac_electrical', label: 'HVAC Air Conditioning & Smart Controls', passed: true },
+  { id: 'interior_cleanliness', label: 'Luxury Interior Cleanliness & Linen Setup', passed: true },
+  { id: 'grounds_landscape', label: 'Surrounding Grounds, Pathway & Garden Lighting', passed: true },
+];
+
+export function DroneInspectionPanel() {
+  const queryClient = useQueryClient();
+  const [filterStatus, setFilterStatus] = useState<string>('ALL');
+  const [selectedInspection, setSelectedInspection] = useState<Inspection | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const stats = useQuery({
+    queryKey: ['admin', 'inspections', 'stats'],
+    queryFn: () => api.get<{
+      totalInspections: number;
+      droneMissions: number;
+      passedInspections: number;
+      flaggedIssues: number;
+      scheduledCount: number;
+      inProgressCount: number;
+    }>(API_PATHS.inspections.stats),
+    retry: false,
+  });
+
+  const list = useQuery({
+    queryKey: ['admin', 'inspections', 'list'],
+    queryFn: () => api.get<Inspection[]>(API_PATHS.inspections.all),
+    retry: false,
+  });
+
+  const roomsQuery = useQuery({
+    queryKey: ['admin', 'rooms', 'quick'],
+    queryFn: () => api.get<{ rooms: any[] }>(API_PATHS.admin.rooms),
+    retry: false,
+  });
+
+  const deleteInspection = useMutation({
+    mutationFn: (id: number) => api.delete(API_PATHS.inspections.delete(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'inspections'] });
+    },
+  });
+
+  const filtered = useMemo(() => {
+    const items = list.data ?? [];
+    if (filterStatus === 'ALL') return items;
+    return items.filter((i) => i.status === filterStatus);
+  }, [list.data, filterStatus]);
+
+  return (
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-[1.5rem] bg-brand-paper p-5">
+          <p className="text-xs uppercase tracking-[0.14em] text-brand-ink/55">Total Missions</p>
+          <p className="mt-2 font-serif text-3xl font-light text-brand-charcoal">{stats.data?.totalInspections ?? 0}</p>
+        </div>
+        <div className="rounded-[1.5rem] bg-brand-paper p-5">
+          <p className="text-xs uppercase tracking-[0.14em] text-brand-ink/55">🚁 Drone Aerial Flights</p>
+          <p className="mt-2 font-serif text-3xl font-light text-brand-forest">{stats.data?.droneMissions ?? 0}</p>
+        </div>
+        <div className="rounded-[1.5rem] bg-brand-paper p-5">
+          <p className="text-xs uppercase tracking-[0.14em] text-brand-ink/55">✅ Passed Inspections</p>
+          <p className="mt-2 font-serif text-3xl font-light text-emerald-600">{stats.data?.passedInspections ?? 0}</p>
+        </div>
+        <div className="rounded-[1.5rem] bg-brand-paper p-5">
+          <p className="text-xs uppercase tracking-[0.14em] text-brand-ink/55">⚠️ Flagged Issues</p>
+          <p className="mt-2 font-serif text-3xl font-light text-brand-coral">{stats.data?.flaggedIssues ?? 0}</p>
+        </div>
+      </div>
+
+      {/* Header & Filter Controls */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2">
+          {['ALL', 'SCHEDULED', 'IN_PROGRESS', 'PASSED', 'FLAGGED_ISSUES', 'REPAIRED'].map((st) => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => setFilterStatus(st)}
+              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition-all ${
+                filterStatus === st
+                  ? 'bg-brand-forest text-brand-white'
+                  : 'border border-brand-stone bg-brand-white text-brand-ink/72 hover:border-brand-forest'
+              }`}
+            >
+              {st.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsCreating(true)}
+          className="rounded-full bg-brand-forest px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white hover:opacity-90"
+        >
+          + Schedule Drone / Villa Inspection
+        </button>
+      </div>
+
+      {/* Inspection List Table */}
+      <div className="overflow-hidden rounded-[1.5rem] border border-brand-stone bg-brand-white">
+        <table className="w-full text-left text-sm text-brand-charcoal">
+          <thead className="bg-brand-paper text-xs uppercase tracking-[0.14em] text-brand-ink/65">
+            <tr>
+              <th className="px-5 py-3.5">ID / Date</th>
+              <th className="px-5 py-3.5">Villa</th>
+              <th className="px-5 py-3.5">Mission Type</th>
+              <th className="px-5 py-3.5">Equipment / Drone</th>
+              <th className="px-5 py-3.5">Status</th>
+              <th className="px-5 py-3.5">Severity</th>
+              <th className="px-5 py-3.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-brand-stone/60">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-sm text-brand-ink/55">
+                  No inspection records found.
+                </td>
+              </tr>
+            ) : (
+              filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-brand-paper/50">
+                  <td className="px-5 py-4">
+                    <p className="font-semibold">#{item.id}</p>
+                    <p className="text-xs text-brand-ink/55">{item.scheduledDate?.slice(0, 10) ?? '-'}</p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <p className="font-semibold text-brand-forest">{item.roomNumber}</p>
+                    <p className="text-xs text-brand-ink/55">{item.roomTypeName ?? 'Villa'}</p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className="rounded-full bg-brand-paper px-3 py-1 text-xs font-medium text-brand-charcoal">
+                      {item.inspectionType}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <p className="text-xs font-medium">{item.droneModel || 'Manual Ground Inspection'}</p>
+                    {item.flightAltitudeMeters ? (
+                      <p className="text-[11px] text-brand-ink/55">
+                        {item.flightAltitudeMeters}m alt • {item.flightDurationMinutes ?? 0}m flight
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] ${
+                        item.status === 'PASSED'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : item.status === 'FLAGGED_ISSUES'
+                          ? 'bg-rose-100 text-rose-800'
+                          : item.status === 'IN_PROGRESS'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-slate-100 text-slate-800'
+                      }`}
+                    >
+                      {item.status.replace('_', ' ')}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span
+                      className={`text-xs font-semibold ${
+                        item.severityLevel === 'CRITICAL'
+                          ? 'text-rose-600'
+                          : item.severityLevel === 'HIGH'
+                          ? 'text-amber-600'
+                          : 'text-brand-ink/65'
+                      }`}
+                    >
+                      {item.severityLevel}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInspection(item)}
+                        className="rounded-full border border-brand-forest px-3 py-1 text-xs font-semibold text-brand-forest hover:bg-brand-forest hover:text-brand-white"
+                      >
+                        Inspect / Report
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Delete inspection record #' + item.id + '?')) {
+                            deleteInspection.mutate(item.id);
+                          }
+                        }}
+                        className="rounded-full border border-brand-coral/40 px-3 py-1 text-xs font-semibold text-brand-coral hover:bg-brand-coral hover:text-brand-white"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Create / Schedule Modal */}
+      {isCreating ? (
+        <CreateInspectionModal
+          rooms={roomsQuery.data?.rooms ?? []}
+          onClose={() => setIsCreating(false)}
+          onSaved={() => {
+            setIsCreating(false);
+            queryClient.invalidateQueries({ queryKey: ['admin', 'inspections'] });
+          }}
+        />
+      ) : null}
+
+      {/* Edit / Execute Inspection Report Modal */}
+      {selectedInspection ? (
+        <ExecuteInspectionModal
+          inspection={selectedInspection}
+          onClose={() => setSelectedInspection(null)}
+          onSaved={() => {
+            setSelectedInspection(null);
+            queryClient.invalidateQueries({ queryKey: ['admin', 'inspections'] });
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function CreateInspectionModal({
+  rooms,
+  onClose,
+  onSaved,
+}: {
+  rooms: any[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [roomId, setRoomId] = useState<number | ''>(rooms[0]?.id ?? '');
+  const [inspectionType, setInspectionType] = useState('DRONE_ROOF_SURVEY');
+  const [droneModel, setDroneModel] = useState('DJI Mavic 3 Enterprise Thermal');
+  const [flightAltitudeMeters, setFlightAltitudeMeters] = useState('35');
+  const [flightDurationMinutes, setFlightDurationMinutes] = useState('15');
+  const [scheduledDate, setScheduledDate] = useState(today());
+  const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () => {
+      if (!roomId) throw new Error('Please select a villa');
+      return api.post(API_PATHS.inspections.create, {
+        roomId: Number(roomId),
+        inspectionType,
+        droneModel,
+        flightAltitudeMeters: Number(flightAltitudeMeters) || undefined,
+        flightDurationMinutes: Number(flightDurationMinutes) || undefined,
+        scheduledDate: scheduledDate ? `${scheduledDate}T09:00:00` : undefined,
+        status: 'SCHEDULED',
+        severityLevel: 'NORMAL',
+        notes,
+      });
+    },
+    onSuccess: onSaved,
+    onError: (err: any) => setError(err.message),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-[2rem] bg-brand-paper p-6 shadow-2xl">
+        <h3 className="text-xl font-medium text-brand-charcoal">Schedule Villa / Drone Inspection</h3>
+        <p className="mt-1 text-xs text-brand-ink/55">Deploy automated aerial survey or physical staff inspection.</p>
+
+        <form
+          className="mt-5 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            save.mutate();
+          }}
+        >
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Villa
+            <select
+              value={roomId}
+              onChange={(e) => setRoomId(Number(e.target.value))}
+              className={fieldCls}
+              required
+            >
+              <option value="">— Select Villa —</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.roomNumber} ({r.roomType?.name ?? 'Villa'})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Mission Type
+            <select
+              value={inspectionType}
+              onChange={(e) => setInspectionType(e.target.value)}
+              className={fieldCls}
+            >
+              <option value="DRONE_ROOF_SURVEY">🚁 Drone Aerial Roof Survey</option>
+              <option value="DRONE_FACADE_SURVEY">🚁 Drone Façade & Balcony Survey</option>
+              <option value="THERMAL_FACADE">🌡️ Thermal Heat Leakage / HVAC Survey</option>
+              <option value="POOL_FACILITY">🏊 Private Pool & Equipment Audit</option>
+              <option value="PRE_CHECKIN">✨ Pre-Checkin Luxury Readiness Check</option>
+              <option value="POST_CHECKOUT">🔍 Post-Checkout Clearance Check</option>
+              <option value="ROUTINE_CHECK">📋 Routine Staff Inspection</option>
+              <option value="MAINTENANCE_AUDIT">🛠️ Post-Maintenance Engineering Audit</option>
+            </select>
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Drone Model / Equipment
+              <input
+                value={droneModel}
+                onChange={(e) => setDroneModel(e.target.value)}
+                className={fieldCls}
+                placeholder="e.g. DJI Mavic 3 Enterprise"
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Flight Altitude (m)
+              <input
+                type="number"
+                value={flightAltitudeMeters}
+                onChange={(e) => setFlightAltitudeMeters(e.target.value)}
+                className={fieldCls}
+              />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Est. Duration (mins)
+              <input
+                type="number"
+                value={flightDurationMinutes}
+                onChange={(e) => setFlightDurationMinutes(e.target.value)}
+                className={fieldCls}
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Scheduled Date
+              <input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className={fieldCls}
+                required
+              />
+            </label>
+          </div>
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Mission Instructions / Notes
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className={areaCls}
+              rows={2}
+              placeholder="e.g. Inspect tile joints around chimney and south gutter..."
+            />
+          </label>
+
+          {error ? <p className="text-xs text-brand-coral">{error}</p> : null}
+
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-brand-stone px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/72"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={save.isPending}
+              className="rounded-full bg-brand-forest px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-50"
+            >
+              {save.isPending ? 'Scheduling...' : 'Schedule Mission'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ExecuteInspectionModal({
+  inspection,
+  onClose,
+  onSaved,
+}: {
+  inspection: Inspection;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [status, setStatus] = useState(inspection.status);
+  const [severityLevel, setSeverityLevel] = useState(inspection.severityLevel);
+  const [notes, setNotes] = useState(inspection.notes ?? '');
+  const [actionRequired, setActionRequired] = useState(inspection.actionRequired ?? '');
+  const [mediaUrls, setMediaUrls] = useState(inspection.mediaUrls ?? '');
+  const [autoMaintenance, setAutoMaintenance] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Parse or initialize checklist
+  const [checklist, setChecklist] = useState<Array<{ id: string; label: string; passed: boolean }>>(() => {
+    if (inspection.checklistResults) {
+      try {
+        return JSON.parse(inspection.checklistResults);
+      } catch (ignored) {}
+    }
+    return DEFAULT_CHECKLIST;
+  });
+
+  const toggleChecklistItem = (index: number) => {
+    setChecklist((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], passed: !next[index].passed };
+      return next;
+    });
+  };
+
+  const save = useMutation({
+    mutationFn: () => {
+      return api.put(API_PATHS.inspections.update(inspection.id), {
+        roomId: inspection.roomId,
+        status,
+        severityLevel,
+        checklistResults: JSON.stringify(checklist),
+        mediaUrls,
+        notes,
+        actionRequired,
+        autoCreateMaintenanceIfCritical: autoMaintenance,
+      });
+    },
+    onSuccess: onSaved,
+    onError: (err: any) => setError(err.message),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-brand-paper p-6 shadow-2xl">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-xl font-medium text-brand-charcoal">
+              Inspection Report: #{inspection.id} — Villa {inspection.roomNumber}
+            </h3>
+            <p className="mt-1 text-xs text-brand-ink/55">
+              Mission: <span className="font-semibold text-brand-forest">{inspection.inspectionType}</span> • Equipment:{' '}
+              {inspection.droneModel || 'Manual Ground Inspection'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-brand-stone bg-brand-white p-2 text-xs text-brand-ink/72 hover:bg-brand-stone/30"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form
+          className="mt-5 space-y-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            save.mutate();
+          }}
+        >
+          {/* Status & Severity Selection */}
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Inspection Status
+              <select value={status} onChange={(e) => setStatus(e.target.value)} className={fieldCls}>
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="PASSED">Passed (Ready for Luxury Stay)</option>
+                <option value="FLAGGED_ISSUES">Flagged Issues (Action Required)</option>
+                <option value="REPAIRED">Repaired & Resolved</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Severity Level
+              <select value={severityLevel} onChange={(e) => setSeverityLevel(e.target.value)} className={fieldCls}>
+                <option value="NORMAL">Normal (No Defects)</option>
+                <option value="LOW">Low (Minor Cosmetic)</option>
+                <option value="MEDIUM">Medium (Maintenance Recommended)</option>
+                <option value="HIGH">High (Immediate Repair Required)</option>
+                <option value="CRITICAL">Critical (Block Villa Booking)</option>
+              </select>
+            </label>
+          </div>
+
+          {/* Interactive Inspection Checklist */}
+          <div className="rounded-[1.2rem] border border-brand-stone bg-brand-white p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-charcoal">
+              Survey Checklist & Defect Inspection
+            </p>
+            <div className="mt-3 divide-y divide-brand-stone/50">
+              {checklist.map((item, idx) => (
+                <div key={item.id} className="flex items-center justify-between py-2.5 text-xs">
+                  <span className="font-medium text-brand-charcoal">{item.label}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleChecklistItem(idx)}
+                    className={`rounded-full px-3 py-1 font-semibold uppercase tracking-[0.12em] transition-all ${
+                      item.passed
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-rose-100 text-rose-800'
+                    }`}
+                  >
+                    {item.passed ? '✅ PASSED' : '❌ DEFECT FLAGGED'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Aerial Drone Footage / Photo URLs */}
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Drone Footage & Photo Evidence URLs (Comma or newline separated)
+            <textarea
+              value={mediaUrls}
+              onChange={(e) => setMediaUrls(e.target.value)}
+              className={areaCls}
+              rows={2}
+              placeholder="https://images.nhuvillas.com/inspections/drone-roof-01.jpg, https://videos.nhuvillas.com/drone-4k.mp4"
+            />
+          </label>
+
+          {/* Action Required & Notes */}
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Action Required / Corrective Measures
+            <input
+              value={actionRequired}
+              onChange={(e) => setActionRequired(e.target.value)}
+              className={fieldCls}
+              placeholder="e.g. Schedule urgent roof technician to replace 2 dislodged tiles."
+            />
+          </label>
+
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Inspector Notes & Telemetry Observations
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className={areaCls}
+              rows={2}
+              placeholder="All gutter waterflow tested clear. Pool salinity optimal at 3200 ppm."
+            />
+          </label>
+
+          {/* Auto-maintenance toggle */}
+          <label className="flex items-center gap-2 text-xs font-medium text-brand-charcoal">
+            <input
+              type="checkbox"
+              checked={autoMaintenance}
+              onChange={(e) => setAutoMaintenance(e.target.checked)}
+              className="rounded"
+            />
+            Auto-create Villa Maintenance schedule if Severity is HIGH or CRITICAL
+          </label>
+
+          {error ? <p className="text-xs text-brand-coral">{error}</p> : null}
+
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-brand-stone px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/72"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={save.isPending}
+              className="rounded-full bg-brand-forest px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-50"
+            >
+              {save.isPending ? 'Saving Report...' : 'Save Inspection Report'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function MaintenancesPanel() {
+  const queryClient = useQueryClient();
+  const [isScheduling, setIsScheduling] = useState(false);
+
+  const list = useQuery({
+    queryKey: ['admin', 'maintenances', 'list'],
+    queryFn: () => api.get<VillaMaintenance[]>(API_PATHS.maintenances.all),
+    retry: false,
+  });
+
+  const roomsQuery = useQuery({
+    queryKey: ['admin', 'rooms', 'quick'],
+    queryFn: () => api.get<{ rooms: any[] }>(API_PATHS.admin.rooms),
+    retry: false,
+  });
+
+  const cancelMaint = useMutation({
+    mutationFn: (id: number) => api.delete(API_PATHS.maintenances.cancel(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'maintenances'] });
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl text-brand-charcoal">Villa Maintenances</h2>
+          <p className="mt-1 text-xs text-brand-ink/55">Schedule property repairs and prevent guest booking conflicts.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsScheduling(true)}
+          className="rounded-full bg-brand-forest px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white"
+        >
+          + Schedule Maintenance
+        </button>
+      </div>
+
+      <div className="overflow-hidden rounded-[1.5rem] border border-brand-stone bg-brand-white">
+        <table className="w-full text-left text-sm text-brand-charcoal">
+          <thead className="bg-brand-paper text-xs uppercase tracking-[0.14em] text-brand-ink/65">
+            <tr>
+              <th className="px-5 py-3.5">ID</th>
+              <th className="px-5 py-3.5">Villa</th>
+              <th className="px-5 py-3.5">Start Date</th>
+              <th className="px-5 py-3.5">End Date</th>
+              <th className="px-5 py-3.5">Reason</th>
+              <th className="px-5 py-3.5">Status</th>
+              <th className="px-5 py-3.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-brand-stone/60">
+            {(list.data ?? []).length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-sm text-brand-ink/55">
+                  No active maintenance schedules found.
+                </td>
+              </tr>
+            ) : (
+              (list.data ?? []).map((m) => (
+                <tr key={m.id} className="hover:bg-brand-paper/50">
+                  <td className="px-5 py-4 font-semibold">#{m.id}</td>
+                  <td className="px-5 py-4 font-semibold text-brand-forest">{m.room?.roomNumber ?? 'Villa'}</td>
+                  <td className="px-5 py-4 text-xs">{m.startDate}</td>
+                  <td className="px-5 py-4 text-xs">{m.endDate}</td>
+                  <td className="px-5 py-4 text-xs text-brand-ink/75">{m.reason || 'Routine overhaul'}</td>
+                  <td className="px-5 py-4">
+                    <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-amber-800">
+                      {m.status}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm('Cancel maintenance #' + m.id + '?')) {
+                          cancelMaint.mutate(m.id);
+                        }
+                      }}
+                      className="rounded-full border border-brand-coral/40 px-3 py-1 text-xs font-semibold text-brand-coral hover:bg-brand-coral hover:text-brand-white"
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {isScheduling ? (
+        <ScheduleMaintenanceModal
+          rooms={roomsQuery.data?.rooms ?? []}
+          onClose={() => setIsScheduling(false)}
+          onSaved={() => {
+            setIsScheduling(false);
+            queryClient.invalidateQueries({ queryKey: ['admin', 'maintenances'] });
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function ScheduleMaintenanceModal({
+  rooms,
+  onClose,
+  onSaved,
+}: {
+  rooms: any[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [roomId, setRoomId] = useState<number | ''>(rooms[0]?.id ?? '');
+  const [startDate, setStartDate] = useState(today());
+  const [endDate, setEndDate] = useState(today(3));
+  const [reason, setReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const save = useMutation({
+    mutationFn: () => {
+      if (!roomId) throw new Error('Please select a villa');
+      return api.post(API_PATHS.maintenances.schedule, {
+        roomId: Number(roomId),
+        startDate,
+        endDate,
+        reason,
+      });
+    },
+    onSuccess: onSaved,
+    onError: (err: any) => setError(err.message),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-[2rem] bg-brand-paper p-6 shadow-2xl">
+        <h3 className="text-xl font-medium text-brand-charcoal">Schedule Villa Maintenance</h3>
+        <form
+          className="mt-4 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError(null);
+            save.mutate();
+          }}
+        >
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Villa
+            <select
+              value={roomId}
+              onChange={(e) => setRoomId(Number(e.target.value))}
+              className={fieldCls}
+              required
+            >
+              <option value="">— Select Villa —</option>
+              {rooms.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.roomNumber} ({r.roomType?.name ?? 'Villa'})
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              Start Date
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={fieldCls}
+                required
+              />
+            </label>
+            <label className="block text-xs font-semibold text-brand-charcoal">
+              End Date
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className={fieldCls}
+                required
+              />
+            </label>
+          </div>
+          <label className="block text-xs font-semibold text-brand-charcoal">
+            Reason / Work Description
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className={areaCls}
+              rows={3}
+              placeholder="e.g. Annual pool pump overhaul and garden lighting repolishing..."
+              required
+            />
+          </label>
+          {error ? <p className="text-xs text-brand-coral">{error}</p> : null}
+          <div className="mt-6 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full border border-brand-stone px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/72"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={save.isPending}
+              className="rounded-full bg-brand-forest px-6 py-2.5 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-50"
+            >
+              {save.isPending ? 'Scheduling...' : 'Confirm Maintenance'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

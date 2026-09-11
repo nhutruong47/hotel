@@ -317,4 +317,19 @@ export const API_PATHS = {
         grouped: '/faqs/grouped',
         helpful: (id: number | string) => `/faqs/${id}/helpful`,
     },
+    inspections: {
+        all: '/inspections',
+        stats: '/inspections/stats',
+        byRoom: (roomId: number | string) => `/inspections/room/${roomId}`,
+        latestByRoom: (roomId: number | string) => `/inspections/room/${roomId}/latest`,
+        detail: (id: number | string) => `/inspections/${id}`,
+        create: '/inspections',
+        update: (id: number | string) => `/inspections/${id}`,
+        delete: (id: number | string) => `/inspections/${id}`,
+    },
+    maintenances: {
+        all: '/admin/maintenances',
+        schedule: '/admin/maintenances',
+        cancel: (id: number | string) => `/admin/maintenances/${id}`,
+    },
 };

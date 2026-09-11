@@ -5,6 +5,7 @@ import com.hsf.hotel.config.ErrorCodes;
 import com.hsf.hotel.exception.ApiException;
 import com.hsf.hotel.exception.BusinessRuleException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
+import com.hsf.hotel.admin.dto.AdminResponseDtos;
 import com.hsf.hotel.room.model.Amenity;
 import com.hsf.hotel.admin.model.AuditLog;
 import com.hsf.hotel.booking.model.Booking;
@@ -156,6 +157,7 @@ public class AdminApi {
                     "Trạng thái không hợp lệ: " + status);
         }
         Map<String, Object> data = new HashMap<>();
+
         data.put("bookings", bookings);
         data.put("statuses", BookingStatus.values());
         data.put("selectedStatus", status);
@@ -191,9 +193,9 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> rooms(HttpSession session) {
         requireManagerOrAdmin(session);
         Map<String, Object> data = new HashMap<>();
-        data.put("rooms", roomService.getAllRooms());
-        data.put("roomTypes", roomTypeRepository.findAll());
-        data.put("amenities", amenityService.getAllAmenities());
+        data.put("rooms", roomService.getAllRooms().stream().map(AdminResponseDtos.AdminRoomResponse::from).toList());
+        data.put("roomTypes", roomTypeRepository.findAll().stream().map(AdminResponseDtos.RoomTypeDto::from).toList());
+        data.put("amenities", amenityService.getAllAmenities().stream().map(AdminResponseDtos.AmenityDto::from).toList());
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 
@@ -209,6 +211,12 @@ public class AdminApi {
         public List<Integer> amenityIds;
         public Integer capacity;
         public Integer bedrooms;
+        public List<String> galleryImages;
+        public String houseRules;
+        public String policies;
+        public String nearbyAttractions;
+        public String checkInTime;
+        public String checkOutTime;
         public Double latitude;
         public Double longitude;
         public String nearbyRestaurants;
@@ -266,6 +274,14 @@ public class AdminApi {
             room.setAmenities(List.of());
         }
         
+        if (p.galleryImages != null) {
+            room.setGalleryImages(new java.util.ArrayList<>(p.galleryImages));
+        }
+        if (p.houseRules != null) room.setHouseRules(p.houseRules);
+        if (p.policies != null) room.setPolicies(p.policies);
+        if (p.nearbyAttractions != null) room.setNearbyAttractions(p.nearbyAttractions);
+        if (p.checkInTime != null) room.setCheckInTime(p.checkInTime);
+        if (p.checkOutTime != null) room.setCheckOutTime(p.checkOutTime);
         room.setLatitude(p.latitude);
         room.setLongitude(p.longitude);
         room.setNearbyRestaurants(p.nearbyRestaurants);
@@ -275,7 +291,7 @@ public class AdminApi {
         if (p.minimumStay != null) room.setMinimumStay(p.minimumStay);
         if (p.maximumStay != null) room.setMaximumStay(p.maximumStay);
         Room saved = roomService.saveRoom(room);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("room", saved,
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("room", AdminResponseDtos.AdminRoomResponse.from(saved),
                 "message", p.id != null ? "Cập nhật phòng thành công!" : "Thêm phòng mới thành công!")));
     }
 
@@ -295,7 +311,11 @@ public class AdminApi {
     @GetMapping("/vouchers")
     public ResponseEntity<ApiResponse<?>> listVouchers(HttpSession session) {
         requireManagerOrAdmin(session);
-        return ResponseEntity.ok(ApiResponse.ok(Map.of("vouchers", voucherRepository.findAll())));
+        List<AdminResponseDtos.AdminVoucherResponse> vouchers = voucherRepository.findAll()
+                .stream()
+                .map(AdminResponseDtos.AdminVoucherResponse::from)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("vouchers", vouchers)));
     }
 
     public static class VoucherPayload {

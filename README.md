@@ -1,196 +1,147 @@
-# Nhu Villas — Hotel Booking Platform
+# Nhu Villas — Luxury Resort Management & Direct Booking Platform
 
-A direct-booking experience for private villa stays. This repository contains
-two tightly coupled deliverables:
+An enterprise-grade, direct-booking and operational management platform for luxury private villas. This repository contains two tightly integrated deliverables:
 
-- **`frontend/`** — React 19 + Next.js 15 application with a premium editorial aesthetic.
-- **`backend/`** — Spring Boot 3.4 (Java 21) REST API backed by JPA / Hibernate.
+- **`frontend/`** — Next.js 15 (React 19, TypeScript, TailwindCSS, Lucide Icons) with Server-Side Rendering (SSR) for catalog discovery, responsive luxury aesthetics, dynamic room customizers, and an integrated Inspector / Drone Mission Control dashboard.
+- **`backend/`** — Spring Boot 3.4+ (Java 21) REST API with domain-driven modular architecture, Flyway database migrations (`V1` to `V11`), pessimistic locking concurrency control, resilient fallback caching, and end-to-end sanitized DTOs.
 
-> The project uses externalised configuration so the **same artifact** can be
-> deployed locally, in containers, or against a hosted database with zero
-> recompilation.
+> **Zero-Recompilation Architecture**: Uses 12-factor externalized configuration (`.env` / environment variables) enabling identical binaries to run locally against PostgreSQL 17, in containerized Docker networks, or in Kubernetes clusters.
 
 ---
 
-## 1. Architecture Overview
+## 1. System Architecture & High-Level Design
 
 ```
-┌───────────────────────┐       JSON over HTTP        ┌──────────────────────────┐
-│ React 19 + Next.js 15 │  ─────────────────────────▶ │  Spring Boot REST API    │
-│  - TanStack Query     │  ◀─────────────────────────  │  - JPA / Hibernate       │
-│  - React Router 7     │      Set-Cookie session       │  - Spring Security       │
-│  - TypeScript strict  │                               │  - Maven build           │
-└───────────────────────┘                                └─────────────┬────────────┘
-                                                                      │
-                                                                      ▼
-                                                            ┌────────────────────────┐
-                                                            │  SQL Server / Postgres │
-                                                            │  JPA entities auto-DDL │
-                                                            └────────────────────────┘
+┌──────────────────────────────────────┐       JSON over REST / JWT       ┌─────────────────────────────────────────┐
+│        Next.js 15 + React 19         │  ──────────────────────────────▶ │        Spring Boot 3.4 REST API         │
+│  - SSR Catalog & SEO Optimization    │  ◀────────────────────────────── │  - Hexagonal Domain Architecture        │
+│  - Dynamic Admin & Drone Panels      │       HttpOnly Cookie / Bearer   │  - Spring Security RBAC                 │
+│  - Type-safe Client (`client.ts`)    │                                  │  - Pessimistic Concurrency Locking      │
+└──────────────────────────────────────┘                                  └────────────────────┬────────────────────┘
+                                                                                               │
+                                                                   ┌───────────────────────────┴───────────────────────────┐
+                                                                   ▼                                                       ▼
+                                                     ┌───────────────────────────┐                           ┌───────────────────────────┐
+                                                     │       PostgreSQL 17       │                           │       Redis / Fallback    │
+                                                     │  Flyway Migrations (V1-11)│                           │  & RabbitMQ Async Outbox  │
+                                                     │  Strict FKs & GiST Indexes│                           │  Resilient Event Bus      │
+                                                     └───────────────────────────┘                           └───────────────────────────┘
 ```
 
-| Layer | Tech | Responsibility |
-| --- | --- | --- |
-| Presentation | React 19 + Tailwind 4 | Editorially rich UI, type-safe forms |
-| State | TanStack Query + Zustand-less context | Server cache, single source of session truth |
-| API | Spring MVC (`@RestController`) | HTTP contract + validation |
-| Security | Spring Security + custom filter | Auth + role enforcement |
-| Domain | `@Service` classes | Business rules, workflow |
-| Persistence | Spring Data JPA | Repository pattern, `FetchType.LAZY` |
-| Database | SQL Server / PostgreSQL | Indexed `@Entity` tables |
+| Domain Layer | Technology | Key Responsibilities |
+| :--- | :--- | :--- |
+| **Presentation** | Next.js 15 + React 19 + TailwindCSS | Luxury UI, interactive room builder, drone mission execution UI, admin CRUD. |
+| **API Client** | TypeScript fetch wrapper (`client.ts`) | Unified error boundary, JWT interceptors, strongly typed endpoints (`API_PATHS`). |
+| **Security & RBAC** | Spring Security 6 + JJWT | 5-tier role hierarchy (`CUSTOMER`, `STAFF`, `INSPECTOR`, `MANAGER`, `ADMIN`). |
+| **Transactional Core** | Spring Data JPA + Hibernate 6 | Pessimistic locking (`SELECT FOR UPDATE`), zero DTO entity leakage. |
+| **Database & Schema** | PostgreSQL 17 + Flyway | Versioned migrations (`V1` to `V11`), `villa_inspections`, strict constraints. |
+| **Resilience & Messaging** | Redis + RabbitMQ | Caching with in-memory map fallback, durable notification outbox. |
+| **Aerial Quality Survey** | Drone Telemetry Subsystem | Pre-arrival structural, thermal, acoustic, and pool clarity inspection logging. |
 
-## 2. Repository Layout
+---
 
-### `docs/`
-Contains all architectural, business, and enterprise documentation (e.g., `ARCHITECTURE.md`, `MASTER_PROJECT_PLAN.md`).
-All backend endpoints must follow [`docs/API_STANDARDS.md`](docs/API_STANDARDS.md); a build-time architecture test enforces the controller, versioning, response, and admin-authorization rules.
+## 2. Core Functional Modules
 
-### `database/`
-Contains SQL migration scripts and constraints.
+### 2.1 Luxury Villa Catalog & Smart Booking
+- **Pessimistic Write Locking**: Prevents double-booking race conditions during high-traffic intervals.
+- **Rich Villa Metadata**: 15+ configurable attributes including high-resolution galleries, amenities selector, coordinates (Lat/Lng), surroundings, check-in/out policies, and minimum/maximum stay constraints.
+- **Flexible Voucher Engine**: Real-time discount calculations with usage limits, expiry tracking, and concurrency-safe redemption counters.
 
-### `tools/`
-Contains utility scripts used for refactoring and maintenance.
+### 2.2 Inspector & Drone Aerial Survey Workflow
+- **Drone Mission Control**: Schedule pre-arrival aerial scans, track drone battery levels, altitude, thermal hotspot scans, structural integrity scores, and HVAC acoustic decibels.
+- **Interactive Checklist**: Step-by-step inspector sign-off with automatic maintenance ticket dispatch upon defect detection.
 
-### `frontend/` (TypeScript / React)
+### 2.3 Payments & Webhook Idempotency
+- Multi-gateway support: **VNPay**, **Stripe**, **MoMo**, **PayPal**, and **Cash/On-Arrival**.
+- Cryptographic HMAC signature verification and atomic database state guards to ensure 100% webhook callback idempotency.
+
+### 2.4 AI Concierge & Smart Recommender
+- Natural language chat assistant that analyzes user party size, vacation style (romantic, family, wellness), and dates to recommend matching luxury villas.
+
+---
+
+## 3. Repository Structure & Key Documents
+
 ```
-src/
-├── app/              ← Router definition
-├── features/         ← Domain-driven modules
-│   ├── admin/        ← AdminDashboardPage
-│   ├── ai/           ← AI assistant widget
-│   ├── auth/         ← Login / Register / Forgot / Verify
-│   ├── booking/      ← Booking, checkout, success
-│   ├── content/      ← About / Contact / FAQ / Offers / Dining…
-│   ├── home/         ← Hero + ambient layers
-│   ├── profile/      ← Profile / MyBookings / Wishlist / Reviews
-│   └── villas/       ← List + Detail + API client
-├── shared/
-│   ├── api/          ← fetch wrapper, ApiError, API_PATHS
-│   ├── auth/         ← SessionProvider, RequireAuth
-│   ├── components/   ← Button, Card, Input, Navbar, Reveal, ErrorBoundary
-│   ├── hooks/        ← useAnimations, useSmoothScroll
-│   ├── layouts/      ← RootLayout
-│   └── utils/        ← shared helpers
-├── hooks/            ← animation hooks
-├── assets/           ← Static images and icons
-├── App.tsx           ← (none — wired directly in main.tsx)
-└── main.tsx          ← RootProvider composition
-```
-
-### `backend/` (Java 21 / Spring Boot)
-```
-src/main/java/com/hsf/hotel/
-├── api/              ← REST controllers (one per resource)
-├── config/           ← Security, exception handler, DataInitializer, CORS, SPA fallback
-├── dto/              ← Request / response DTOs
-├── exception/        ← ApiException + typed subclasses
-├── model/            ← JPA entities
-├── repository/       ← Spring Data repositories
-├── service/          ← Business logic
-├── observability/    ← RequestIdFilter
-├── scheduler/        ← BookingScheduler (auto-cancel expired holds)
-└── HotelApplication.java
+hotel/
+├── backend/                  # Java 21 Spring Boot Backend
+│   ├── src/main/java/com/hsf/hotel/
+│   │   ├── admin/            # Admin management APIs & DTO projections
+│   │   ├── auth/             # JWT authentication, RBAC, user models
+│   │   ├── booking/          # Concurrency-safe booking engine
+│   │   ├── payment/          # Multi-gateway payment handlers & webhooks
+│   │   ├── review/           # Verified reviews with zero entity leakage
+│   │   ├── room/             # Rooms, amenities, & Drone Villa Inspections
+│   │   └── config/           # Security, Flyway, Cache fallback, RabbitMQ
+│   └── src/main/resources/db/postgresql/ # Flyway migrations (V1 to V11)
+├── frontend/                 # Next.js 15 App Router Frontend
+│   ├── src/app/              # Next.js route handlers and pages
+│   ├── src/features/admin/   # Admin dashboards, Drone Inspection & Maintenance panels
+│   ├── src/features/villas/  # Villa catalog, room details, customizers
+│   └── src/shared/api/       # Unified API client & type declarations
+└── docs/                     # Comprehensive Project Documentation
+    ├── API_DOCUMENTATION.md          # Complete REST API specification
+    ├── FINAL_PROJECT_INTERVIEW_QA.md # 360-degree technical defense & interview Q&A
+    ├── ARCHITECTURE.md               # Deep-dive system architecture
+    └── MASTER_PROJECT_PLAN.md        # Project delivery & roadmap milestones
 ```
 
-## 3. Local Development
+---
 
-### Prerequisites
-- Node.js 20+
-- Java 21 (with `JAVA_HOME` set)
-- Maven wrapper bundled (`./mvnw`)
-- PostgreSQL 16 *or* SQL Server 2019
+## 4. Local Quickstart (PostgreSQL 17 Direct)
 
-### One-shot startup
+### 4.1 Prerequisites
+- **Node.js**: `v20+` (or `v22 LTS`)
+- **Java Development Kit**: `JDK 21` (configured in `JAVA_HOME`)
+- **PostgreSQL**: `v17` running locally on port `5432` with database `hotel`
+
+### 4.2 Database Setup
+1. Create database in PostgreSQL:
+   ```sql
+   CREATE DATABASE hotel;
+   ```
+2. Flyway migrations (`V1` through `V11`) will automatically execute on application startup.
+
+### 4.3 Running the Backend
 ```bash
-# Terminal 1 — frontend
+cd backend
+# Run with local PostgreSQL profile
+./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
+# Backend running at: http://localhost:8080
+```
+Default bootstrap admin: `admin` / `admin@123` (or configured via `.env`).
+
+### 4.4 Running the Frontend
+```bash
 cd frontend
 npm install
-npm run dev            # http://localhost:5173
-
-# Terminal 2 — backend (PostgreSQL profile)
-cd backend
-cp ../.env.example .env.local          # tweak if needed
-./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
-# → http://localhost:8080
+npm run dev
+# Frontend running at: http://localhost:3000 (or http://localhost:5173)
 ```
 
-The first backend boot seeds a default admin account (`admin`/`admin@123`).
-Override via `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` env vars in production.
+---
 
-### Containerised workflow
+## 5. Testing & Quality Assurance
+
+### 5.1 Backend Automated Tests
 ```bash
-# From repo root
-docker compose up --build
-# Frontend → http://localhost
-# Backend   → http://localhost:8080 (proxied through nginx)
+cd backend
+./mvnw.cmd test
 ```
+Executes comprehensive unit, integration, RBAC security, concurrency locking, and DTO projection tests.
 
-## 4. Environment Variables
+### 5.2 Frontend Production Build
+```bash
+cd frontend
+npm run build
+```
+Validates TypeScript type safety, Next.js page generation, and optimized client bundle assets.
 
-All sensitive values are externalised; see `.env.example` for the canonical
-list.
+---
 
-| Variable | Purpose |
-| --- | --- |
-| `SPRING_DATASOURCE_URL` | JDBC URL (provider-aware) |
-| `SPRING_DATASOURCE_USERNAME` / `PASSWORD` | DB credentials |
-| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated SPA origins |
-| `APP_BASE_URL` | Used for email links |
-| `APP_ADMIN_USERNAME` / `APP_ADMIN_PASSWORD` | Bootstrap admin |
-| `APP_ADMIN_EMAIL` | Where admin notifications are sent |
-| `APP_BOOKING_HOLD_MINUTES` | Minutes a pending payment reserves villa inventory |
-| `SEPAY_API_KEY` | Required to enable authenticated SePay webhook reconciliation |
-| `NOTIFICATION_OUTBOX_ENABLED` | Enable durable post-commit email dispatch (default `true`) |
-| `NOTIFICATION_OUTBOX_POLL_MS` | RabbitMQ outbox polling interval (default `5000`) |
-| `NOTIFICATION_OUTBOX_RETENTION_DAYS` | Days to retain published outbox metadata (default `7`) |
-| `GEMINI_API_KEY` | AI recommendation engine |
-| `SESSION_COOKIE_SECURE` | `true` in production (HTTPS) |
+## 6. Key Documentation Links
 
-## 5. Architectural Principles
-
-- **Clean Architecture** — Controllers → Services → Repositories. No entity
-  leakage past the service boundary except for read-only views.
-- **SOLID + DRY + KISS** — Each service has a single responsibility; common
-  helpers (e.g. password validation, request id propagation) live alongside.
-- **Repository Pattern** — Spring Data `JpaRepository` for every aggregate.
-- **Service Layer** — Every mutation is wrapped in `@Transactional` and lives
-  in a service that throws typed `ApiException`s.
-- **DTO Pattern** — All public API input/output is a dedicated DTO/record; no
-  entity is exposed directly (with the exception of the existing read models
-  that the SPA already consumes verbatim).
-- **Constructor Injection** — No `@Autowired` field injection; every
-  dependency is final and non-null.
-- **Observability First** — Structured logs ship a request id; the same id
-  is echoed back to the browser in `X-Request-Id` for end-to-end tracing.
-- **Security by Default** — Spring Security enforces admin-only routes;
-  every mutation is owned by the current user; file uploads validate type +
-  size; password reset is user-enumeration safe.
-
-## 6. Testing Strategy
-
-- **Unit Tests** live under `backend/src/test/java`. Services are fully
-  constructor-injected so a Mockito mock can be substituted without
-  Spring.
-- **Integration Tests** share the same package layout and boot a slim
-  Spring context.
-- **Frontend** uses `next build` as its compile-time and production-build
-  guardrail. Component and browser tests are planned for a later phase.
-
-## 7. Operational Runbook
-
-### Logs
-- Plain JSON-ish logs land in `./logs/hotel-backend.log` with daily
-  rotation (`logback-spring.xml`).
-- Every line carries `requestId` so support can grep end-to-end.
-
-### Health checks
-- Liveness / readiness via `/actuator/health` (publicly reachable).
-- Container probes configured to hit `/api/v1/health` for business
-  semantics.
-
-### Graceful shutdown
-- `server.shutdown=graceful` keeps the JVM alive for in-flight requests
-  (up to 30s) when a SIGTERM is received.
-
-## 8. License & Attribution
-Internal project — no public license configured.
+- 📖 [REST API Documentation](docs/API_DOCUMENTATION.md)
+- 🎓 [Final Defense & Technical Interview Guide](docs/FINAL_PROJECT_INTERVIEW_QA.md)
+- 🏗️ [Architectural Blueprint](docs/ARCHITECTURE.md)
+- 📋 [Master Project Plan](docs/MASTER_PROJECT_PLAN.md)
