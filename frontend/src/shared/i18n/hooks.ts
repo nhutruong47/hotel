@@ -41,20 +41,25 @@ export function useCurrency() {
     const num = typeof value === 'string' ? Number(value) : value;
     if (!Number.isFinite(num)) return '—';
 
+    // Prices in the database/catalog are stored in USD (e.g. 450 = $450/night),
+    // while legacy VND amounts are >= 100,000. Normalize automatically:
+    const isUsdBase = Math.abs(num) < 100000;
+
     if (settings.currency === 'USD') {
-      const usdValue = num / 25000;
-      return new Intl.NumberFormat(settings.lang === 'vi' ? 'vi-VN' : 'en-US', {
+      const usdValue = isUsdBase ? num : num / 25000;
+      return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'USD',
-        maximumFractionDigits: 2,
+        maximumFractionDigits: usdValue % 1 === 0 ? 0 : 2,
       }).format(usdValue);
     }
 
-    return new Intl.NumberFormat(settings.lang === 'vi' ? 'vi-VN' : 'en-US', {
+    const vndValue = isUsdBase ? Math.round(num * 25000) : num;
+    return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
       maximumFractionDigits: 0,
-    }).format(num);
+    }).format(vndValue);
   };
 
   return { formatCurrency, currency: settings.currency };

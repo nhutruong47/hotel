@@ -62,10 +62,10 @@ public class ReviewApi {
     }
 
     @GetMapping("/room/{roomId}")
-    public ResponseEntity<ApiResponse<?>> forRoom(@PathVariable Integer roomId) {
-        Room room = roomService.getRoomById(roomId)
+    public ResponseEntity<ApiResponse<?>> forRoom(@PathVariable String roomId) {
+        Room room = roomService.getRoomByIdOrSlug(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
-        List<PublicReviewResponse> reviews = reviewService.getPublicReviewsByRoomId(roomId);
+        List<PublicReviewResponse> reviews = reviewService.getPublicReviewsByRoom(room);
         Map<String, Object> data = new HashMap<>();
         data.put("room", Map.of("id", room.getId(), "roomNumber", room.getRoomNumber()));
         data.put("reviews", reviews);

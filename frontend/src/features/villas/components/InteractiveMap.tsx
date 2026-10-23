@@ -33,9 +33,9 @@ export default function InteractiveMap({ latitude, longitude, name }: Interactiv
     return <div className="h-[400px] w-full bg-slate-100 animate-pulse rounded-2xl flex items-center justify-center text-slate-400">Loading map...</div>;
   }
 
-  // Default to Da Nang, Vietnam if not provided
-  const lat = latitude || 16.0544;
-  const lng = longitude || 108.2022;
+  // Default to Tuyen Lam Lake, Da Lat, Vietnam if not provided
+  const lat = latitude || 11.9038;
+  const lng = longitude || 108.4368;
 
   return (
     <div className="h-[400px] w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200/60 z-0 relative">

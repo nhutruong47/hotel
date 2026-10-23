@@ -20,7 +20,7 @@ const STORAGE_KEY = 'nhu.account.settings';
 
 const defaultSettings: Settings = {
   theme: 'system',
-  currency: 'VND',
+  currency: 'USD',
   lang: 'vi',
   emailBooking: true,
   emailReminders: true,

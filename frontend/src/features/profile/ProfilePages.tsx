@@ -132,6 +132,9 @@ export const ProfilePage = () => {
 function formatCurrency(value: number | string): string {
   const num = typeof value === 'string' ? Number(value) : value;
   if (!Number.isFinite(num)) return '—';
+  if (Math.abs(num) < 100000) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: num % 1 === 0 ? 0 : 2 }).format(num);
+  }
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(num);
 }
 

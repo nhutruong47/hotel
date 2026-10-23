@@ -160,50 +160,52 @@ public class GeminiService {
     }
 
     private String genericFallback(List<Room> rooms, String request) {
-        return "Trợ lý AI hiện không khả dụng. Dưới đây là gợi ý phòng:\n\n"
+        return "Xin chào quý khách! Em là Nhu AI Concierge tại Nhu Villas Đà Lạt.\n\n"
                 + renderFallback(rooms, request);
     }
 
     private String renderFallback(List<Room> rooms, String userRequest) {
         String r = userRequest == null ? "" : userRequest.toLowerCase();
         List<Room> suggestions;
-        if (r.contains("vip") || r.contains("sang trọng") || r.contains("cao cấp")) {
+        if (r.contains("vip") || r.contains("sang trọng") || r.contains("cao cấp") || r.contains("signature") || r.contains("estate")) {
             suggestions = rooms.stream()
-                    .filter(x -> x.getRoomType().getName().contains("VIP")
-                            || x.getRoomType().getName().contains("SUITE"))
+                    .filter(x -> x.getRoomType().getName().toUpperCase().contains("SIGNATURE")
+                            || x.getRoomType().getName().toUpperCase().contains("RESIDENCE"))
                     .limit(2).toList();
-        } else if (r.contains("gia đình") || r.contains("4 người") || r.contains("nhóm")) {
+        } else if (r.contains("gia đình") || r.contains("4 người") || r.contains("6 người") || r.contains("nhóm") || r.contains("family")) {
             suggestions = rooms.stream()
-                    .filter(x -> x.getRoomType().getName().contains("FAMILY")
-                            || x.getRoomType().getName().contains("DELUXE"))
+                    .filter(x -> x.getCapacity() != null && x.getCapacity() >= 4)
                     .limit(2).toList();
-        } else if (r.contains("cặp đôi") || r.contains("lãng mạn") || r.contains("2 người")) {
+        } else if (r.contains("cặp đôi") || r.contains("lãng mạn") || r.contains("2 người") || r.contains("honeymoon") || r.contains("trăng mật")) {
             suggestions = rooms.stream()
-                    .filter(x -> x.getRoomType().getName().contains("DOUBLE")
-                            || x.getRoomType().getName().contains("DELUXE"))
+                    .filter(x -> x.getCapacity() != null && x.getCapacity() == 2)
                     .limit(2).toList();
-        } else if (r.contains("rẻ") || r.contains("tiết kiệm") || r.contains("hợp lý")) {
+        } else if (r.contains("rẻ") || r.contains("tiết kiệm") || r.contains("hợp lý") || r.contains("giá")) {
             suggestions = rooms.stream()
                     .sorted((a, b) -> a.getPricePerNight().compareTo(b.getPricePerNight()))
                     .limit(2).toList();
         } else {
-            suggestions = rooms.stream().limit(2).toList();
+            suggestions = rooms.stream().limit(3).toList();
         }
         if (suggestions.isEmpty()) {
             suggestions = rooms.stream().limit(2).toList();
         }
 
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("Dựa trên nhu cầu của quý khách, Nhu Villas xin gợi ý các biệt thự phù hợp nhất:\n\n");
         for (Room room : suggestions) {
-            sb.append(String.format("Phòng %s (%s)%n",
-                    room.getRoomNumber(), room.getRoomType().getDisplayName()));
-            sb.append(String.format("   Giá: %s VNĐ/đêm%n", room.getPricePerNight()));
+            sb.append(String.format("• %s (%s) — Tối đa %d khách, %d phòng ngủ%n",
+                    room.getRoomTypeDisplayName(), room.getRoomNumber(),
+                    room.getCapacity() != null ? room.getCapacity() : 2,
+                    room.getBedrooms() != null ? room.getBedrooms() : 1));
+            sb.append(String.format("  Giá tham khảo: $%s USD/đêm | Xem chi tiết: /villas/%s%n",
+                    room.getPricePerNight(),
+                    room.getSlug() != null ? room.getSlug() : room.getId()));
             if (room.getDescription() != null && !room.getDescription().isEmpty()) {
-                sb.append(String.format("   %s%n", room.getDescription()));
+                sb.append(String.format("  Điểm nhấn: %s%n", room.getDescription()));
             }
             sb.append("\n");
         }
-        sb.append("Để được tư vấn chi tiết hơn, vui lòng liên hệ lễ tân hoặc thử lại sau!");
+        sb.append("🎁 Ưu đãi hiện hành: Nhập mã WELCOME10 (giảm 10%) hoặc HONEYMOON20 (giảm 20% từ 2 đêm) tại bước đặt phòng!");
         return sb.toString();
     }
 

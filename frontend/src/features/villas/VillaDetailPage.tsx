@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
-import { fetchVillas } from './villasApi';
+import { fetchVillas, fetchVillaById } from './villasApi';
 import { fallbackVillas } from './villaFallbacks';
 import { findVillaById, getSimilarVillas } from './villaSelectors';
 import { api, API_PATHS, ApiError } from '../../shared/api/client';
@@ -212,8 +212,15 @@ export const VillaDetailPage = () => {
   });
 
   const query = useQuery({ queryKey: ['villas'], queryFn: () => fetchVillas(), staleTime: 60_000 });
+  const detailQuery = useQuery({
+    queryKey: ['villa-detail', villaId],
+    queryFn: () => fetchVillaById(villaId),
+    enabled: !!villaId,
+    staleTime: 60_000,
+    retry: false,
+  });
   const villas = (query.data ?? (query.isError ? fallbackVillas : undefined)) as Villa[] | undefined;
-  const villa = findVillaById(villas, villaId);
+  const villa = findVillaById(villas, villaId) ?? detailQuery.data ?? findVillaById(fallbackVillas, villaId);
 
   // Fetch real reviews
   const { data: reviewsData } = useQuery({
@@ -221,11 +228,11 @@ export const VillaDetailPage = () => {
     queryFn: () => api.get<{ reviews: Review[]; avgRating: number; reviewCount: number; categoryAverages?: { cleanliness: number; service: number; location: number; value: number } }>(
       API_PATHS.reviews.room(villaId)
     ),
-    enabled: !!villaId && !isNaN(Number(villaId)),
+    enabled: !!villaId,
     staleTime: 30_000,
   });
 
-  if (query.isLoading && !villa) {
+  if ((query.isLoading || detailQuery.isLoading) && !villa) {
     return <DetailSkeleton />;
   }
 
@@ -246,7 +253,10 @@ export const VillaDetailPage = () => {
     );
   }
 
-  const galleryImages = [villa.imageUrl, ...fallbackImages].slice(0, 5);
+  const galleryImages = (villa.galleryImages && villa.galleryImages.length > 0
+    ? villa.galleryImages
+    : [villa.imageUrl, ...fallbackImages]
+  ).slice(0, 5);
   const similarVillas = getSimilarVillas(villa, villas);
   const reviews = reviewsData?.reviews || [];
   const avgRating = reviewsData?.avgRating ?? villa.rating;

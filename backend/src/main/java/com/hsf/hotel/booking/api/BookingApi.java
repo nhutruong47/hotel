@@ -225,10 +225,11 @@ public class BookingApi {
     public ResponseEntity<ApiResponse<?>> pricingPreview(
             @RequestParam Integer roomId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
+            @RequestParam(required = false) Integer guests) {
         Room room = roomService.getRoomById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
-        var pricing = bookingService.calculatePricing(room, checkIn, checkOut);
+        var pricing = bookingService.calculatePricing(room, checkIn, checkOut, guests);
         Map<String, Object> data = new HashMap<>();
         data.put("subtotal", pricing.subtotal());
         data.put("serviceFee", pricing.serviceFee());

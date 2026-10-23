@@ -17,6 +17,7 @@ type SessionUser = {
 export const AiChatWidget = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [guestMessages, setGuestMessages] = useState<ChatMessage[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { t } = useTranslation();
@@ -39,24 +40,46 @@ export const AiChatWidget = () => {
   const chatMutation = useMutation({
     mutationFn: (message: string) =>
       api.post<{ response: string }>(API_PATHS.ai.recommend, { message }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ai-history'] });
+    onSuccess: (data, variables) => {
+      if (isLoggedIn) {
+        queryClient.invalidateQueries({ queryKey: ['ai-history'] });
+      } else {
+        setGuestMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now(),
+            userMessage: variables,
+            aiResponse: data?.response || '',
+            createdAt: new Date().toISOString(),
+          },
+        ]);
+      }
       setInput('');
     },
   });
 
   const clearHistoryMutation = useMutation({
-    mutationFn: () => api.delete(API_PATHS.ai.clear),
+    mutationFn: async () => {
+      if (isLoggedIn) {
+        await api.delete(API_PATHS.ai.clear);
+      } else {
+        setGuestMessages([]);
+      }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['ai-history'] });
+      if (isLoggedIn) {
+        queryClient.invalidateQueries({ queryKey: ['ai-history'] });
+      }
     },
   });
+
+  const activeMessages = isLoggedIn ? (historyQuery.data ?? []) : guestMessages;
 
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isOpen, historyQuery.data, chatMutation.isPending]);
+  }, [isOpen, activeMessages.length, chatMutation.isPending]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,86 +121,91 @@ export const AiChatWidget = () => {
           </button>
         </div>
 
-        {!isLoggedIn ? (
-          <div className="flex flex-1 items-center justify-center p-6 text-center text-brand-ink/60">
-            <p className="text-sm">{t('common.aiLoginPrompt')}</p>
-          </div>
-        ) : (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm bg-brand-white/40">
-              {historyQuery.isLoading ? (
-                <div className="flex items-center justify-center h-full text-brand-ink/40">{t('common.loadingHistory')}</div>
-              ) : historyQuery.data?.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-brand-ink/60 text-center">
-                  <p>
-                    {t('common.aiGreeting').split('<br/>').map((line, index) => (
-                      <span key={`${index}-${line}`}>
-                        {index > 0 ? <br /> : null}
-                        {line}
-                      </span>
-                    ))}
-                  </p>
-                </div>
-              ) : (
-                historyQuery.data?.map((msg, index) => (
-                  <div key={msg.id ?? index} className="space-y-4">
-                    <div className="flex justify-end">
-                      <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-brand-forest-deep px-4 py-2 text-brand-white shadow-sm">
-                        {msg.userMessage}
-                      </div>
-                    </div>
-                    <div className="flex justify-start">
-                      <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-brand-paper border border-brand-ink/10 px-4 py-2 text-brand-ink shadow-sm whitespace-pre-wrap">
-                        {msg.aiResponse}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              {chatMutation.isPending && (
-                <div className="flex justify-start">
-                  <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-brand-paper border border-brand-ink/10 px-4 py-2 text-brand-ink/60 shadow-sm flex items-center gap-2">
-                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce"></span>
-                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce [animation-delay:200ms]"></span>
-                    <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce [animation-delay:400ms]"></span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            <form onSubmit={handleSubmit} className="border-t border-brand-ink/10 bg-brand-paper p-3">
-              {historyQuery.data && historyQuery.data.length > 0 && (
-                <div className="flex justify-center mb-2">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 text-sm bg-brand-white/40">
+          {isLoggedIn && historyQuery.isLoading ? (
+            <div className="flex items-center justify-center h-full text-brand-ink/40">{t('common.loadingHistory')}</div>
+          ) : activeMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-brand-ink/60 text-center gap-4">
+              <p>
+                {t('common.aiGreeting').split('<br/>').map((line, index) => (
+                  <span key={`${index}-${line}`}>
+                    {index > 0 ? <br /> : null}
+                    {line}
+                  </span>
+                ))}
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {['Gợi ý biệt thự cho cặp đôi', 'Biệt thự gia đình 4-6 người', 'Mã ưu đãi hiện có'].map((prompt) => (
                   <button
+                    key={prompt}
                     type="button"
-                    onClick={() => clearHistoryMutation.mutate()}
-                    className="text-[0.65rem] uppercase tracking-wider text-brand-ink/40 hover:text-brand-ink/80 transition-colors"
+                    onClick={() => chatMutation.mutate(prompt)}
+                    disabled={chatMutation.isPending}
+                    className="rounded-full border border-brand-forest/30 bg-brand-white px-3 py-1.5 text-xs text-brand-forest hover:bg-brand-forest hover:text-brand-white transition-colors"
                   >
-                    {t('common.clearHistory')}
+                    {prompt}
                   </button>
-                </div>
-              )}
-              <div className="relative">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={t('common.aiPlaceholder')}
-                  className="w-full rounded-full border border-brand-ink/20 bg-brand-white px-4 py-2.5 pr-12 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-forest-deep focus:outline-none focus:ring-1 focus:ring-brand-forest-deep transition-all"
-                  disabled={chatMutation.isPending}
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || chatMutation.isPending}
-                  className="absolute right-1 top-1 bottom-1 flex aspect-square items-center justify-center rounded-full bg-brand-forest-deep text-brand-white transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-                </button>
+                ))}
               </div>
-            </form>
-          </>
-        )}
+            </div>
+          ) : (
+            activeMessages.map((msg, index) => (
+              <div key={msg.id ?? index} className="space-y-4">
+                <div className="flex justify-end">
+                  <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-brand-forest-deep px-4 py-2 text-brand-white shadow-sm">
+                    {msg.userMessage}
+                  </div>
+                </div>
+                <div className="flex justify-start">
+                  <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-brand-paper border border-brand-ink/10 px-4 py-2 text-brand-ink shadow-sm whitespace-pre-wrap">
+                    {msg.aiResponse}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+          {chatMutation.isPending && (
+            <div className="flex justify-start">
+              <div className="max-w-[90%] rounded-2xl rounded-tl-sm bg-brand-paper border border-brand-ink/10 px-4 py-2 text-brand-ink/60 shadow-sm flex items-center gap-2">
+                <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce"></span>
+                <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce [animation-delay:200ms]"></span>
+                <span className="w-2 h-2 bg-brand-ink/40 rounded-full animate-bounce [animation-delay:400ms]"></span>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <form onSubmit={handleSubmit} className="border-t border-brand-ink/10 bg-brand-paper p-3">
+          {activeMessages.length > 0 && (
+            <div className="flex justify-center mb-2">
+              <button
+                type="button"
+                onClick={() => clearHistoryMutation.mutate()}
+                className="text-[0.65rem] uppercase tracking-wider text-brand-ink/40 hover:text-brand-ink/80 transition-colors"
+              >
+                {t('common.clearHistory')}
+              </button>
+            </div>
+          )}
+          <div className="relative">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t('common.aiPlaceholder')}
+              className="w-full rounded-full border border-brand-ink/20 bg-brand-white px-4 py-2.5 pr-12 text-sm text-brand-ink placeholder:text-brand-ink/40 focus:border-brand-forest-deep focus:outline-none focus:ring-1 focus:ring-brand-forest-deep transition-all"
+              disabled={chatMutation.isPending}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || chatMutation.isPending}
+              className="absolute right-1 top-1 bottom-1 flex aspect-square items-center justify-center rounded-full bg-brand-forest-deep text-brand-white transition-transform hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+          </div>
+        </form>
       </div>
     </>
   );

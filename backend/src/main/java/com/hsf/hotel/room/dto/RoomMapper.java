@@ -3,6 +3,7 @@ import com.hsf.hotel.room.dto.RoomTypeDTO;
 import com.hsf.hotel.room.dto.RoomDTO;
 import com.hsf.hotel.room.dto.AmenityDTO;
 
+import com.hsf.hotel.promotion.model.Promotion;
 import com.hsf.hotel.room.model.Amenity;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.room.model.RoomTypeEntity;
@@ -26,4 +27,6 @@ public interface RoomMapper {
     List<RoomTypeDTO> roomTypesToRoomTypeDTOs(List<RoomTypeEntity> roomTypes);
 
     AmenityDTO amenityToAmenityDTO(Amenity amenity);
+
+    PromotionSummaryDTO promotionToPromotionSummaryDTO(Promotion promotion);
 }

@@ -70,4 +70,11 @@ public class RoomQueryService {
         return roomMapper.roomToRoomDTO(roomService.getRoomById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", id)));
     }
+
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "roomViews", key = "'detail_slug_' + #idOrSlug")
+    public RoomDTO byIdOrSlug(String idOrSlug) {
+        return roomMapper.roomToRoomDTO(roomService.getRoomByIdOrSlug(idOrSlug)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", idOrSlug)));
+    }
 }

@@ -10,6 +10,7 @@ import { ParallaxImage } from '../../../shared/components/ParallaxImage';
 const residences = [
   {
     id: 'residence-1',
+    slug: 'hillside-residence-private-pool',
     eyebrow: 'RESIDENCE',
     title: 'Hillside Residence',
     desc: 'A larger private residence designed for hosted dinners, longer retreats, and unforgettable sunset pool rituals on the ridge.',
@@ -17,25 +18,27 @@ const residences = [
     price: 1150,
     reviews: 19,
     rating: 5,
-    image: '/images/nhu-infinity-pool.jpg', // Re-using existing image
+    image: '/images/nhu-infinity-pool.jpg',
   },
   {
     id: 'residence-2',
+    slug: 'water-courtyard-villa',
     eyebrow: 'POOL VILLA',
     title: 'Water Courtyard Villa',
     desc: 'A tranquil courtyard villa arranged around reflective water features, featuring fine linens, warm stone elements, and spaces for late breakfast rituals.',
-    reviews: 61,
+    reviews: 31,
     rating: 5,
-    image: '/images/nhu-garden-pool-villa.jpg', // Re-using existing image
+    image: '/images/nhu-garden-pool-villa.jpg',
   },
   {
     id: 'residence-3',
+    slug: 'forest-pavilion',
     eyebrow: 'PAVILION',
     title: 'Forest Pavilion',
     desc: 'A quiet pavilion designed for couples seeking deep shade, the natural sounds of the forest, and an intimate, smaller footprint.',
-    reviews: 32,
+    reviews: 24,
     rating: 5,
-    image: '/images/nhu-villa-interior.jpg', // Re-using existing image
+    image: '/images/nhu-villa-interior.jpg',
   }
 ];
 
@@ -157,6 +160,12 @@ export function FeaturedResidences() {
                 <StarRating rating={residences[0].rating} size="sm" />
                 <span className="text-xs text-brand-ink/50">({residences[0].reviews})</span>
               </div>
+              <Link
+                href={`/villas/${residences[0].slug}`}
+                className="mt-8 inline-flex w-fit items-center gap-2 rounded-full bg-brand-forest px-6 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep"
+              >
+                Explore Residence &rarr;
+              </Link>
             </Reveal>
           </div>
         </div>
@@ -181,7 +190,9 @@ export function FeaturedResidences() {
                 {residences[1].eyebrow}
               </p>
               <h3 className="mt-3 font-serif text-2xl text-brand-charcoal">
-                {residences[1].title}
+                <Link href={`/villas/${residences[1].slug}`} className="hover:text-brand-forest transition-colors">
+                  {residences[1].title}
+                </Link>
               </h3>
               <p className="mt-4 text-sm leading-relaxed text-brand-ink/70">
                 {residences[1].desc}
@@ -209,7 +220,9 @@ export function FeaturedResidences() {
                 {residences[2].eyebrow}
               </p>
               <h3 className="mt-3 font-serif text-2xl text-brand-charcoal">
-                {residences[2].title}
+                <Link href={`/villas/${residences[2].slug}`} className="hover:text-brand-forest transition-colors">
+                  {residences[2].title}
+                </Link>
               </h3>
               <p className="mt-4 text-sm leading-relaxed text-brand-ink/70">
                 {residences[2].desc}

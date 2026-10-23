@@ -172,11 +172,18 @@ public class ReviewService {
 
     public Double getAverageRating(Room room) {
         Double avg = reviewRepository.getAverageRatingByRoom(room);
-        return avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0;
+        if (avg != null) {
+            return Math.round(avg * 10.0) / 10.0;
+        }
+        return room.getAvgRating() != null ? room.getAvgRating().doubleValue() : 0.0;
     }
 
     public long getReviewCount(Room room) {
-        return reviewRepository.countByRoom(room);
+        long count = reviewRepository.countByRoom(room);
+        if (count > 0) {
+            return count;
+        }
+        return room.getReviewCount() != null ? room.getReviewCount() : 0L;
     }
 
     public List<Review> getAllReviews() {

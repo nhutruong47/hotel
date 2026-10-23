@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/admin/', '/api/', '/account/', '/checkout/'],
       },
     ],
-    sitemap: 'https://nhuvillas.com/sitemap.xml',
+    sitemap: 'https://nhu-villas.vercel.app/sitemap.xml',
   };
 }

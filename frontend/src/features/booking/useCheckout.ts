@@ -161,7 +161,15 @@ export function useCheckout(): UseCheckoutReturn {
       );
 
       if (response.mode === 'mock') {
-        // Mock mode - simulate payment
+        // Mock mode when Stripe live keys are not configured — register payment and proceed
+        await submitPaymentMutation.mutateAsync({
+          bookingId,
+          transactionRef: response.sessionId || `STRIPE_MOCK_${bookingId}`,
+          amount: response.amount || 0,
+        });
+        if (successUrl) {
+          window.location.href = successUrl;
+        }
         return;
       }
 
@@ -177,7 +185,7 @@ export function useCheckout(): UseCheckoutReturn {
       }
       throw err;
     }
-  }, [redirectToCheckout]);
+  }, [redirectToCheckout, submitPaymentMutation]);
 
   // Simulate mock payment
   const simulateMockPayment = useCallback(async (

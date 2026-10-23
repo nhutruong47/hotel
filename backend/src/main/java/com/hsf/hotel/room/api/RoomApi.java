@@ -82,11 +82,11 @@ public class RoomApi {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<?>> getRoomDetail(@PathVariable Integer id) {
-        Room room = roomService.getRoomById(id)
+    public ResponseEntity<ApiResponse<?>> getRoomDetail(@PathVariable String id) {
+        Room room = roomService.getRoomByIdOrSlug(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", id));
         
-        RoomDTO roomDTO = roomQueryService.byId(id);
+        RoomDTO roomDTO = roomQueryService.byId(room.getId());
         List<RoomTypeDTO> roomTypeDTOs = roomMapper.roomTypesToRoomTypeDTOs(roomTypeService.getAllRoomTypes());
 
         Map<String, Object> detail = new HashMap<>();
@@ -99,8 +99,10 @@ public class RoomApi {
     }
 
     @GetMapping("/{roomId}/booked-dates")
-    public ResponseEntity<ApiResponse<?>> getBookedDates(@PathVariable Integer roomId) {
-        List<Booking> active = bookingRepository.findActiveBookingsByRoomId(roomId);
+    public ResponseEntity<ApiResponse<?>> getBookedDates(@PathVariable String roomId) {
+        Room room = roomService.getRoomByIdOrSlug(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
+        List<Booking> active = bookingRepository.findActiveBookingsByRoomId(room.getId());
         List<Map<String, String>> ranges = active.stream().map(b -> {
             Map<String, String> r = new HashMap<>();
             r.put("checkIn", b.getCheckInDate().toString());

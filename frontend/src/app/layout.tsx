@@ -22,7 +22,7 @@ const sansFont = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://nhuvillas.com'),
+  metadataBase: new URL('https://nhu-villas.vercel.app'),
   title: {
     default: 'Nhu Villas | Private Luxury Villa Retreats',
     template: '%s | Nhu Villas',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     title: 'Nhu Villas | Private Luxury Villa Retreats',
     description:
       'Private pool villas, calm architecture, and refined hospitality for direct luxury stays.',
-    url: 'https://nhuvillas.com',
+    url: 'https://nhu-villas.vercel.app',
     siteName: 'Nhu Villas',
     images: [
       {

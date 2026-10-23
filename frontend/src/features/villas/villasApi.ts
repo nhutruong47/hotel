@@ -11,6 +11,7 @@ type RawRoomType = {
 type RawRoom = {
   id?: number;
   roomNumber?: string;
+  slug?: string;
   roomType?: RawRoomType | string;
   roomTypeDisplayName?: string;
   amenities?: unknown;
@@ -22,6 +23,20 @@ type RawRoom = {
   bedrooms?: number;
   avgRating?: number;
   reviewCount?: number;
+  galleryImages?: string[];
+  houseRules?: string;
+  policies?: string;
+  nearbyAttractions?: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  latitude?: number;
+  longitude?: number;
+  nearbyRestaurants?: string;
+  nearbyCafes?: string;
+  nearbyAirport?: string;
+  directions?: string;
+  minimumStay?: number;
+  maximumStay?: number;
   promotions?: unknown[];
 };
 
@@ -81,6 +96,19 @@ function getImageUrl(value: unknown, fallback: string): string {
   return value;
 }
 
+function getVillaTitle(roomNumber: string, slug: string | undefined, roomType: string): string {
+  const code = roomNumber.toUpperCase();
+  if (code === 'GV-01') return 'Garden Pool Villa';
+  if (code === 'TF-02') return 'Terrace Family Villa';
+  if (code === 'HR-03') return 'Hillside Residence';
+  if (code === 'SE-04') return 'Signature Four Bedroom Estate';
+  if (code === 'WC-05' || code === 'WC-04' || slug === 'water-courtyard-villa') return 'Water Courtyard Villa';
+  if (code === 'FP-06' || code === 'FP-05' || slug === 'forest-pavilion') return 'Forest Pavilion';
+  return roomType.includes('Villa') || roomType.includes('Residence') || roomType.includes('Pavilion')
+    ? roomType
+    : `${roomType} Villa`;
+}
+
 function normalizeRoom(value: unknown, index: number): Villa | null {
   if (!isRecord(value)) return null;
   const room = value as RawRoom;
@@ -89,13 +117,18 @@ function normalizeRoom(value: unknown, index: number): Villa | null {
   const amenities = normalizeAmenities(room.amenities);
   const pricePerNight = toNumber(room.pricePerNight, fallback.pricePerNight);
   const roomNumber = typeof room.roomNumber === 'string' ? room.roomNumber : fallback.roomNumber;
+  const slug = typeof room.slug === 'string' && room.slug.length > 0 ? room.slug : fallback.slug;
   const id = typeof room.id === 'number' ? room.id : fallback.id + index;
+  const galleryImages = Array.isArray(room.galleryImages)
+    ? room.galleryImages.filter((img): img is string => typeof img === 'string' && img.length > 0)
+    : undefined;
 
   return {
     id,
+    slug,
     roomNumber,
     roomType,
-    name: roomType.includes('Villa') ? roomType : `${roomType} Villa`,
+    name: getVillaTitle(roomNumber, slug, roomType),
     description:
       typeof room.description === 'string' && room.description.length > 0
         ? room.description
@@ -108,6 +141,20 @@ function normalizeRoom(value: unknown, index: number): Villa | null {
     amenities: amenities.length > 0 ? amenities : fallback.amenities,
     rating: toNumber(room.avgRating, fallback.rating),
     reviewCount: toNumber(room.reviewCount, fallback.reviewCount),
+    galleryImages,
+    houseRules: typeof room.houseRules === 'string' ? room.houseRules : undefined,
+    policies: typeof room.policies === 'string' ? room.policies : undefined,
+    nearbyAttractions: typeof room.nearbyAttractions === 'string' ? room.nearbyAttractions : undefined,
+    checkInTime: typeof room.checkInTime === 'string' ? room.checkInTime : undefined,
+    checkOutTime: typeof room.checkOutTime === 'string' ? room.checkOutTime : undefined,
+    latitude: typeof room.latitude === 'number' ? room.latitude : undefined,
+    longitude: typeof room.longitude === 'number' ? room.longitude : undefined,
+    nearbyRestaurants: typeof room.nearbyRestaurants === 'string' ? room.nearbyRestaurants : undefined,
+    nearbyCafes: typeof room.nearbyCafes === 'string' ? room.nearbyCafes : undefined,
+    nearbyAirport: typeof room.nearbyAirport === 'string' ? room.nearbyAirport : undefined,
+    directions: typeof room.directions === 'string' ? room.directions : undefined,
+    minimumStay: typeof room.minimumStay === 'number' ? room.minimumStay : undefined,
+    maximumStay: typeof room.maximumStay === 'number' ? room.maximumStay : undefined,
     promotions: (Array.isArray(room.promotions) ? room.promotions : []) as VillaPromotion[],
   };
 }

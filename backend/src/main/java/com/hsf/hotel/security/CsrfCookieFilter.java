@@ -43,6 +43,11 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
             "/api/v1/auth/reset-password",
             "/api/v1/auth/verify",
             "/api/v1/auth/resend-verification",
+            "/api/v1/contact",
+            "/api/v1/ai/recommend",
+            "/api/v1/vouchers/validate",
+            "/api/v1/vouchers/preview",
+            "/api/v1/bookings/vouchers/validate",
             "/api/v1/payments/webhook/stripe",
             "/api/v1/payments/webhook/sepay" // provider signatures/API keys are the real auth
     );

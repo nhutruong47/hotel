@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next';
 import { fallbackVillas } from '../features/villas/villaFallbacks';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://nhuvillas.com';
+  const baseUrl = 'https://nhu-villas.vercel.app';
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

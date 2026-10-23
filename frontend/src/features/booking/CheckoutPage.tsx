@@ -110,6 +110,20 @@ export const CheckoutPage = () => {
 
       // Step 2: Process payment based on method
       if (paymentMethod === 'stripe') {
+        window.sessionStorage.setItem(
+          'nhu.bookingSuccess',
+          JSON.stringify({
+            ...draft,
+            reference,
+            guestName,
+            email,
+            phone,
+            notes,
+            paymentMethod: 'Stripe Card',
+            bookingId,
+            status: 'Confirmed',
+          })
+        );
         // Initiate Stripe Checkout
         await initiateStripeCheckout(
           bookingId,

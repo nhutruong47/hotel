@@ -108,8 +108,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/forgot-password", "/api/v1/auth/reset-password", "/api/v1/auth/verify", "/api/v1/auth/resend-verification", "/api/v1/auth/session", "/api/v1/auth/logout").permitAll()
                         // Public voucher preview/validate as POST too (used by booking page)
                         .requestMatchers(HttpMethod.POST, "/api/v1/vouchers/validate", "/api/v1/vouchers/preview", "/api/v1/bookings/vouchers/validate").permitAll()
-                        // Public contact form
-                        .requestMatchers(HttpMethod.POST, "/api/v1/contact").permitAll()
+                        // Public contact form and AI concierge recommendation
+                        .requestMatchers(HttpMethod.POST, "/api/v1/contact", "/api/v1/ai/recommend").permitAll()
                         // Only provider-specific, internally authenticated webhook routes are public.
                         .requestMatchers(HttpMethod.POST,
                                 "/api/v1/payments/webhook/stripe",

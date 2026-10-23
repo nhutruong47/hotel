@@ -44,7 +44,7 @@ public class AiApi {
 
     @PostMapping("/recommend")
     public ResponseEntity<ApiResponse<?>> recommend(@RequestBody Map<String, String> request, HttpSession session) {
-        User user = requireUser(session);
+        User user = (User) session.getAttribute("user");
         String message = request.get("message");
         if (message == null || message.trim().isEmpty()) {
             return ResponseEntity.badRequest()
@@ -56,10 +56,12 @@ public class AiApi {
                     .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Message is too long"));
         }
         String ai = geminiService.getAiRecommendation(message);
-        try {
-            chatMessageRepository.save(new ChatMessage(user, message, ai));
-        } catch (Exception e) {
-            log.warn("Failed to persist chat message for user {}: {}", user.getUsername(), e.getMessage());
+        if (user != null) {
+            try {
+                chatMessageRepository.save(new ChatMessage(user, message, ai));
+            } catch (Exception e) {
+                log.warn("Failed to persist chat message for user {}: {}", user.getUsername(), e.getMessage());
+            }
         }
         Map<String, Object> data = new HashMap<>();
         data.put("response", ai);

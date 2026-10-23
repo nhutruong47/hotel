@@ -62,7 +62,7 @@ export const BookingPage = () => {
   const nights = calculateNights(checkIn, checkOut);
 
   const pricingQuery = useQuery({
-    queryKey: ['pricing', villa?.id, checkIn, checkOut],
+    queryKey: ['pricing', villa?.id, checkIn, checkOut, guests],
     queryFn: async () => {
       if (!villa || nights <= 0) return null;
       try {
@@ -71,7 +71,7 @@ export const BookingPage = () => {
           serviceFee: number;
           taxAmount: number;
           total: number;
-        }>(`${API_PATHS.bookings.list}/pricing-preview?roomId=${villa.id}&checkIn=${checkIn}&checkOut=${checkOut}`);
+        }>(`${API_PATHS.bookings.list}/pricing-preview?roomId=${villa.id}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`);
       } catch (err) {
         // Fallback to local calculation if backend fails
         const subtotal = nights * villa.pricePerNight;

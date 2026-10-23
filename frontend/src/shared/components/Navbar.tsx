@@ -7,6 +7,7 @@ import { api, API_PATHS } from '../api/client';
 import { useSession, type SessionUser } from '../auth/SessionProvider';
 import { BookingSearchModal } from '../../features/booking/components/BookingSearchModal';
 import { useTranslation } from '../i18n/hooks';
+import { useSettings } from '../settings/SettingsContext';
 
 const navItems = [
     { key: 'villas', href: '/villas' },
@@ -33,6 +34,7 @@ export const Navbar = () => {
     const searchParams = useSearchParams();
     const { user, signOut } = useSession();
     const { t } = useTranslation();
+    const { settings, updateSetting } = useSettings();
 
     const currentSearch = searchParams.toString();
     const currentUrl = pathname + (currentSearch ? `?${currentSearch}` : '');
@@ -162,6 +164,29 @@ export const Navbar = () => {
                 </nav>
 
                 <div className="flex items-center gap-2">
+                    <div className={`hidden xl:flex items-center gap-1 rounded-full border px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wider ${
+                        pathname === '/'
+                            ? 'border-brand-white/24 text-brand-paper'
+                            : 'border-brand-stone text-brand-charcoal'
+                    }`}>
+                        <button
+                            type="button"
+                            onClick={() => updateSetting('lang', settings.lang === 'vi' ? 'en' : 'vi')}
+                            className="px-2 py-0.5 rounded-full hover:bg-brand-forest/15 transition-colors"
+                            title="Switch Language (VI / EN)"
+                        >
+                            {settings.lang.toUpperCase()}
+                        </button>
+                        <span className="opacity-30">|</span>
+                        <button
+                            type="button"
+                            onClick={() => updateSetting('currency', settings.currency === 'USD' ? 'VND' : 'USD')}
+                            className="px-2 py-0.5 rounded-full hover:bg-brand-forest/15 transition-colors"
+                            title="Switch Currency (USD / VND)"
+                        >
+                            {settings.currency}
+                        </button>
+                    </div>
                     <button
                         type="button"
                         onClick={() => setIsSearchModalOpen(true)}

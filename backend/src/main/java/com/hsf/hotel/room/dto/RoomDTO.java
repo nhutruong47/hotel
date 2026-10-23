@@ -27,7 +27,12 @@ public class RoomDTO implements java.io.Serializable {
     private String checkOutTime;
     private Double latitude;
     private Double longitude;
+    private String nearbyRestaurants;
+    private String nearbyCafes;
+    private String nearbyAirport;
+    private String directions;
     private Integer minimumStay;
     private Integer maximumStay;
     private String roomTypeDisplayName;
+    private List<PromotionSummaryDTO> promotions;
 }
