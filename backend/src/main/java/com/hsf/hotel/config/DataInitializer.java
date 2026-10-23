@@ -8,6 +8,7 @@ import com.hsf.hotel.faq.repository.FaqItemRepository;
 import com.hsf.hotel.promotion.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
  */
 @Component
 @Profile({"default", "dev", "postgres", "seed"})
+@Lazy(false)
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
