@@ -86,6 +86,10 @@ public class GeminiService {
                 4. Tuyệt đối không bịa đặt biệt thự hoặc giá cả không có trong danh sách trên.
                 """, roomsContext, userRequest);
 
+        if (apiKey == null || apiKey.isBlank() || apiKey.startsWith("your-")) {
+            return genericFallback(availableRooms, userRequest);
+        }
+
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
                 String response = callGeminiApi(prompt);
@@ -93,7 +97,7 @@ public class GeminiService {
                     return response;
                 }
                 log.warn("No response from Gemini on attempt {}", attempt);
-                return "Không nhận được phản hồi từ AI. Vui lòng thử lại.";
+                return genericFallback(availableRooms, userRequest);
             } catch (WebClientResponseException e) {
                 String body = e.getResponseBodyAsString();
                 log.warn("Gemini API error attempt {}: {} - {}", attempt, e.getStatusCode(), body);
@@ -104,8 +108,7 @@ public class GeminiService {
                     }
                     return rateLimitFallback(availableRooms, userRequest);
                 }
-                return "Khong thể kết nối đến AI. Vui lòng thử lại sau hoặc liên hệ lễ tân để được hỗ trợ."
-                        .replace("Khong", "Không");
+                return genericFallback(availableRooms, userRequest);
             } catch (Exception e) {
                 log.warn("Error on attempt {}: {} - {}", attempt, e.getClass().getSimpleName(), e.getMessage());
                 if (attempt >= MAX_RETRIES) {
