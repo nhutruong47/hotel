@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
  * migrations and / or admin tools.
  */
 @Component
-@Profile({"default", "dev", "postgres"})
+@Profile({"default", "dev", "postgres", "seed"})
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
