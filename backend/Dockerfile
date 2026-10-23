@@ -44,7 +44,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 # JVM optimization for 512MB container (Render free tier)
-ENV JAVA_OPTS="-XX:+UseContainerSupport -Xmx280m -Xms128m -XX:MaxMetaspaceSize=110m -Xss256k -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
+ENV JAVA_OPTS="-XX:+UseContainerSupport -Xmx220m -Xms96m -XX:MaxMetaspaceSize=170m -XX:CompressedClassSpaceSize=32m -XX:ReservedCodeCacheSize=48m -Xss256k -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
 
 # Run application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
