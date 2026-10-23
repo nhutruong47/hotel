@@ -154,7 +154,7 @@ public class RoomApi {
             case "price-desc" -> Sort.by(Sort.Order.desc("pricePerNight"), Sort.Order.asc("id"));
             case "capacity-desc" -> Sort.by(Sort.Order.desc("capacity"), Sort.Order.asc("id"));
             case "rating-desc", "recommended" -> Sort.by(
-                    Sort.Order.desc("avgRating").nullsLast(),
+                    Sort.Order.desc("avgRating"),
                     Sort.Order.desc("reviewCount"),
                     Sort.Order.asc("id"));
             default -> throw new IllegalArgumentException("Unsupported room sort");
