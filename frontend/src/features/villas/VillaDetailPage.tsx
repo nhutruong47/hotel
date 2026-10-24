@@ -9,6 +9,8 @@ import dynamic from 'next/dynamic';
 import { fetchVillas, fetchVillaById } from './villasApi';
 import { fallbackVillas } from './villaFallbacks';
 import { findVillaById, getSimilarVillas } from './villaSelectors';
+import { getArchitecturalSpecs } from './components/SanctuaryVisualizer';
+import { calculateNights, getTodayDate, getTomorrowDate, type BookingDraft } from '../booking/bookingUtils';
 import { api, API_PATHS, ApiError } from '../../shared/api/client';
 import type { Villa } from './types';
 import { useCurrency, useTranslation } from '../../shared/i18n/hooks';
@@ -115,32 +117,117 @@ function StarRating({ rating, size = 'md' }: { rating: number; size?: 'sm' | 'md
 }
 
 function BookingCard({ villa }: { villa: Villa }) {
+  const router = useRouter();
   const { formatCurrency } = useCurrency();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isVi = lang === 'vi';
+  const spec = getArchitecturalSpecs(villa);
+
+  const [checkIn, setCheckIn] = useState(getTodayDate());
+  const [checkOut, setCheckOut] = useState(getTomorrowDate());
+  const [guests, setGuests] = useState(Math.min(2, villa.capacity));
+
+  const nights = Math.max(1, calculateNights(checkIn, checkOut));
+  const subtotal = nights * villa.pricePerNight;
+  const serviceFee = Math.round(subtotal * 0.08);
+  const taxAmount = Math.round(subtotal * 0.1);
+  const total = subtotal + serviceFee + taxAmount;
+
+  const handleInstantReserve = () => {
+    const draft: BookingDraft = {
+      villaId: villa.id,
+      villaName: villa.name,
+      checkIn,
+      checkOut,
+      guests,
+      nights,
+      nightlyRate: villa.pricePerNight,
+      subtotal,
+      discount: 0,
+      serviceFee,
+      taxAmount,
+      total,
+    };
+    window.sessionStorage.setItem('nhu.bookingDraft', JSON.stringify(draft));
+    router.push('/checkout');
+  };
 
   return (
     <aside className="rounded-[2rem] bg-brand-paper p-2 shadow-[0_24px_90px_rgba(32,52,43,0.12)] lg:sticky lg:top-28">
       <div className="rounded-[1.55rem] bg-brand-white p-6 sm:p-7">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sage">{t('villas.from')}</p>
-        <p className="mt-2 font-serif text-4xl text-brand-charcoal">{formatCurrency(villa.pricePerNight)}</p>
-        <p className="mt-2 text-sm text-brand-ink/58">{t('villas.perNightDesc')}</p>
-        <div className="mt-7 grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-[1rem] bg-brand-sand p-4">
-            <p className="font-semibold text-brand-charcoal">{villa.capacity} {t('villas.guests')}</p>
-            <p className="mt-1 text-brand-ink/54">{t('villas.capacity')}</p>
+        <div className="flex items-baseline justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-sage">{t('villas.from')}</p>
+            <p className="mt-1 font-serif text-4xl text-brand-charcoal">{formatCurrency(villa.pricePerNight)}</p>
           </div>
-          <div className="rounded-[1rem] bg-brand-sand p-4">
-            <p className="font-semibold text-brand-charcoal">{villa.bedrooms} {t('villas.bedrooms')}</p>
-            <p className="mt-1 text-brand-ink/54">{t('villas.privateLayout')}</p>
-          </div>
+          <span className="rounded-full bg-brand-sand px-3 py-1 text-xs font-semibold text-brand-forest">
+            📐 {spec.areaSqm}
+          </span>
         </div>
-        <Link
-          href={`/booking/${villa.id}`}
-          className="mt-7 inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest-deep active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
-        >
-          {t('villas.checkAvailability')}
-        </Link>
-        <p className="mt-5 text-center text-xs leading-6 text-brand-ink/50">
+        <p className="mt-1 text-xs text-brand-ink/58">{t('villas.perNightDesc')}</p>
+
+        {/* Interactive Mini Date & Guest Picker */}
+        <div className="mt-5 grid grid-cols-2 gap-2.5 rounded-2xl bg-brand-sand/70 p-3 text-xs">
+          <label className="block">
+            <span className="font-semibold text-brand-charcoal">{isVi ? 'Nhận phòng' : 'Check-in'}</span>
+            <input
+              type="date"
+              value={checkIn}
+              min={getTodayDate()}
+              onChange={(e) => setCheckIn(e.target.value)}
+              className="mt-1 h-9 w-full rounded-xl border border-brand-stone bg-brand-white px-2.5 text-xs outline-none focus:border-brand-forest"
+            />
+          </label>
+          <label className="block">
+            <span className="font-semibold text-brand-charcoal">{isVi ? 'Trả phòng' : 'Check-out'}</span>
+            <input
+              type="date"
+              value={checkOut}
+              min={checkIn || getTomorrowDate()}
+              onChange={(e) => setCheckOut(e.target.value)}
+              className="mt-1 h-9 w-full rounded-xl border border-brand-stone bg-brand-white px-2.5 text-xs outline-none focus:border-brand-forest"
+            />
+          </label>
+          <label className="col-span-2 block">
+            <span className="font-semibold text-brand-charcoal">{isVi ? 'Số lượng khách' : 'Guests'}</span>
+            <select
+              value={guests}
+              onChange={(e) => setGuests(Number(e.target.value))}
+              className="mt-1 h-9 w-full rounded-xl border border-brand-stone bg-brand-white px-2.5 text-xs outline-none focus:border-brand-forest"
+            >
+              {Array.from({ length: villa.capacity }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n} {t('villas.guests')} ({isVi ? `Tối đa ${villa.capacity}` : `Max ${villa.capacity}`})
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* Live Price Preview */}
+        <div className="mt-4 flex items-center justify-between border-t border-brand-stone/60 pt-3 text-xs">
+          <span className="text-brand-ink/65">
+            {nights} {isVi ? 'đêm (gồm phí Quản gia & thuế)' : 'nights (incl. butler & tax)'}
+          </span>
+          <span className="font-serif text-lg font-bold text-brand-forest">{formatCurrency(total)}</span>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2.5">
+          <button
+            type="button"
+            onClick={handleInstantReserve}
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition duration-500 hover:bg-brand-forest-deep"
+          >
+            ⚡ {isVi ? 'Đặt Nhanh & Thanh Toán' : 'Instant Reserve'}
+          </button>
+          <Link
+            href={`/booking/${villa.id}`}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-brand-forest/40 px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition hover:bg-brand-forest/10"
+          >
+            {isVi ? 'Tùy chỉnh Kỳ nghỉ & Áp Voucher' : t('villas.checkAvailability')}
+          </Link>
+        </div>
+        <p className="mt-4 text-center text-xs leading-5 text-brand-ink/50">
           {t('villas.noPaymentNeeded')}
         </p>
       </div>
@@ -171,6 +258,143 @@ function AmenityBadge({ name }: { name: string }) {
       <span className="text-2xl">{icons[name] || '✨'}</span>
       <span className="text-sm font-medium text-brand-charcoal">{name}</span>
     </div>
+  );
+}
+
+function SanctuaryRhythmSection({ villa, galleryImages }: { villa: Villa; galleryImages: string[] }) {
+  const { lang } = useTranslation();
+  const isVi = lang === 'vi';
+  const spec = getArchitecturalSpecs(villa);
+  const [activeHour, setActiveHour] = useState(0);
+
+  const moments = [
+    {
+      time: '06:30',
+      icon: '🌅',
+      titleVi: 'Bình Minh Sương Mù & Trà Nóng',
+      titleEn: 'Misty Pine Dawn & Artisanal Tea',
+      descVi:
+        'Đón những tia nắng đầu tiên xuyên qua tán thông cổ thụ ở độ cao ' +
+        spec.elevation +
+        '. Quản gia chuẩn bị sẵn trà Ô Long Cầu Đất nóng và khay bữa sáng nổi ngay tại hiên biệt thự.',
+      descEn:
+        'Wake to golden mist drifting across the pine valley at ' +
+        spec.elevation +
+        '. Your butler prepares warm Cau Dat Oolong tea and a floating terrace breakfast.',
+      image: galleryImages[0] || villa.imageUrl,
+    },
+    {
+      time: '11:30',
+      icon: '🌊',
+      titleVi: 'Thủy Trị Liệu Hồ Bơi Nước Ấm',
+      titleEn: 'Heated Pool Hydro-Sanctuary',
+      descVi:
+        'Ngâm mình trong ' +
+        spec.poolSpecVi.toLowerCase() +
+        ' giữa không khí se lạnh đặc trưng của Đà Lạt, lắng nghe tiếng gió thông rì rào hoàn toàn biệt lập.',
+      descEn:
+        'Immerse yourself in the ' +
+        spec.poolSpecEn.toLowerCase() +
+        ' surrounded by crisp highland air and complete architectural privacy.',
+      image: galleryImages[2] || galleryImages[0] || villa.imageUrl,
+    },
+    {
+      time: '17:30',
+      icon: '🌇',
+      titleVi: 'Hoàng Hôn Tím Trên Hồ Tuyền Lâm',
+      titleEn: 'Golden Hour & Sunset Ritual',
+      descVi:
+        'Thưởng thức cocktail thảo mộc thủ công và canapés tại sân hiên hướng ' +
+        spec.viewVi.toLowerCase() +
+        ' khi mặt hồ chuyển sang sắc tím hoàng hôn.',
+      descEn:
+        'Savor botanical sunset cocktails and chef-crafted canapés overlooking ' +
+        spec.viewEn.toLowerCase() +
+        '.',
+      image: galleryImages[1] || villa.imageUrl,
+    },
+    {
+      time: '20:30',
+      icon: '🕯️',
+      titleVi: 'Tiệc Nến Riêng Tư & Tinh Dầu Thông Đỏ',
+      titleEn: 'Candlelit Chef Table & Pine Aromatherapy',
+      descVi:
+        'Bữa tối Fine Dining riêng tư ngay tại biệt thự cùng nghi thức turn-down thắp nến thơm tinh dầu gỗ thông và bồn tắm thảo mộc nóng.',
+      descEn:
+        'An intimate multi-course dinner hosted in your villa, followed by pine-wood aromatherapy and a drawn herbal bath.',
+      image: galleryImages[3] || galleryImages[0] || villa.imageUrl,
+    },
+  ];
+
+  const current = moments[activeHour] || moments[0];
+
+  return (
+    <section className="bg-brand-forest-deep px-5 py-20 text-brand-white sm:px-8 lg:px-12">
+      <div className="mx-auto max-w-[1440px]">
+        <div className="mb-10 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage-light">
+              {isVi ? 'Nhịp Điệu Không Gian 24 Giờ' : '24-Hour Sanctuary Rhythm'}
+            </p>
+            <h2 className="mt-3 font-serif text-4xl text-white sm:text-5xl">
+              {isVi ? 'Một Ngày Trôi Chậm Tại ' : 'A Slow Day Inside '} {villa.name}
+            </h2>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {moments.map((m, idx) => (
+              <button
+                key={m.time}
+                type="button"
+                onClick={() => setActiveHour(idx)}
+                className={`flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wider transition ${
+                  idx === activeHour
+                    ? 'border-amber-300 bg-amber-300 text-brand-forest-deep shadow-lg'
+                    : 'border-white/20 bg-white/5 text-white/75 hover:bg-white/15'
+                }`}
+              >
+                <span>{m.icon}</span>
+                <span>{m.time}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid items-center gap-8 rounded-[2.2rem] border border-white/12 bg-white/5 p-6 backdrop-blur-md lg:grid-cols-[1.15fr_0.85fr] sm:p-8">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem]">
+            <img src={current.image} alt={current.titleVi} className="h-full w-full object-cover transition duration-700" />
+            <div className="absolute left-4 top-4 rounded-full bg-black/55 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-300 backdrop-blur-md">
+              {current.icon} {current.time} — {isVi ? spec.zoneVi : spec.zoneEn}
+            </div>
+          </div>
+          <div className="space-y-5 lg:px-4">
+            <span className="inline-block rounded-full border border-white/20 px-3.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-brand-sage-light">
+              {villa.roomNumber} · {spec.areaSqm} · {spec.elevation}
+            </span>
+            <h3 className="font-serif text-3xl text-white sm:text-4xl">
+              {isVi ? current.titleVi : current.titleEn}
+            </h3>
+            <p className="text-base leading-relaxed text-brand-paper/80">
+              {isVi ? current.descVi : current.descEn}
+            </p>
+            <div className="grid grid-cols-2 gap-3 border-t border-white/15 pt-5 text-xs">
+              <div>
+                <p className="uppercase tracking-wider text-brand-sage-light">
+                  {isVi ? 'Thủy trị liệu riêng' : 'Water Feature'}
+                </p>
+                <p className="mt-1 font-medium text-white">{isVi ? spec.poolSpecVi : spec.poolSpecEn}</p>
+              </div>
+              <div>
+                <p className="uppercase tracking-wider text-brand-sage-light">
+                  {isVi ? 'Đặc quyền đi kèm' : 'Complimentary Privilege'}
+                </p>
+                <p className="mt-1 font-medium text-white">{isVi ? spec.butlerVi : spec.butlerEn}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -342,6 +566,9 @@ export const VillaDetailPage = () => {
           onPrev={() => setLightboxIndex(lightboxIndex === 0 ? galleryImages.length - 1 : lightboxIndex - 1)}
         />
       )}
+
+      {/* Interactive 24-Hour Sanctuary Rhythm */}
+      <SanctuaryRhythmSection villa={villa} galleryImages={galleryImages} />
 
       {/* Details Section */}
       <section className="bg-brand-paper px-5 py-24 sm:px-8 lg:px-12">

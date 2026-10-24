@@ -1,211 +1,281 @@
 ﻿"use client";
-import { useState, useEffect, useMemo, type ReactNode } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { api, API_PATHS, ApiError } from "../../../shared/api/client";
 import { useTranslation } from "../../../shared/i18n/hooks";
-import { ContentShell, Promotion, CountdownTimer, getCategoryLabels, categoryColors, PromotionCard, FeaturedBanner, PromoCodeValidator, SeasonalDealsBanner } from "../shared";
+import { ContentShell } from "../shared";
+
+const MATERIAL_SPECIMENS = [
+  {
+    id: "basalt",
+    badge: "01 · HIGHLAND STONE",
+    titleVi: "Đá Bazan Xẻ Thô Tây Nguyên",
+    titleEn: "Hand-Cut Highland Basalt",
+    originVi: "Khai thác bền vững tại Bảo Lộc & Di Linh",
+    originEn: "Sustainably quarried in Bao Loc & Di Linh",
+    descVi:
+      "Bề mặt đá xẻ thô giữ nhiệt tự nhiên vào ban ngày và tỏa hơi ấm dịu nhẹ quanh khu vực hồ bơi vô cực vào ban đêm khi nhiệt độ Đà Lạt xuống 16°C.",
+    descEn:
+      "Raw-split volcanic basalt retains daytime solar warmth and provides slip-resistant tactile grounding around our heated infinity pools.",
+    image: "/images/nhu-infinity-pool.jpg",
+  },
+  {
+    id: "cedar",
+    badge: "02 · TIMBER CRAFT",
+    titleVi: "Gỗ Tuyết Tùng & Thông Đỏ Tái Sinh",
+    titleEn: "Reclaimed Cedar & Highland Pine",
+    originVi: "Xử lý thủ công chống ẩm sương mù ở độ cao 1,500m",
+    originEn: "Hand-treated for 1,500m highland mist resilience",
+    descVi:
+      "Hệ khung dầm và trần gỗ cao 4.8 mét tỏa hương tinh dầu gỗ tự nhiên dịu nhẹ, giúp nhịp tim chậm lại ngay khi bước qua hiên biệt thự.",
+    descEn:
+      "4.8-meter timber ceilings release subtle phytoncide aromatics, lowering cortisol and framing panoramic pine forest views.",
+    image: "/images/nhu-villa-interior.jpg",
+  },
+  {
+    id: "thermal",
+    badge: "03 · HYDRO-ENGINEERING",
+    titleVi: "Hệ Thống Hồ Bơi Khoáng Ấm 30°C",
+    titleEn: "30°C Mineral Hydro-Thermal Pools",
+    originVi: "Lọc muối khoáng sinh học không mùi Clo",
+    originEn: "Chlorine-free bio-mineral ionization",
+    descVi:
+      "Mỗi biệt thự sở hữu hồ bơi riêng được gia nhiệt bằng năng lượng mặt trời và bơm nhiệt biến tần, cho phép bơi lội giữa làn sương mù Đà Lạt suốt bốn mùa.",
+    descEn:
+      "Heated via solar-assisted heat pumps so guests can swim comfortably amidst misty highland mornings year-round.",
+    image: "/images/nhu-hero-villa-4k.jpg",
+  },
+];
 
 export const AboutPage = () => {
-      const timeline = [
-        { year: '2018', event: 'Khởi công xây dựng dự án Nhu Villas' },
-        { year: '2019', event: 'Khai trương 3 villa đầu tiên' },
-        { year: '2020', event: 'Mở rộng thêm 2 villa và khu vực dining' },
-        { year: '2021', event: 'Giải thưởng Luxury Boutique Resort' },
-        { year: '2022', event: 'Ra máº¯t dá»‹ch vá»¥ private dining' },
-        { year: '2023', event: 'Chá»©ng nháº­n Green Hospitality' },
-        { year: '2024', event: 'Mở rộng khu vực spa và wellness' },
-      ];
+  const { lang } = useTranslation();
+  const isVi = lang === "vi";
+  const [activeMaterial, setActiveMaterial] = useState(MATERIAL_SPECIMENS[0]);
 
-      const facilities = [
-        { icon: '🏊', name: 'Private Pool', desc: 'Hồ bơi riêng cho mỗi villa' },
-        { icon: '🍽️', name: 'Private Dining', desc: 'Bữa ăn được nấu theo yêu cầu' },
-        { icon: '💆', name: 'Spa & Wellness', desc: 'Trải nghiệm thư giãn đích thực' },
-        { icon: '🚴', name: 'Bike Tours', desc: 'Khám phá xung quanh bằng xe đạp' },
-        { icon: '🍳', name: 'Breakfast Service', desc: 'Bữa sáng tại ban công riêng' },
-        { icon: '🚗', name: 'Airport Transfer', desc: 'Đưa đón sân bay riêng' },
-        { icon: '🧹', name: 'Housekeeping', desc: 'Dọn phòng hàng ngày' },
-        { icon: '🌿', name: 'Garden Walks', desc: 'Đi bộ trong vườn tropical' },
-      ];
+  const timeline = [
+    {
+      year: "2018",
+      titleVi: "Khởi Nguyên Trên Đồi Thông",
+      titleEn: "Sanctuary Conception",
+      eventVi: "Chọn vùng bán đảo biệt lập ven Hồ Tuyền Lâm với mật độ xây dựng chỉ 12%.",
+      eventEn: "Selected a secluded peninsula on Tuyen Lam Lake with a strict 12% building footprint.",
+    },
+    {
+      year: "2020",
+      titleVi: "Khai Trương Bộ Sưu Tập Đầu Tiên",
+      titleEn: "First Villa Unveiling",
+      eventVi: "Ra mắt Garden Pool Villa (GV-01) và Sanctuary Pool Villa (PV-02) với hồ bơi nước ấm riêng.",
+      eventEn: "Debuted Garden Pool Villa and Sanctuary Pool Villa with private heated pools.",
+    },
+    {
+      year: "2023",
+      titleVi: "Hoàn Thiện Tuyệt Tác Đỉnh Đồi & Mặt Hồ",
+      titleEn: "Estate Masterpiece Expansion",
+      eventVi: "Khánh thành Hillside Residence (HR-03) và Lakefront Estate (LE-04) cùng dịch vụ Quản gia 24/7.",
+      eventEn: "Opened Hillside Residence and Lakefront Estate with dedicated 24/7 Butler service.",
+    },
+    {
+      year: "2026",
+      titleVi: "Biểu Tượng Nghỉ Dưỡng Độc Bản Đà Lạt",
+      titleEn: "Avant-Garde Highland Sanctuary",
+      eventVi: "Đạt chuẩn 6 biệt thự nghệ thuật cùng hệ thống AI Concierge & Đặt phòng trực quan thế hệ mới.",
+      eventEn: "Crowned Top Boutique Villa Sanctuary with 6 architectural residences and AI Concierge.",
+    },
+  ];
 
-      const awards = [
-        { year: '2021', title: 'Best Boutique Resort', org: 'Travel + Leisure' },
-        { year: '2022', title: 'Excellence Award', org: 'Booking.com' },
-        { year: '2023', title: 'Green Hospitality', org: 'Sustainable Travel' },
-        { year: '2024', title: 'Top 10 Villas', org: 'Condé Nast Traveler' },
-      ];
+  const awards = [
+    { year: "2023", title: "Best Highland Boutique Villa", org: "Travel + Leisure Southeast Asia" },
+    { year: "2024", title: "Green Architecture Distinction", org: "Sustainable Luxury Awards" },
+    { year: "2025", title: "Top 10 Private Pool Retreats", org: "Condé Nast Traveler" },
+    { year: "2026", title: "9.9/10 Guest Satisfaction", org: "Direct Sanctuary Index" },
+  ];
 
-      return (
-        <ContentShell
-          eyebrow="About"
-          title="Private hospitality, shaped slowly."
-          copy="Nhu Villas is a direct booking experience for private villa stays built around calm design, clear rules, and quiet service."
-        >
-          {/* Our Story */}
-          <section className="mb-16">
-            <h2 className="mb-8 text-4xl text-brand-charcoal">Our Story</h2>
-            <div className="grid gap-8 lg:grid-cols-2">
-              <div>
-                <p className="text-base leading-8 text-brand-ink/74">
-                  Nhu Villas was born from a simple belief: luxury hospitality should feel unhurried, private, and deeply personal. 
-                  Founded in 2018, we set out to create a retreat where guests could disconnect from the noise and reconnect 
-                  with what matters most.
-                </p>
-                <p className="mt-4 text-base leading-8 text-brand-ink/62">
-                  Every villa is designed with natural materials, oriented toward light and landscape, and staffed by a team 
-                  who knows your name before you arrive. Our approach to service is quiet but present — available when needed,
-                  invisible when not.
-                </p>
-              </div>
-              <div className="overflow-hidden rounded-[2rem]">
-                <img
-                  src="/images/nhu-villa-interior.jpg"
-                  alt="Nhu Villas interior"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Brand Philosophy */}
-          <section className="mb-16">
-            <h2 className="mb-8 text-4xl text-brand-charcoal">Brand Philosophy</h2>
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-                <div className="mb-4 text-4xl">🌿</div>
-                <h3 className="text-2xl text-brand-charcoal">Privacy First</h3>
-                <p className="mt-4 text-sm leading-7 text-brand-ink/62">
-                  Every product decision should make the guest feel informed, unhurried, and cared for. 
-                  We never compromise on the space and solitude that our guests deserve.
-                </p>
-              </div>
-              <div className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-                <div className="mb-4 text-4xl">🏡</div>
-                <h3 className="text-2xl text-brand-charcoal">Natural Materials</h3>
-                <p className="mt-4 text-sm leading-7 text-brand-ink/62">
-                  Stone, wood, linen, and water. Our architecture draws from the landscape it sits in, 
-                  creating spaces that feel rooted rather than imported.
-                </p>
-              </div>
-              <div className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_20px_70px_rgba(32,52,43,0.08)]">
-                <div className="mb-4 text-4xl">✨</div>
-                <h3 className="text-2xl text-brand-charcoal">Hosted Details</h3>
-                <p className="mt-4 text-sm leading-7 text-brand-ink/62">
-                  Service without ceremony. A stocked terrace when you arrive, a quiet breakfast when you wake, 
-                  a recommendation when you ask. Nothing forced, everything considered.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Facilities */}
-          <section className="mb-16">
-            <h2 className="mb-8 text-4xl text-brand-charcoal">Included Facilities</h2>
-            <div className="grid gap-px overflow-hidden rounded-[2rem] bg-brand-stone sm:grid-cols-2 lg:grid-cols-4">
-              {facilities.map((facility) => (
-                <div key={facility.name} className="bg-brand-paper p-6">
-                  <span className="text-3xl">{facility.icon}</span>
-                  <h3 className="mt-3 text-lg font-semibold text-brand-charcoal">{facility.name}</h3>
-                  <p className="mt-1 text-sm text-brand-ink/58">{facility.desc}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Timeline */}
-          <section className="mb-16">
-            <h2 className="mb-8 text-4xl text-brand-charcoal">Our Journey</h2>
-            <div className="relative">
-              <div className="absolute left-4 top-0 h-full w-px bg-brand-stone lg:left-1/2 lg:-translate-x-px" />
-              <div className="space-y-8">
-                {timeline.map((item, index) => (
-                  <div key={item.year} className={`relative flex items-center gap-6 lg:${index % 2 === 0 ? 'justify-end' : 'justify-start'} lg:pr-[calc(50%+2rem)]`}>
-                    <div className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full bg-brand-forest text-sm font-bold text-brand-white lg:absolute lg:left-1/2 lg:-translate-x-1/2`}>
-                      {item.year.slice(-2)}
-                    </div>
-                    <div className="flex-1 rounded-[1.5rem] bg-brand-paper p-5 shadow-[0_12px_40px_rgba(32,52,43,0.06)] lg:flex-none lg:text-right">
-                      <span className="text-xs font-semibold text-brand-sage">{item.year}</span>
-                      <p className="mt-1 text-brand-charcoal">{item.event}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-
-          {/* Awards */}
-          <section className="mb-16">
-            <h2 className="mb-8 text-4xl text-brand-charcoal">Recognition</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {awards.map((award) => (
-                <div key={`${award.year}-${award.title}`} className="rounded-[1.5rem] bg-brand-sand p-6 text-center">
-                  <div className="text-4xl">🏆</div>
-                  <p className="mt-3 font-serif text-2xl text-brand-charcoal">{award.title}</p>
-                  <p className="mt-1 text-xs text-brand-ink/58">{award.org}</p>
-                  <p className="mt-2 text-sm font-semibold text-brand-sage">{award.year}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Sustainability */}
-          <section className="mb-16 rounded-[2rem] bg-brand-forest-deep p-8 text-brand-white">
-            <h2 className="text-3xl text-brand-white">Sustainability Commitment</h2>
-            <p className="mt-4 max-w-2xl text-brand-paper/74">
-              We are committed to minimizing our environmental footprint while maximizing the quality of our guests' experience. 
-              From solar-powered amenities to locally-sourced ingredients, every decision considers its impact on the world around us.
+  return (
+    <ContentShell
+      eyebrow={isVi ? "Câu Chuyện & Triết Lý Kiến Trúc" : "Architecture & Ethos"}
+      title={isVi ? "Nghệ Thuật Nghỉ Dưỡng Tĩnh Lặng." : "Private hospitality, shaped slowly."}
+      copy={
+        isVi
+          ? "Nhu Villas được kiến tạo như một ốc đảo ẩn mình giữa rừng thông nguyên sinh và mặt nước Hồ Tuyền Lâm — nơi kiến trúc nhường lời cho thiên nhiên."
+          : "Nhu Villas is a direct sanctuary experience built around calm architecture, pine forest solitude, and bespoke butler service."
+      }
+    >
+      {/* 1. Architectural Manifesto Numbers */}
+      <section className="mb-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { num: "12%", labelVi: "Mật độ xây dựng toàn khu", labelEn: "Estate Building Footprint" },
+          { num: "1,520m", labelVi: "Độ cao trung bình trên mực nước biển", labelEn: "Highland Elevation" },
+          { num: "06", labelVi: "Biệt thự độc bản có hồ bơi ấm riêng", labelEn: "Private Heated Pool Villas" },
+          { num: "1 : 1", labelVi: "Tỷ lệ Quản gia chăm sóc từng căn", labelEn: "Dedicated Villa Butler Ratio" },
+        ].map((stat) => (
+          <div
+            key={stat.num}
+            className="rounded-[2rem] bg-brand-paper p-7 shadow-[0_18px_60px_rgba(32,52,43,0.06)]"
+          >
+            <p className="font-serif text-5xl text-brand-forest">{stat.num}</p>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-brand-ink/65">
+              {isVi ? stat.labelVi : stat.labelEn}
             </p>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl bg-brand-white/10 p-4">
-                <span className="text-2xl">☀️</span>
-                <p className="mt-2 font-semibold">100% Renewable Energy</p>
-              </div>
-              <div className="rounded-xl bg-brand-white/10 p-4">
-                <span className="text-2xl">🌱</span>
-                <p className="mt-2 font-semibold">Zero Single-Use Plastics</p>
-              </div>
-              <div className="rounded-xl bg-brand-white/10 p-4">
-                <span className="text-2xl">♻️</span>
-                <p className="mt-2 font-semibold">Local Sourcing</p>
-              </div>
-            </div>
-          </section>
+          </div>
+        ))}
+      </section>
 
-          {/* Location */}
-          <section className="rounded-[2rem] bg-brand-paper p-8 shadow-[0_22px_70px_rgba(32,52,43,0.08)]">
-            <h2 className="text-3xl text-brand-charcoal">Location</h2>
-            <div className="mt-6 grid gap-8 lg:grid-cols-2">
+      {/* 2. Interactive Materiality & Craft Lab */}
+      <section className="mb-16 rounded-[2.4rem] bg-brand-forest-deep p-6 text-white shadow-[0_28px_90px_rgba(12,28,22,0.24)] sm:p-10">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/15 pb-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage-light">
+              🏛️ {isVi ? "Phòng Thí Nghiệm Vật Liệu Kiến Trúc" : "Architectural Materiality Lab"}
+            </p>
+            <h2 className="mt-2 font-serif text-3xl text-white sm:text-5xl">
+              {isVi ? "Đá, Gỗ, Nước & Ánh Sáng Cao Nguyên" : "Tactile Elements of the Sanctuary"}
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {MATERIAL_SPECIMENS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => setActiveMaterial(m)}
+                className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-wider transition ${
+                  activeMaterial.id === m.id
+                    ? "bg-amber-300 text-brand-forest-deep"
+                    : "bg-white/10 text-white hover:bg-white/20"
+                }`}
+              >
+                {m.badge.split("·")[1]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-8 grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="relative aspect-[16/10] overflow-hidden rounded-[1.75rem]">
+            <img
+              src={activeMaterial.image}
+              alt={isVi ? activeMaterial.titleVi : activeMaterial.titleEn}
+              className="h-full w-full object-cover transition duration-700"
+            />
+            <span className="absolute left-4 top-4 rounded-full bg-black/60 px-3.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-md">
+              {activeMaterial.badge}
+            </span>
+          </div>
+
+          <div className="space-y-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300">
+              {isVi ? activeMaterial.originVi : activeMaterial.originEn}
+            </p>
+            <h3 className="font-serif text-3xl text-white sm:text-4xl">
+              {isVi ? activeMaterial.titleVi : activeMaterial.titleEn}
+            </h3>
+            <p className="text-base leading-8 text-brand-paper/80">
+              {isVi ? activeMaterial.descVi : activeMaterial.descEn}
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/villas"
+                className="inline-flex rounded-full bg-brand-paper px-6 py-3.5 text-xs font-semibold uppercase tracking-[0.16em] text-brand-forest-deep transition hover:bg-white"
+              >
+                {isVi ? "Khám Phá Kiến Trúc Từng Căn →" : "Explore the Residences →"}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Journey Timeline */}
+      <section className="mb-16">
+        <h2 className="mb-8 font-serif text-4xl text-brand-charcoal">
+          {isVi ? "Hành Trình Kiến Tạo" : "Our Journey"}
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {timeline.map((item) => (
+            <div
+              key={item.year}
+              className="flex flex-col justify-between rounded-[2rem] bg-brand-paper p-7 shadow-[0_18px_60px_rgba(32,52,43,0.06)]"
+            >
               <div>
-                <p className="text-base leading-8 text-brand-ink/74">
-                  Nhu Villas is nestled in a tranquil landscape, offering easy access to local attractions while 
-                  maintaining the privacy and serenity that define our guests' experience. Exact directions 
-                  are shared after booking confirmation.
+                <span className="inline-block rounded-full bg-brand-forest px-3.5 py-1 text-xs font-bold text-white">
+                  {item.year}
+                </span>
+                <h3 className="mt-4 font-serif text-2xl text-brand-charcoal">
+                  {isVi ? item.titleVi : item.titleEn}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-brand-ink/68">
+                  {isVi ? item.eventVi : item.eventEn}
                 </p>
-                <dl className="mt-6 grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-xl bg-brand-sand p-4">
-                    <dt className="text-2xl font-serif text-brand-forest">35 min</dt>
-                    <dd className="mt-1 text-xs uppercase tracking-wider text-brand-ink/52">Airport</dd>
-                  </div>
-                  <div className="rounded-xl bg-brand-sand p-4">
-                    <dt className="text-2xl font-serif text-brand-forest">12 min</dt>
-                    <dd className="mt-1 text-xs uppercase tracking-wider text-brand-ink/52">Local Dining</dd>
-                  </div>
-                  <div className="rounded-xl bg-brand-sand p-4">
-                    <dt className="text-2xl font-serif text-brand-forest">8 min</dt>
-                    <dd className="mt-1 text-xs uppercase tracking-wider text-brand-ink/52">Garden Walks</dd>
-                  </div>
-                </dl>
-              </div>
-              <div className="overflow-hidden rounded-[1.5rem]">
-                <img
-                  src="/images/nhu-location-landscape.jpg"
-                  alt="Location"
-                  className="h-full w-full object-cover"
-                />
               </div>
             </div>
-          </section>
-        </ContentShell>
-      );
-    };
+          ))}
+        </div>
+      </section>
 
+      {/* 4. Recognition */}
+      <section className="mb-16">
+        <h2 className="mb-8 font-serif text-4xl text-brand-charcoal">
+          {isVi ? "Giải Thưởng & Ghi Nhận Quốc Tế" : "Global Recognition"}
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {awards.map((award) => (
+            <div
+              key={`${award.year}-${award.title}`}
+              className="rounded-[1.75rem] border border-brand-stone/60 bg-brand-paper p-6 text-center"
+            >
+              <div className="text-3xl">🏆</div>
+              <p className="mt-3 font-serif text-2xl text-brand-charcoal">{award.title}</p>
+              <p className="mt-1 text-xs text-brand-ink/60">{award.org}</p>
+              <p className="mt-2 text-xs font-bold uppercase tracking-widest text-brand-forest">
+                {award.year}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. Location & Coordinates */}
+      <section className="rounded-[2.2rem] bg-brand-paper p-8 shadow-[0_22px_70px_rgba(32,52,43,0.08)]">
+        <div className="grid items-center gap-8 lg:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-sage">
+              📍 11.9038° N, 108.4368° E · TUYỀN LÂM LAKE
+            </p>
+            <h2 className="mt-2 font-serif text-4xl text-brand-charcoal">
+              {isVi ? "Vị Trí Biệt Lập Giữa Đồi Thông Đà Lạt" : "Secluded Highland Coordinates"}
+            </h2>
+            <p className="mt-4 text-base leading-8 text-brand-ink/74">
+              {isVi
+                ? "Tọa lạc trên bán đảo thông riêng tư tại Khu du lịch Quốc gia Hồ Tuyền Lâm, Nhu Villas vừa đủ tách biệt để giữ trọn sự tĩnh lặng tuyệt đối, vừa kết nối thuận tiện tới trung tâm Đà Lạt và sân bay Liên Khương."
+                : "Nestled on a private pine peninsula overlooking Tuyen Lam Lake, offering effortless access to Lien Khuong Airport and central Da Lat while preserving complete serenity."}
+            </p>
+            <dl className="mt-6 grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl bg-brand-sand p-4">
+                <dt className="font-serif text-2xl text-brand-forest">30 phút</dt>
+                <dd className="mt-1 text-xs uppercase tracking-wider text-brand-ink/60">
+                  {isVi ? "Sân bay Liên Khương" : "Lien Khuong Airport"}
+                </dd>
+              </div>
+              <div className="rounded-2xl bg-brand-sand p-4">
+                <dt className="font-serif text-2xl text-brand-forest">12 phút</dt>
+                <dd className="mt-1 text-xs uppercase tracking-wider text-brand-ink/60">
+                  {isVi ? "Trung tâm Đà Lạt" : "Central Da Lat"}
+                </dd>
+              </div>
+              <div className="rounded-2xl bg-brand-sand p-4">
+                <dt className="font-serif text-2xl text-brand-forest">5 phút</dt>
+                <dd className="mt-1 text-xs uppercase tracking-wider text-brand-ink/60">
+                  {isVi ? "Thiền Viện Trúc Lâm" : "Truc Lam Zen Monastery"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="overflow-hidden rounded-[1.75rem]">
+            <img
+              src="/images/nhu-location-landscape.jpg"
+              alt="Tuyen Lam Lake Location"
+              className="h-full w-full object-cover"
+            />
+          </div>
+        </div>
+      </section>
+    </ContentShell>
+  );
+};

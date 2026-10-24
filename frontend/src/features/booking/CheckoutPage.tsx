@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, API_PATHS, ApiError } from '../../shared/api/client';
-import { formatCurrency, type BookingDraft } from './bookingUtils';
+import { type BookingDraft } from './bookingUtils';
 import { useCheckout } from './useCheckout';
 import { useSession } from '../../shared/auth/SessionProvider';
-import { useTranslation } from '../../shared/i18n/hooks';
+import { useCurrency, useTranslation } from '../../shared/i18n/hooks';
 
 function readDraft(): BookingDraft | null {
   const raw = window.sessionStorage.getItem('nhu.bookingDraft');
@@ -27,6 +27,7 @@ type BookingResponse = {
 
 export const CheckoutPage = () => {
   const { t } = useTranslation();
+  const { formatCurrency } = useCurrency();
   const router = useRouter();
   const [draft, setDraft] = useState<BookingDraft | null>(null);
   const [guestName, setGuestName] = useState('');
@@ -51,6 +52,10 @@ export const CheckoutPage = () => {
 
   useEffect(() => {
     setDraft(readDraft());
+    const savedBespoke = window.sessionStorage.getItem('nhu.bespokeNotes');
+    if (savedBespoke) {
+      setNotes((prev) => prev || savedBespoke);
+    }
   }, []);
 
   const { user } = useSession();
