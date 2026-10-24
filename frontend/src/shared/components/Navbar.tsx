@@ -54,6 +54,11 @@ export const Navbar = () => {
 
     const isAdmin = (user as SessionUser | null)?.role === 'ADMIN';
     const displayName = user?.fullName || user?.username;
+    const isDarkBackdrop =
+        pathname === '/' ||
+        pathname === '/login' ||
+        pathname === '/register' ||
+        pathname === '/forgot-password';
 
     // Instantly reset scroll state on route change before paint
     const prevPathname = useRef(pathname);
@@ -109,10 +114,10 @@ export const Navbar = () => {
                 className={`mx-auto flex max-w-[1180px] items-center justify-between rounded-full px-3 pl-5 backdrop-blur-xl md:px-4 md:pl-7 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                     isScrolled
                         ? `h-[56px] shadow-[0_20px_50px_rgba(8,17,14,0.12)] ${
-                            pathname === '/' ? 'border border-brand-white/28 bg-brand-forest-deep/90 supports-[not(backdrop-filter:blur(1px))]:bg-brand-forest-deep' : 'border border-brand-stone bg-brand-white/95 supports-[not(backdrop-filter:blur(1px))]:bg-brand-white'
+                            isDarkBackdrop ? 'border border-brand-white/28 bg-brand-forest-deep/90 supports-[not(backdrop-filter:blur(1px))]:bg-brand-forest-deep' : 'border border-brand-stone bg-brand-white/95 supports-[not(backdrop-filter:blur(1px))]:bg-brand-white'
                         }`
                         : `h-[68px] shadow-[0_18px_60px_rgba(8,17,14,0.08)] ${
-                            pathname === '/' ? 'border border-brand-white/22 bg-brand-forest-deep/62 supports-[not(backdrop-filter:blur(1px))]:bg-brand-forest-deep' : 'border border-brand-stone/60 bg-brand-paper/80 supports-[not(backdrop-filter:blur(1px))]:bg-brand-paper'
+                            isDarkBackdrop ? 'border border-brand-white/22 bg-brand-forest-deep/62 supports-[not(backdrop-filter:blur(1px))]:bg-brand-forest-deep' : 'border border-brand-stone/60 bg-brand-paper/80 supports-[not(backdrop-filter:blur(1px))]:bg-brand-paper'
                         }`
                 }`}
             >
@@ -121,12 +126,12 @@ export const Navbar = () => {
                     className="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper"
                     onClick={closeMenu}
                 >
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border font-serif text-2xl italic leading-none transition-colors duration-500 ${pathname === '/' ? 'border-brand-white/32 bg-brand-white/10 text-brand-white' : 'border-brand-forest/20 bg-brand-forest/5 text-brand-forest-deep'}`}>
+                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border font-serif text-2xl italic leading-none transition-colors duration-500 ${isDarkBackdrop ? 'border-brand-white/32 bg-brand-white/10 text-brand-white' : 'border-brand-forest/20 bg-brand-forest/5 text-brand-forest-deep'}`}>
                         N
                     </span>
                     <span className="min-w-0">
-                        <span className={`block font-serif text-xl leading-none tracking-wide transition-colors duration-500 ${pathname === '/' ? 'text-brand-white' : 'text-brand-forest-deep'}`}>{t('common.brandName')}</span>
-                        <span className={`mt-1 hidden text-[0.58rem] font-semibold uppercase tracking-[0.22em] transition-colors duration-500 sm:block ${pathname === '/' ? 'text-brand-paper/62' : 'text-brand-ink/50'}`}>
+                        <span className={`block font-serif text-xl leading-none tracking-wide transition-colors duration-500 ${isDarkBackdrop ? 'text-brand-white' : 'text-brand-forest-deep'}`}>{t('common.brandName')}</span>
+                        <span className={`mt-1 hidden text-[0.58rem] font-semibold uppercase tracking-[0.22em] transition-colors duration-500 sm:block ${isDarkBackdrop ? 'text-brand-paper/62' : 'text-brand-ink/50'}`}>
                             {t('common.brandSubtitle')}
                         </span>
                     </span>
@@ -135,7 +140,7 @@ export const Navbar = () => {
                 <nav aria-label="Primary navigation" className="hidden items-center gap-7 lg:flex">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href;
-                        const isHome = pathname === '/';
+                        const isHome = isDarkBackdrop;
                         return (
                             <Link
                                 key={item.key}
@@ -165,7 +170,7 @@ export const Navbar = () => {
 
                 <div className="flex items-center gap-2">
                     <div className={`hidden xl:flex items-center gap-1 rounded-full border px-2 py-1 text-[0.65rem] font-semibold uppercase tracking-wider ${
-                        pathname === '/'
+                        isDarkBackdrop
                             ? 'border-brand-white/24 text-brand-paper'
                             : 'border-brand-stone text-brand-charcoal'
                     }`}>
@@ -191,7 +196,7 @@ export const Navbar = () => {
                         type="button"
                         onClick={() => setIsSearchModalOpen(true)}
                         className={`hidden min-h-11 items-center justify-center rounded-full px-5 text-[0.7rem] font-semibold uppercase tracking-[0.14em] transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[1px] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper sm:inline-flex ${
-                            pathname === '/' 
+                            isDarkBackdrop 
                                 ? 'bg-brand-paper text-brand-forest-deep hover:bg-brand-white hover:shadow-[0_18px_44px_rgba(8,17,14,0.32)]'
                                 : 'bg-brand-forest text-brand-white hover:bg-brand-forest-deep hover:shadow-[0_18px_44px_rgba(32,52,43,0.22)]'
                         }`}
@@ -203,12 +208,12 @@ export const Navbar = () => {
                     ) : user ? (
                         <div className="relative group hidden md:inline-block">
                             <button className={`min-h-11 flex items-center justify-center gap-2 rounded-full border pl-2 pr-4 text-[0.7rem] font-semibold uppercase tracking-[0.14em] transition duration-500 ${
-                                pathname === '/'
+                                isDarkBackdrop
                                     ? 'border-brand-white/24 text-brand-paper hover:bg-brand-white/12'
                                     : 'border-brand-stone text-brand-charcoal hover:bg-brand-stone/40'
                             }`}>
                                 <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${
-                                    pathname === '/' ? 'bg-brand-white/20 text-brand-white' : 'bg-brand-forest/10 text-brand-forest'
+                                    isDarkBackdrop ? 'bg-brand-white/20 text-brand-white' : 'bg-brand-forest/10 text-brand-forest'
                                 }`}>
                                     {displayName?.[0]?.toUpperCase() || 'U'}
                                 </span>
@@ -221,6 +226,14 @@ export const Navbar = () => {
                                 <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-brand-forest-deep/60 border-b border-brand-ink/5 mb-1 truncate">
                                     {displayName}
                                 </div>
+                                {isAdmin ? (
+                                    <Link href="/admin" className="block w-full text-left px-4 py-3 text-sm font-semibold text-brand-forest hover:bg-brand-sage/15 rounded-xl transition-colors">
+                                        🛡️ {t('nav.admin')}
+                                    </Link>
+                                ) : null}
+                                <Link href="/account" className="block w-full text-left px-4 py-3 text-sm text-brand-charcoal hover:bg-brand-sage/10 rounded-xl transition-colors">
+                                    {t('nav.account')}
+                                </Link>
                                 <Link href="/account/bookings" className="block w-full text-left px-4 py-3 text-sm text-brand-charcoal hover:bg-brand-sage/10 rounded-xl transition-colors">
                                     {t('nav.myBookings')}
                                 </Link>
@@ -239,7 +252,7 @@ export const Navbar = () => {
                         <Link
                             href={`/login${redirectQuery}`}
                             className={`hidden min-h-11 items-center justify-center rounded-full border px-4 text-[0.7rem] font-semibold uppercase tracking-[0.14em] transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-paper md:inline-flex ${
-                                pathname === '/'
+                                isDarkBackdrop
                                     ? 'border-brand-white/24 text-brand-paper hover:bg-brand-white/12'
                                     : 'border-brand-stone text-brand-charcoal hover:bg-brand-stone/40'
                             }`}

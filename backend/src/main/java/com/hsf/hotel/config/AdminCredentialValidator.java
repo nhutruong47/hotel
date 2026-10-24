@@ -33,6 +33,7 @@ public class AdminCredentialValidator implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
     private final String adminUsername;
     private final String adminPassword;
+    private final String adminEmail;
     private final String activeProfile;
 
     public AdminCredentialValidator(
@@ -40,11 +41,13 @@ public class AdminCredentialValidator implements CommandLineRunner {
             PasswordEncoder passwordEncoder,
             @Value("${app.admin.username:}") String adminUsername,
             @Value("${app.admin.password:}") String adminPassword,
+            @Value("${app.admin.email:truongthainhuu@gmail.com}") String adminEmail,
             @Value("${spring.profiles.active:default}") String activeProfile) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.adminUsername = adminUsername;
         this.adminPassword = adminPassword;
+        this.adminEmail = adminEmail;
         this.activeProfile = activeProfile;
     }
 
@@ -111,22 +114,33 @@ public class AdminCredentialValidator implements CommandLineRunner {
 
     private void ensureAdminUser() {
         User admin = userRepository.findByUsername(adminUsername).orElse(null);
-        
+        String resolvedEmail = (adminEmail != null && !adminEmail.isBlank() && !"admin@hotel.com".equals(adminEmail))
+                ? adminEmail
+                : "truongthainhuu@gmail.com";
+
         if (admin == null) {
             // Create admin user
             admin = new User();
             admin.setUsername(adminUsername);
-            admin.setEmail("admin@" + extractDomain());
+            admin.setEmail(resolvedEmail);
+            admin.setFullName("Trương Thái Như (Executive Admin)");
             admin.setPassword(passwordEncoder.encode(adminPassword));
             admin.setRole("ADMIN");
             admin.setEmailVerified(true);
             userRepository.save(admin);
             log.info("Created admin user: {}", adminUsername);
         } else {
-            // Update password to ensure it matches env var
+            // Update password and email to ensure they match env var
             admin.setPassword(passwordEncoder.encode(adminPassword));
+            if (admin.getEmail() == null || admin.getEmail().startsWith("admin@")) {
+                admin.setEmail(resolvedEmail);
+            }
+            if (admin.getFullName() == null || admin.getFullName().isBlank()) {
+                admin.setFullName("Trương Thái Như (Executive Admin)");
+            }
+            admin.setEmailVerified(true);
             userRepository.save(admin);
-            log.info("Updated admin user password: {}", adminUsername);
+            log.info("Updated admin user credentials: {}", adminUsername);
         }
     }
 

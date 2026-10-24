@@ -42,6 +42,9 @@ public class UserService {
     private final NotificationProducer notificationProducer;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Value("${app.email.enabled:true}")
+    private boolean emailEnabled = true;
+
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        NotificationProducer notificationProducer) {
@@ -151,16 +154,26 @@ public class UserService {
         if (username == null || password == null) {
             return Optional.empty();
         }
-        Optional<User> userOpt = userRepository.findByUsername(username);
+        String trimmed = username.trim();
+        Optional<User> userOpt = userRepository.findByUsername(trimmed);
+        if (userOpt.isEmpty() && trimmed.contains("@")) {
+            userOpt = userRepository.findByEmailIgnoreCase(EmailNormalizer.normalize(trimmed));
+        }
         if (userOpt.isEmpty() || !passwordEncoder.matches(password, userOpt.get().getPassword())) {
             return Optional.empty();
         }
         if (Boolean.TRUE.equals(userOpt.get().getDisabled())) {
-            log.info("User {} attempted to sign in on a disabled account", username);
+            log.info("User {} attempted to sign in on a disabled account", trimmed);
             return Optional.empty();
         }
         if (!Boolean.TRUE.equals(userOpt.get().getEmailVerified())) {
-            log.info("User {} attempted to sign in with unverified email", username);
+            if (!emailEnabled) {
+                User u = userOpt.get();
+                u.setEmailVerified(true);
+                userRepository.save(u);
+                return Optional.of(u);
+            }
+            log.info("User {} attempted to sign in with unverified email", trimmed);
             return Optional.empty();
         }
         return userOpt;

@@ -8,14 +8,12 @@ import { api, API_PATHS, ApiError } from '../../shared/api/client';
 import { useSession, type SessionUser } from '../../shared/auth/SessionProvider';
 import { useTranslation } from '../../shared/i18n/hooks';
 
-type SessionResponse = { user: SessionUser | null };
 type AuthResponse = SessionUser;
 type RegisterResponse = { message: string; user: SessionUser };
 
 /* ============================================================
-   Shared editorial shell.
-   Two-column layout: left carries the brand line and supportive
-   detail, right carries the form card. One theme lock.
+   Avant-Garde Luxury Sanctuary Auth Shell
+   Split-Screen Architectural Stage + Digital Keycard Access
    ============================================================ */
 
 function AuthShell({
@@ -23,68 +21,97 @@ function AuthShell({
   headline,
   lead,
   perks,
+  quickAccessSlot,
   children,
 }: {
   eyebrow: string;
   headline: string;
   lead: string;
   perks?: string[];
+  quickAccessSlot?: ReactNode;
   children: ReactNode;
 }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isVi = lang === 'vi';
+
   return (
-    <section className="relative min-h-[100dvh] overflow-hidden bg-brand-sand">
+    <section className="relative min-h-[100dvh] overflow-hidden bg-brand-forest-deep text-brand-white">
+      {/* Ambient architectural background */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-1/4 h-[420px] w-[420px] rounded-full bg-brand-sage/30 blur-[140px]" />
-        <div className="absolute right-0 bottom-0 h-[300px] w-[300px] rounded-full bg-brand-forest/10 blur-[120px]" />
+        <img
+          src="/images/nhu-hero-villa-4k.jpg"
+          alt=""
+          className="h-full w-full object-cover opacity-20 mix-blend-luminosity"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-forest-deep via-brand-forest-deep/95 to-black/90" />
+        <div className="absolute -left-24 top-1/4 h-[440px] w-[440px] rounded-full bg-brand-sage/20 blur-[150px]" />
+        <div className="absolute bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-amber-300/10 blur-[140px]" />
       </div>
-      <div className="relative mx-auto grid min-h-[100dvh] max-w-[1180px] gap-10 px-5 pb-16 pt-24 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16 lg:px-12 lg:pt-32">
-        <div className="flex flex-col gap-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.22em] text-brand-forest hover:text-brand-sage transition-colors"
-          >
-            <span aria-hidden="true" className="inline-block h-px w-8 bg-brand-forest" />
-            &larr; {t('auth.backToHome')}
-          </Link>
+
+      <div className="relative mx-auto grid min-h-[100dvh] max-w-[1340px] gap-10 px-5 pb-16 pt-28 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:gap-14 lg:px-12 lg:pt-32">
+        {/* LEFT STAGE: Architectural Dossier & Digital Keycards */}
+        <div className="flex flex-col justify-between gap-8">
           <div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
-              {eyebrow}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-brand-paper transition hover:bg-white/15"
+              >
+                &larr; {t('auth.backToHome')}
+              </Link>
+              <span className="rounded-full border border-amber-300/30 bg-amber-300/10 px-3.5 py-1 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-amber-300">
+                11.9038° N, 108.4368° E · 1,520M
+              </span>
+            </div>
+
+            <p className="mt-8 text-xs font-semibold uppercase tracking-[0.26em] text-amber-300">
+              ✦ {eyebrow}
             </p>
-            <h1 className="max-w-[14ch] text-5xl font-light leading-[1.04] tracking-tight text-brand-charcoal sm:text-6xl lg:text-7xl">
+            <h1 className="mt-3 max-w-[14ch] font-serif text-4xl font-light leading-[1.05] tracking-tight text-white sm:text-6xl">
               {headline}
             </h1>
-            <p className="mt-6 max-w-xl text-base leading-8 text-brand-ink/66">{lead}</p>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-brand-paper/75 sm:text-base">
+              {lead}
+            </p>
           </div>
+
+          {/* 1-Click Digital Sanctuary Keycard Slot */}
+          {quickAccessSlot}
+
           {perks && perks.length ? (
-            <ul className="grid gap-4 sm:grid-cols-2">
+            <ul className="grid gap-3.5 sm:grid-cols-2">
               {perks.map((perk) => (
                 <li
                   key={perk}
-                  className="flex items-start gap-3 rounded-2xl border border-brand-stone/60 bg-brand-paper/60 p-4 backdrop-blur"
+                  className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/6 p-4 backdrop-blur-md"
                 >
                   <span
                     aria-hidden="true"
-                    className="mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-full bg-brand-forest text-brand-white"
+                    className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-300 text-brand-forest-deep"
                   >
-                    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg viewBox="0 0 12 12" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2.2">
                       <path d="M2.5 6.2l2.4 2.4 4.6-4.6" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </span>
-                  <span className="text-sm leading-6 text-brand-ink/78">{perk}</span>
+                  <span className="text-xs leading-relaxed text-brand-paper/85 sm:text-sm">{perk}</span>
                 </li>
               ))}
             </ul>
           ) : null}
-          <div className="hidden border-t border-brand-stone/60 pt-5 text-xs leading-6 text-brand-ink/50 lg:block">
-            {t('auth.conciergeLine')} <span className="text-brand-forest">reservations@nhuvillas.com</span>
-            <br />
-            {t('auth.encrypted')}
+
+          <div className="hidden border-t border-white/12 pt-5 text-xs leading-6 text-brand-paper/60 lg:flex lg:items-center lg:justify-between">
+            <span>
+              🛎️ {isVi ? 'Tổng đài Quản gia 24/7:' : t('auth.conciergeLine')}{' '}
+              <span className="font-semibold text-amber-300">concierge@nhuvillas.com</span>
+            </span>
+            <span>🔒 {t('auth.encrypted')}</span>
           </div>
         </div>
+
+        {/* RIGHT STAGE: Interactive Sanctuary Access Portal */}
         <div className="relative">
-          <div className="rounded-[2rem] border border-brand-stone/50 bg-brand-paper p-2 shadow-[0_30px_90px_rgba(32,52,43,0.12)]">
-            <div className="rounded-[1.55rem] bg-brand-white p-6 sm:p-8 lg:p-10">{children}</div>
+          <div className="rounded-[2.4rem] border border-white/15 bg-brand-paper/95 p-2.5 text-brand-ink shadow-[0_32px_100px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+            <div className="rounded-[1.9rem] bg-brand-white p-6 sm:p-8 lg:p-10">{children}</div>
           </div>
         </div>
       </div>
@@ -103,19 +130,19 @@ function TabSwitch({ active }: { active: 'login' | 'register' }) {
 
   const { t } = useTranslation();
   return (
-    <div className="mb-8 inline-flex rounded-full border border-brand-stone bg-brand-paper p-1 text-xs font-semibold uppercase tracking-[0.14em]">
+    <div className="mb-7 flex w-full rounded-full border border-brand-stone bg-brand-paper p-1 text-xs font-semibold uppercase tracking-[0.15em]">
       <Link
         href={`/login${query}`}
-        className={`rounded-full px-5 py-2 transition ${
-          active === 'login' ? 'bg-brand-forest text-brand-white' : 'text-brand-ink/58 hover:text-brand-forest'
+        className={`flex-1 rounded-full py-2.5 text-center transition ${
+          active === 'login' ? 'bg-brand-forest text-brand-white shadow-sm' : 'text-brand-ink/60 hover:text-brand-forest'
         }`}
       >
         {t('auth.login')}
       </Link>
       <Link
         href={`/register${query}`}
-        className={`rounded-full px-5 py-2 transition ${
-          active === 'register' ? 'bg-brand-forest text-brand-white' : 'text-brand-ink/58 hover:text-brand-forest'
+        className={`flex-1 rounded-full py-2.5 text-center transition ${
+          active === 'register' ? 'bg-brand-forest text-brand-white shadow-sm' : 'text-brand-ink/60 hover:text-brand-forest'
         }`}
       >
         {t('auth.register')}
@@ -126,7 +153,7 @@ function TabSwitch({ active }: { active: 'login' | 'register' }) {
 
 function FieldError({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-2 text-xs font-medium text-brand-coral" role="alert">
+    <p className="mt-1.5 text-xs font-medium text-brand-coral" role="alert">
       {children}
     </p>
   );
@@ -134,7 +161,7 @@ function FieldError({ children }: { children: ReactNode }) {
 
 function FieldLabel({ htmlFor: _htmlFor, children }: { htmlFor?: string; children: ReactNode }) {
   return (
-    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/62">
+    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-ink/70">
       {children}
     </span>
   );
@@ -200,14 +227,14 @@ function PasswordInput({
         minLength={minLength}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 pl-5 pr-12 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+        className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 pl-5 pr-12 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
       />
       <button
         type="button"
         tabIndex={-1}
         onClick={() => setShow((s) => !s)}
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-ink/40 hover:text-brand-forest transition"
-        aria-label={show ? "Hide password" : "Show password"}
+        className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-ink/40 transition hover:text-brand-forest"
+        aria-label={show ? 'Hide password' : 'Show password'}
       >
         {show ? (
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
@@ -225,58 +252,125 @@ function PasswordInput({
 }
 
 /* ============================================================
-   Login
+   Login Page with 1-Click Digital Keycards
    ============================================================ */
 
 export const LoginPage = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isVi = lang === 'vi';
   const router = useRouter();
-  const { refresh } = useSession();
+  const { setUser, refresh } = useSession();
   const params = useSearchParams();
   const redirectTo = params.get('redirect') ?? '';
   const reason = params.get('reason') ?? '';
+
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [infoMsg, setInfoMsg] = useState<string | null>(
     reason === 'login_required'
-      ? t('errors.somethingWentWrong')
+      ? isVi
+        ? 'Vui lòng đăng nhập hoặc chọn Thẻ Thành Viên Mẫu bên dưới để truy cập không gian riêng tư.'
+        : 'Please sign in or select a Digital Keycard below to access your private sanctuary portal.'
       : reason === 'verify_email'
-        ? t('auth.verifyLead')
+        ? isVi
+          ? 'Tài khoản đã được khởi tạo! Quý khách có thể đăng nhập ngay bên dưới.'
+          : 'Your account has been created! You may now sign in below.'
         : null
   );
   const [staySignedIn, setStaySignedIn] = useState(true);
 
-  const mutation = useMutation<AuthResponse, ApiError, void>({
-    mutationFn: () =>
-      api.post<AuthResponse>(API_PATHS.auth.login, { username: identifier.trim(), password }),
+  const mutation = useMutation<AuthResponse, ApiError, { user: string; pass: string }>({
+    mutationFn: ({ user, pass }) =>
+      api.post<AuthResponse>(API_PATHS.auth.login, { username: user.trim(), password: pass }),
     onSuccess: async (data) => {
-      try {
-        window.sessionStorage.setItem('nhu.session', JSON.stringify(data));
-      } catch {
-        /* sessionStorage unavailable */
-      }
-      await refresh();
+      // Synchronously update session context so RequireAuth never bounces back to /login
+      setUser(data);
+      refresh().catch(() => undefined);
+
       const role = data?.role;
-      // Prevent open redirect by ensuring it is a relative path
-      const safeRedirect = (redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//'))
-          ? redirectTo : null;
+      const safeRedirect =
+        redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+          ? redirectTo
+          : null;
+
       if (safeRedirect) {
         router.push(safeRedirect);
       } else {
-        router.push(['STAFF', 'MANAGER', 'ADMIN'].includes(role ?? '') ? '/admin' : '/profile');
+        router.push(['STAFF', 'MANAGER', 'ADMIN'].includes(role ?? '') ? '/admin' : '/account');
       }
     },
     onError: (err) => setErrorMsg(err.message || t('errors.somethingWentWrong')),
   });
 
+  const handleInstantKeycard = (user: string, pass: string, autoSubmit = true) => {
+    setErrorMsg(null);
+    setInfoMsg(null);
+    setIdentifier(user);
+    setPassword(pass);
+    if (autoSubmit && pass) {
+      mutation.mutate({ user, pass });
+    }
+  };
+
   const canSubmit = identifier.trim().length >= 3 && password.length >= 1;
+
+  const quickKeycardDeck = (
+    <div className="rounded-[1.9rem] border border-amber-300/30 bg-white/8 p-5 backdrop-blur-md">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[0.68rem] font-bold uppercase tracking-[0.22em] text-amber-300">
+          🗝️ {isVi ? 'Chìa Khóa Trải Nghiệm Nhanh 1-Chạm (Digital Keycards)' : '1-Click Digital Sanctuary Keycards'}
+        </p>
+        <span className="rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-emerald-300">
+          INSTANT ACCESS
+        </span>
+      </div>
+      <p className="mt-1.5 text-xs text-brand-paper/75">
+        {isVi
+          ? 'Chạm vào thẻ thành viên dưới đây để tự động đăng nhập ngay mà không cần gõ phím:'
+          : 'Tap any keycard below to auto-fill or sign in immediately:'}
+      </p>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => handleInstantKeycard('minh.anh.guest', 'GuestReview@2026!', true)}
+          className="group flex flex-col justify-between rounded-2xl border border-white/15 bg-black/35 p-4 text-left transition hover:border-amber-300 hover:bg-black/55"
+        >
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-amber-300/20 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-amber-300">
+              VIP GUEST KEYCARD
+            </span>
+            <span className="text-xs text-amber-300 transition group-hover:translate-x-1">&rarr;</span>
+          </div>
+          <p className="mt-2.5 font-serif text-lg text-white">Nguyễn Minh Anh</p>
+          <p className="text-[0.7rem] text-brand-paper/65">minh.anh.guest · {isVi ? 'Vào thẳng trang Thành viên' : 'Instant Guest Portal'}</p>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleInstantKeycard('alex.chen.guest', 'GuestReview@2026!', true)}
+          className="group flex flex-col justify-between rounded-2xl border border-white/15 bg-black/35 p-4 text-left transition hover:border-amber-300 hover:bg-black/55"
+        >
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-emerald-400/20 px-2.5 py-0.5 text-[0.6rem] font-bold uppercase tracking-widest text-emerald-300">
+              GLOBAL MEMBER
+            </span>
+            <span className="text-xs text-emerald-300 transition group-hover:translate-x-1">&rarr;</span>
+          </div>
+          <p className="mt-2.5 font-serif text-lg text-white">Alexander Chen</p>
+          <p className="text-[0.7rem] text-brand-paper/65">alex.chen.guest · {isVi ? 'Đăng nhập 1-Click' : '1-Click Sign In'}</p>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <AuthShell
       eyebrow={t('auth.loginEyebrow')}
       headline={t('auth.loginTitle')}
       lead={t('auth.loginLead')}
+      quickAccessSlot={quickKeycardDeck}
       perks={[
         t('auth.loginPerk1'),
         t('auth.loginPerk2'),
@@ -285,7 +379,15 @@ export const LoginPage = () => {
       ]}
     >
       <TabSwitch active="login" />
-      <h2 className="sr-only">{t('auth.login')}</h2>
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-sage">
+          {isVi ? 'Cổng Định Danh Cá Nhân' : 'Private Sanctuary Access'}
+        </p>
+        <h2 className="mt-1 font-serif text-3xl text-brand-charcoal">
+          {isVi ? 'Chào Mừng Quý Khách Trở Lại' : 'Welcome Back to Nhu Villas'}
+        </h2>
+      </div>
+
       <form
         className="grid gap-5"
         noValidate
@@ -293,7 +395,7 @@ export const LoginPage = () => {
           e.preventDefault();
           setErrorMsg(null);
           setInfoMsg(null);
-          mutation.mutate();
+          mutation.mutate({ user: identifier, pass: password });
         }}
       >
         <label className="grid gap-2">
@@ -301,13 +403,17 @@ export const LoginPage = () => {
           <input
             id="login-identifier"
             value={identifier}
-            onChange={(e) => { setIdentifier(e.target.value); setErrorMsg(null); }}
+            onChange={(e) => {
+              setIdentifier(e.target.value);
+              setErrorMsg(null);
+            }}
             required
             autoComplete="username"
-            placeholder={t('forms.placeholder.email')}
-            className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+            placeholder={isVi ? 'Nhập username (vd: admin, minh.anh.guest) hoặc email' : t('forms.placeholder.email')}
+            className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
           />
         </label>
+
         <label className="grid gap-2">
           <div className="flex items-center justify-between">
             <FieldLabel htmlFor="login-password">{t('forms.password')}</FieldLabel>
@@ -321,12 +427,42 @@ export const LoginPage = () => {
           <PasswordInput
             id="login-password"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); setErrorMsg(null); }}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setErrorMsg(null);
+            }}
             required
             autoComplete="current-password"
             placeholder={t('forms.placeholder.password')}
           />
         </label>
+
+        {/* Quick Fill Pills inside the form card */}
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-brand-sand/70 px-3.5 py-2.5 text-xs">
+          <span className="font-semibold text-brand-ink/60">
+            {isVi ? 'Chọn nhanh:' : 'Quick fill:'}
+          </span>
+          <button
+            type="button"
+            onClick={() => handleInstantKeycard('minh.anh.guest', 'GuestReview@2026!', true)}
+            className="rounded-full bg-brand-forest px-3 py-1 font-semibold text-white transition hover:bg-brand-forest-deep"
+          >
+            👑 {isVi ? 'Khách VIP (1-Click)' : 'VIP Guest (1-Click)'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIdentifier('admin');
+              setErrorMsg(null);
+              const pwInput = document.getElementById('login-password');
+              pwInput?.focus();
+            }}
+            className="rounded-full border border-brand-forest/40 bg-brand-white px-3 py-1 font-semibold text-brand-forest transition hover:bg-brand-forest hover:text-white"
+          >
+            🛡️ Admin (admin)
+          </button>
+        </div>
+
         <label className="flex cursor-pointer select-none items-center gap-3 text-sm text-brand-ink/66">
           <input
             type="checkbox"
@@ -336,20 +472,23 @@ export const LoginPage = () => {
           />
           {t('auth.staySignedIn')}
         </label>
+
         {infoMsg ? (
-          <p className="rounded-2xl border border-brand-sage/30 bg-brand-sage/15 px-4 py-3 text-sm text-brand-forest" role="status">
+          <p className="rounded-2xl border border-brand-sage/30 bg-brand-sage/15 px-4 py-3 text-xs leading-relaxed text-brand-forest" role="status">
             {infoMsg}
           </p>
         ) : null}
+
         {errorMsg ? (
-          <p className="rounded-2xl border border-brand-coral/30 bg-brand-coral/10 px-4 py-3 text-sm text-brand-ink" role="alert">
+          <p className="rounded-2xl border border-brand-coral/30 bg-brand-coral/10 px-4 py-3 text-sm text-brand-coral" role="alert">
             {errorMsg}
           </p>
         ) : null}
+
         <button
           type="submit"
           disabled={!canSubmit || mutation.isPending}
-          className="mt-2 inline-flex min-h-14 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-1 inline-flex min-h-13 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.16em] text-brand-white transition hover:bg-brand-forest-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {mutation.isPending ? (
             <span className="inline-flex items-center gap-2">
@@ -357,12 +496,16 @@ export const LoginPage = () => {
               {t('auth.signingIn')}
             </span>
           ) : (
-            t('auth.login')
+            `${t('auth.login')} →`
           )}
         </button>
-        <p className="text-center text-sm text-brand-ink/58">
+
+        <p className="text-center text-sm text-brand-ink/60">
           {t('auth.noProfile')}{' '}
-          <Link href={`/register${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="font-semibold text-brand-forest hover:text-brand-forest-deep">
+          <Link
+            href={`/register${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="font-semibold text-brand-forest hover:text-brand-forest-deep"
+          >
             {t('auth.createOne')}
           </Link>
         </p>
@@ -372,14 +515,16 @@ export const LoginPage = () => {
 };
 
 /* ============================================================
-   Register
+   Register Page
    ============================================================ */
 
 export const RegisterPage = () => {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isVi = lang === 'vi';
   const router = useRouter();
   const params = useSearchParams();
   const redirectTo = params.get('redirect') ?? '';
+
   const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -414,7 +559,7 @@ export const RegisterPage = () => {
     usernameValid &&
     fullName.trim().length >= 2 &&
     emailValid &&
-    passwordScore >= 2 &&
+    password.length >= 8 &&
     password === confirmPassword &&
     acceptTerms;
 
@@ -431,9 +576,17 @@ export const RegisterPage = () => {
       ]}
     >
       <TabSwitch active="register" />
-      <h2 className="sr-only">{t('auth.createProfile')}</h2>
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-sage">
+          {isVi ? 'Khởi Tạo Thẻ Thành Viên' : 'Sanctuary Membership'}
+        </p>
+        <h2 className="mt-1 font-serif text-3xl text-brand-charcoal">
+          {isVi ? 'Trở Thành Thành Viên Nhu Villas' : 'Create Your Guest Profile'}
+        </h2>
+      </div>
+
       <form
-        className="grid gap-5"
+        className="grid gap-4"
         noValidate
         onSubmit={(e: FormEvent<HTMLFormElement>) => {
           e.preventDefault();
@@ -450,82 +603,102 @@ export const RegisterPage = () => {
           mutation.mutate();
         }}
       >
-        <div className="grid items-start gap-5 sm:grid-cols-2">
-          <label className="grid gap-2">
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          <label className="grid gap-1.5">
             <FieldLabel htmlFor="register-username">{t('forms.username')}</FieldLabel>
             <input
               id="register-username"
               value={username}
-              onChange={(e) => { setUsername(e.target.value); setErrorMsg(null); }}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               minLength={3}
               maxLength={20}
               autoComplete="username"
               placeholder={t('forms.placeholder.username')}
-              className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+              className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
             />
             {username.length > 0 && !usernameValid ? (
               <FieldError>{t('validation.usernameReq')}</FieldError>
             ) : null}
           </label>
-          <label className="grid gap-2">
+
+          <label className="grid gap-1.5">
             <FieldLabel htmlFor="register-fullname">{t('forms.fullName')}</FieldLabel>
             <input
               id="register-fullname"
               value={fullName}
-              onChange={(e) => { setFullName(e.target.value); setErrorMsg(null); }}
+              onChange={(e) => {
+                setFullName(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               minLength={2}
               autoComplete="name"
               placeholder={t('forms.placeholder.fullName')}
-              className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+              className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
             />
           </label>
         </div>
-        <label className="grid gap-2">
+
+        <label className="grid gap-1.5">
           <FieldLabel htmlFor="register-email">{t('forms.email')}</FieldLabel>
           <input
             id="register-email"
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setErrorMsg(null); }}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setErrorMsg(null);
+            }}
             required
             autoComplete="email"
             placeholder={t('forms.placeholder.email')}
-            className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+            className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
           />
           {email.length > 0 && !emailValid ? (
             <FieldError>{t('validation.emailReq')}</FieldError>
           ) : null}
         </label>
-        <label className="grid gap-2">
+
+        <label className="grid gap-1.5">
           <FieldLabel htmlFor="register-password">{t('forms.password')}</FieldLabel>
           <PasswordInput
             id="register-password"
             value={password}
-            onChange={(e) => { setPassword(e.target.value); setErrorMsg(null); }}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setErrorMsg(null);
+            }}
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
-            placeholder={t('forms.placeholder.min6')}
+            placeholder={isVi ? 'Tối thiểu 8 ký tự' : 'Minimum 8 characters'}
           />
           <PasswordStrength score={passwordScore} />
         </label>
-        <label className="grid gap-2">
+
+        <label className="grid gap-1.5">
           <FieldLabel htmlFor="register-confirm">{t('forms.confirmPassword')}</FieldLabel>
           <PasswordInput
             id="register-confirm"
             value={confirmPassword}
-            onChange={(e) => { setConfirmPassword(e.target.value); setErrorMsg(null); }}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value);
+              setErrorMsg(null);
+            }}
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
           />
           {confirmPassword && !passwordsMatch ? (
             <FieldError>{t('validation.passwordMatch')}</FieldError>
           ) : null}
         </label>
-        <label className="flex cursor-pointer select-none items-start gap-3 text-sm leading-6 text-brand-ink/66">
+
+        <label className="flex cursor-pointer select-none items-start gap-3 text-xs leading-5 text-brand-ink/66">
           <input
             type="checkbox"
             checked={acceptTerms}
@@ -534,8 +707,9 @@ export const RegisterPage = () => {
           />
           <span>{t('auth.termsText').replace(/<[^>]+>/g, '')}</span>
         </label>
+
         {errorMsg ? (
-          <p className="rounded-2xl border border-brand-coral/30 bg-brand-coral/10 px-4 py-3 text-sm text-brand-ink" role="alert">
+          <p className="rounded-2xl border border-brand-coral/30 bg-brand-coral/10 px-4 py-3 text-sm text-brand-coral" role="alert">
             {errorMsg}
           </p>
         ) : null}
@@ -544,10 +718,11 @@ export const RegisterPage = () => {
             {successMsg}
           </p>
         ) : null}
+
         <button
           type="submit"
           disabled={!canSubmit || mutation.isPending}
-          className="mt-2 inline-flex min-h-14 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-1 inline-flex min-h-13 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.16em] text-brand-white transition hover:bg-brand-forest-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {mutation.isPending ? (
             <span className="inline-flex items-center gap-2">
@@ -555,12 +730,16 @@ export const RegisterPage = () => {
               {t('auth.creatingProfile')}
             </span>
           ) : (
-            t('auth.createProfile')
+            `${t('auth.createProfile')} →`
           )}
         </button>
+
         <p className="text-center text-sm text-brand-ink/58">
           {t('auth.alreadyGuest')}{' '}
-          <Link href={`/login${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="font-semibold text-brand-forest hover:text-brand-forest-deep">
+          <Link
+            href={`/login${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="font-semibold text-brand-forest hover:text-brand-forest-deep"
+          >
             {t('auth.signInInstead')}
           </Link>
         </p>
@@ -634,11 +813,14 @@ export const ForgotPasswordPage = () => {
               id="forgot-email"
               type="email"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setErrorMsg(null); }}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               autoComplete="email"
               placeholder={t('forms.placeholder.email')}
-              className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+              className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
             />
           </label>
           {errorMsg ? (
@@ -649,13 +831,11 @@ export const ForgotPasswordPage = () => {
           <button
             type="submit"
             disabled={!email.trim() || lookupMutation.isPending}
-            className="inline-flex min-h-14 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-13 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {lookupMutation.isPending ? t('auth.sending') : t('auth.sendResetLink')}
           </button>
-          <p className="text-sm leading-7 text-brand-ink/58">
-            {t('auth.recoveryNote')}
-          </p>
+          <p className="text-sm leading-7 text-brand-ink/58">{t('auth.recoveryNote')}</p>
           <p className="text-sm text-brand-ink/58">
             <Link href="/login" className="font-semibold text-brand-forest hover:text-brand-forest-deep">
               &larr; {t('auth.backToLogin')}
@@ -690,11 +870,14 @@ export const ForgotPasswordPage = () => {
             <input
               id="reset-token"
               value={token}
-              onChange={(e) => { setToken(e.target.value); setErrorMsg(null); }}
+              onChange={(e) => {
+                setToken(e.target.value);
+                setErrorMsg(null);
+              }}
               required
               autoComplete="one-time-code"
               placeholder={t('forms.placeholder.token')}
-              className="h-14 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
+              className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
             />
           </label>
           <label className="grid gap-2">
@@ -702,9 +885,12 @@ export const ForgotPasswordPage = () => {
             <PasswordInput
               id="reset-password"
               value={newPassword}
-              onChange={(e) => { setNewPassword(e.target.value); setErrorMsg(null); }}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                setErrorMsg(null);
+              }}
               required
-              minLength={6}
+              minLength={8}
               autoComplete="new-password"
               placeholder={t('forms.placeholder.min6')}
             />
@@ -715,9 +901,12 @@ export const ForgotPasswordPage = () => {
             <PasswordInput
               id="reset-confirm"
               value={confirm}
-              onChange={(e) => { setConfirm(e.target.value); setErrorMsg(null); }}
+              onChange={(e) => {
+                setConfirm(e.target.value);
+                setErrorMsg(null);
+              }}
               required
-              minLength={6}
+              minLength={8}
               autoComplete="new-password"
             />
             {confirm && newPassword !== confirm ? (
@@ -732,7 +921,7 @@ export const ForgotPasswordPage = () => {
           <button
             type="submit"
             disabled={!resetCanSubmit || resetMutation.isPending}
-            className="inline-flex min-h-14 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-h-13 items-center justify-center rounded-full bg-brand-forest px-6 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition hover:bg-brand-forest-deep active:translate-y-[1px] disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {resetMutation.isPending ? t('auth.resetting') : t('auth.resetPassword')}
           </button>
