@@ -10,6 +10,7 @@ import { Reveal } from '../../shared/components/Reveal';
 import { api, API_PATHS } from '../../shared/api/client';
 import { fallbackVillas } from '../villas/villaFallbacks';
 import type { Villa } from '../villas/types';
+import { getArchitecturalSpecs } from '../villas/components/SanctuaryVisualizer';
 import { useTranslation, useCurrency } from '../../shared/i18n/hooks';
 import { MagneticButton } from '../../shared/components/MagneticButton';
 import { ParallaxImage } from '../../shared/components/ParallaxImage';
@@ -199,54 +200,129 @@ function VillaCollectionSection() {
     staleTime: 60_000,
   });
 
-  const displayVillas = villas && villas.length > 0 ? villas.slice(0, 3) : fallbackVillas.slice(0, 3);
-  const { t } = useTranslation();
+  const displayVillas = villas && villas.length > 0 ? villas.slice(0, 5) : fallbackVillas.slice(0, 5);
+  const [expandedIdx, setExpandedIdx] = useState(0);
+  const { t, lang } = useTranslation();
+  const { formatCurrency } = useCurrency();
+  const isVi = lang === 'vi';
 
   return (
     <section id="villas" className="bg-brand-sand py-24 lg:py-36 overflow-hidden">
       <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        <Reveal className="mb-14 max-w-3xl">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
-            {t('home.featured')}
-          </p>
-          <h2 className="font-serif text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
-            {t('home.featuredSubtitle')}
-          </h2>
-          <p className="mt-6 max-w-2xl text-base leading-8 text-brand-ink/66 sm:text-lg">
+        <Reveal className="mb-14 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div className="max-w-3xl">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-brand-sage">
+              {t('home.featured')}
+            </p>
+            <h2 className="font-serif text-4xl leading-[1.08] text-brand-charcoal sm:text-5xl lg:text-7xl">
+              {t('home.featuredSubtitle')}
+            </h2>
+          </div>
+          <p className="max-w-md text-base leading-8 text-brand-ink/66">
             {t('home.featuredDesc')}
           </p>
         </Reveal>
       </div>
 
-      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
+      {/* Desktop Avant-Garde Interactive Expanding Accordion Stage */}
+      <div className="mx-auto hidden max-w-[1480px] px-5 lg:block sm:px-8 lg:px-12">
         {isLoading ? (
-          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-7 lg:grid-cols-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="w-full">
-                <VillaCardSkeleton delay={i * 100} />
-              </div>
+              <VillaCardSkeleton key={i} delay={i * 100} />
             ))}
           </div>
         ) : (
-          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-            {displayVillas.map((villa, index) => {
-              // Dramatic entrance: Card 1 from left, Card 2 from bottom, Card 3 from right
-              const animProps = 
-                index === 0 ? { x: -60, y: 0, scale: 0.95 } :
-                index === 1 ? { x: 0, y: 60, scale: 0.95 } :
-                { x: 60, y: 0, scale: 0.95 };
-                
+          <div className="flex h-[580px] w-full gap-4">
+            {displayVillas.map((villa, idx) => {
+              const isExpanded = idx === expandedIdx;
+              const spec = getArchitecturalSpecs(villa);
               return (
-                <div key={villa.id} className="h-full w-full">
-                  <VillaCard 
-                    villa={villa} 
-                    delay={index * 0.15 + 0.2} 
-                    featured={false} 
-                    x={animProps.x}
-                    y={animProps.y}
-                    scale={animProps.scale}
-                    duration={1.4}
+                <div
+                  key={villa.id}
+                  onMouseEnter={() => setExpandedIdx(idx)}
+                  onClick={() => setExpandedIdx(idx)}
+                  className={`group relative h-full cursor-pointer overflow-hidden rounded-[2.2rem] transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    isExpanded ? 'flex-[3.4] shadow-[0_32px_90px_rgba(12,28,22,0.28)]' : 'flex-[0.85] opacity-85 hover:opacity-100'
+                  }`}
+                >
+                  <img
+                    src={villa.imageUrl}
+                    alt={villa.name}
+                    className={`h-full w-full object-cover transition-transform duration-1000 ${
+                      isExpanded ? 'scale-100' : 'scale-110'
+                    }`}
                   />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1914]/95 via-[#0b1914]/30 to-black/25" />
+
+                  {/* Top Index Pill */}
+                  <div className="absolute left-6 right-6 top-6 flex items-center justify-between text-white">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/40 font-serif text-base italic backdrop-blur-md">
+                      0{idx + 1}
+                    </span>
+                    {isExpanded && (
+                      <span className="rounded-full border border-white/20 bg-black/45 px-4 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-brand-sage-light backdrop-blur-md">
+                        {isVi ? spec.zoneVi : spec.zoneEn} · {spec.areaSqm}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Collapsed Vertical Title */}
+                  {!isExpanded && (
+                    <div className="absolute inset-x-0 bottom-10 flex flex-col items-center gap-3 text-white">
+                      <span className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-brand-sage-light">
+                        {villa.roomNumber}
+                      </span>
+                      <p className="writing-mode-vertical font-serif text-xl tracking-wide text-white/90">
+                        {villa.name}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Expanded Full Architectural Showcase */}
+                  {isExpanded && (
+                    <div className="absolute inset-x-8 bottom-8 flex flex-col justify-end text-white">
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-sage-light">
+                        {villa.roomNumber} · {villa.roomType} · {villa.capacity} {t('villas.guests')}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+                        <h3 className="font-serif text-4xl leading-tight text-white xl:text-5xl">
+                          {villa.name}
+                        </h3>
+                        <p className="font-serif text-3xl text-brand-paper">
+                          {formatCurrency(villa.pricePerNight)}
+                          <span className="ml-1 font-sans text-xs text-white/60">/{isVi ? 'đêm' : 'night'}</span>
+                        </p>
+                      </div>
+                      <p className="mt-3 max-w-xl line-clamp-2 text-sm leading-relaxed text-brand-paper/80">
+                        {villa.description}
+                      </p>
+                      <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/15 pt-4">
+                        <div className="flex flex-wrap gap-2 text-xs text-brand-paper/90">
+                          <span className="rounded-full bg-white/10 px-3 py-1 backdrop-blur-md">
+                            🌊 {isVi ? spec.poolSpecVi : spec.poolSpecEn}
+                          </span>
+                          <span className="rounded-full bg-white/10 px-3 py-1 backdrop-blur-md">
+                            ⛰️ {spec.elevation}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <Link
+                            href={`/booking/${villa.id}`}
+                            className="rounded-full bg-brand-paper px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-brand-forest-deep transition hover:bg-white"
+                          >
+                            {isVi ? 'Đặt Phòng Ngay' : 'Reserve Now'}
+                          </Link>
+                          <Link
+                            href={`/villas/${villa.slug || villa.id}`}
+                            className="rounded-full border border-white/35 bg-white/10 px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-white backdrop-blur-md transition hover:bg-white/20"
+                          >
+                            {isVi ? 'Chi tiết →' : 'Explore →'}
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -254,12 +330,21 @@ function VillaCollectionSection() {
         )}
       </div>
 
+      {/* Mobile & Tablet Grid */}
+      <div className="mx-auto max-w-[1440px] px-5 lg:hidden sm:px-8">
+        <div className="grid gap-7 sm:grid-cols-2">
+          {displayVillas.slice(0, 4).map((villa, index) => (
+            <VillaCard key={villa.id} villa={villa} delay={index * 0.1} />
+          ))}
+        </div>
+      </div>
+
       <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12">
-        <Reveal delay={0.3} className="mt-12 text-center">
+        <Reveal delay={0.2} className="mt-12 text-center">
           <MagneticButton>
             <Link
               href="/villas"
-              className="inline-flex min-h-12 w-fit items-center justify-center rounded-full border border-brand-forest px-8 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-forest transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest hover:text-brand-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
+              className="inline-flex min-h-12 w-fit items-center justify-center rounded-full border border-brand-forest bg-brand-forest px-8 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-brand-white transition duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-brand-forest-deep focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-forest"
             >
               {t('home.viewAll')}
             </Link>
