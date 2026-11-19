@@ -436,13 +436,26 @@ public class PaymentService {
             BigDecimal bookingRefund = booking.getRefundAmount() != null
                     ? booking.getRefundAmount() : BigDecimal.ZERO;
             booking.setRefundAmount(bookingRefund.add(refundAmount));
+
+            boolean isFullRefund = totalRefund.compareTo(payment.getAmount()) >= 0;
+            BookingStatus currentBookingStatus = booking.getStatus();
+            BookingStatus targetBookingStatus = currentBookingStatus;
+
+            if (isFullRefund && (currentBookingStatus == BookingStatus.PAID || currentBookingStatus == BookingStatus.PENDING_PAYMENT)) {
+                targetBookingStatus = BookingStatus.CANCELLED;
+                booking.setStatus(BookingStatus.CANCELLED);
+                booking.setCancelledAt(LocalDateTime.now());
+                booking.setCancelledBy(processedBy != null ? processedBy.getUsername() : "system");
+                booking.setCancellationReason("Hoàn tiền 100%: " + (reason != null ? reason : "Full refund"));
+            }
+
             bookingRepository.save(booking);
             transitionRepository.save(new BookingStatusTransition(
                     booking,
-                    booking.getStatus(),
-                    booking.getStatus(),
+                    currentBookingStatus,
+                    targetBookingStatus,
                     processedBy,
-                    "[Payment] Refund " + refundAmount + " (" + reason + ")"));
+                    "[Payment] " + (isFullRefund ? "Full Refund " : "Partial Refund ") + refundAmount + " (" + reason + ")"));
         }
 
         log.info("Payment {} refunded amount={} by {}", paymentId, refundAmount,

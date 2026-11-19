@@ -25,9 +25,11 @@ public class BookingScheduler {
     private static final Logger log = LoggerFactory.getLogger(BookingScheduler.class);
 
     private final BookingService bookingService;
+    private final AuditLogService auditLogService;
 
-    public BookingScheduler(BookingService bookingService) {
+    public BookingScheduler(BookingService bookingService, AuditLogService auditLogService) {
         this.bookingService = bookingService;
+        this.auditLogService = auditLogService;
     }
 
     /**
@@ -137,7 +139,7 @@ public class BookingScheduler {
 
     /**
      * Run daily at midnight to cleanup old audit logs.
-     * Keeps logs for 90 days by default.
+     * Keeps logs for RETENTION_DAYS (180 days).
      * Cron: "0 0 0 * * *" = at 00:00:00 every day.
      */
     @Scheduled(cron = "0 0 0 * * *")
@@ -145,9 +147,8 @@ public class BookingScheduler {
         log.debug("Scheduler: Starting audit log cleanup at {}", LocalDateTime.now());
         
         try {
-            // This would call AuditLogService to cleanup old logs
-            // Implementation depends on having a cleanup method in AuditLogService
-            log.info("Scheduler: Audit log cleanup completed");
+            long purgedCount = auditLogService.purgeExpiredLogs();
+            log.info("Scheduler: Audit log cleanup completed. Purged {} expired logs", purgedCount);
         } catch (Exception e) {
             log.error("Scheduler: Error during audit log cleanup: {}", e.getMessage(), e);
         }

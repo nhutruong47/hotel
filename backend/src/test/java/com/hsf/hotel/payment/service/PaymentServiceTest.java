@@ -512,6 +512,9 @@ class PaymentServiceTest {
             assertEquals(Payment.PaymentStatus.REFUNDED, result.getStatus());
             assertEquals(BigDecimal.valueOf(1000), result.getRefundAmount());
             assertNotNull(result.getRefundedAt());
+            assertEquals(BookingStatus.CANCELLED, testBooking.getStatus());
+            assertNotNull(testBooking.getCancelledAt());
+            assertEquals(testUser.getUsername(), testBooking.getCancelledBy());
         }
 
         @Test
