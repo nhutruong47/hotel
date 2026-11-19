@@ -310,7 +310,7 @@ export function FeaturedBanner({ promo }: { promo: Promotion }) {
       </div>
       {promo.imageUrl && (
         <div className="absolute -bottom-20 -right-20 h-80 w-80 opacity-20 lg:h-[400px] lg:w-[400px]">
-          <img src={promo.imageUrl} alt="" className="h-full w-full rounded-full object-cover" />
+          <img src={promo.imageUrl} alt="" className="h-full w-full rounded-full object-cover"  loading="lazy" decoding="async" />
         </div>
       )}
     </div>

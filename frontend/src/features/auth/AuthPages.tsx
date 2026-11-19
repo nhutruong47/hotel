@@ -39,10 +39,10 @@ function AuthShell({
       {/* Ambient architectural background */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <img
-          src="/images/nhu-hero-villa-4k.jpg"
+          src="/images/nhu-hero-villa-4k.webp"
           alt=""
           className="h-full w-full object-cover opacity-20 mix-blend-luminosity"
-        />
+         loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-br from-brand-forest-deep via-brand-forest-deep/95 to-black/90" />
         <div className="absolute -left-24 top-1/4 h-[440px] w-[440px] rounded-full bg-brand-sage/20 blur-[150px]" />
         <div className="absolute bottom-0 right-0 h-[360px] w-[360px] rounded-full bg-amber-300/10 blur-[140px]" />

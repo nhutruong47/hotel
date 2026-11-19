@@ -28,7 +28,7 @@ const EDITORIAL_ARTICLES: Blog[] = [
     category: 'ARCHITECTURE',
     readTime: '6 phút đọc',
     author: 'Kiến Trúc Sư Trần Minh Nhật',
-    imageUrl: '/images/nhu-hero-villa-4k.jpg',
+    imageUrl: '/images/nhu-hero-villa-4k.webp',
     createdAt: '2026-10-15',
     recommendedVillaSlug: 'hillside-residence-private-pool',
     recommendedVillaName: 'Hillside Residence (HR-03)',
@@ -42,7 +42,7 @@ const EDITORIAL_ARTICLES: Blog[] = [
     category: 'GASTRONOMY',
     readTime: '4 phút đọc',
     author: 'Bếp Trưởng Lê Hoàng Nam',
-    imageUrl: '/images/nhu-private-dining.jpg',
+    imageUrl: '/images/nhu-private-dining.webp',
     createdAt: '2026-10-12',
     recommendedVillaSlug: 'garden-pool-villa-da-lat',
     recommendedVillaName: 'Garden Pool Villa (GV-01)',
@@ -56,7 +56,7 @@ const EDITORIAL_ARTICLES: Blog[] = [
     category: 'WELLNESS',
     readTime: '5 phút đọc',
     author: 'Chuyên Gia Trị Liệu Mai Lâm',
-    imageUrl: '/images/nhu-infinity-pool.jpg',
+    imageUrl: '/images/nhu-infinity-pool.webp',
     createdAt: '2026-10-08',
     recommendedVillaSlug: 'water-courtyard-villa',
     recommendedVillaName: 'Water Courtyard Villa (WC-05)',
@@ -70,7 +70,7 @@ const EDITORIAL_ARTICLES: Blog[] = [
     category: 'DALAT GUIDE',
     readTime: '7 phút đọc',
     author: 'Nhu Concierge Team',
-    imageUrl: '/images/nhu-location-landscape.jpg',
+    imageUrl: '/images/nhu-location-landscape.webp',
     createdAt: '2026-10-02',
     recommendedVillaSlug: 'forest-pavilion',
     recommendedVillaName: 'Forest Pavilion (FP-06)',
@@ -150,10 +150,10 @@ export function BlogsPage() {
           >
             <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem]">
               <img
-                src={coverStory.imageUrl || '/images/nhu-hero-villa-4k.jpg'}
+                src={coverStory.imageUrl || '/images/nhu-hero-villa-4k.webp'}
                 alt={coverStory.title}
                 className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.03]"
-              />
+               loading="lazy" decoding="async" />
               <span className="absolute left-4 top-4 rounded-full bg-amber-300 px-3.5 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-brand-forest-deep">
                 ★ COVER STORY
               </span>
@@ -191,10 +191,10 @@ export function BlogsPage() {
               <div>
                 <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem]">
                   <img
-                    src={blog.imageUrl || '/images/nhu-villa-interior.jpg'}
+                    src={blog.imageUrl || '/images/nhu-villa-interior.webp'}
                     alt={blog.title}
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-                  />
+                   loading="lazy" decoding="async" />
                   <span className="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-widest text-white backdrop-blur-md">
                     {blog.category || 'JOURNAL'}
                   </span>
@@ -267,7 +267,7 @@ export function BlogDetailPage() {
               src={article.imageUrl}
               alt={article.title}
               className="mt-8 aspect-[16/9] w-full rounded-[1.5rem] object-cover shadow-md"
-            />
+             loading="lazy" decoding="async" />
           )}
 
           <div className="mt-8 space-y-5 whitespace-pre-line text-base leading-8 text-brand-ink/80 sm:text-lg">

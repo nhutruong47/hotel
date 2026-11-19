@@ -40,7 +40,7 @@ const CULINARY_CHAPTERS: CulinaryChapter[] = [
       "Served at your preferred waking hour either on a handcrafted rattan floating tray or your sun-dappled pine terrace.",
     priceUsd: 0,
     includedForGuests: true,
-    image: "/images/nhu-infinity-pool.jpg",
+    image: "/images/nhu-infinity-pool.webp",
     sommelierVi: "Kết hợp cùng: Cà phê Arabica Cầu Đất ủ thủ công, Trà Ô Long hoa lan & Nước ép dâu tây tươi hái sáng sớm.",
     sommelierEn: "Paired with: Hand-poured Cau Dat Arabica, Orchid Oolong tea & cold-pressed highland strawberry elixir.",
     courses: [
@@ -77,7 +77,7 @@ const CULINARY_CHAPTERS: CulinaryChapter[] = [
       "As golden hour filters through the pines, enjoy a three-tier artisanal tea service on your private timber deck.",
     priceUsd: 0,
     includedForGuests: true,
-    image: "/images/nhu-garden-courtyard.jpg",
+    image: "/images/nhu-garden-pool-villa.webp",
     sommelierVi: "Kết hợp cùng: Trà Ô Long Nướng Than Hồng, Trà Hoa Cúc Chi Mật Ong Rừng & Rượu vang sủi Prosecco.",
     sommelierEn: "Paired with: Charcoal-Roasted Oolong, Wild Chamomile Honey Infusion & chilled Prosecco.",
     courses: [
@@ -114,7 +114,7 @@ const CULINARY_CHAPTERS: CulinaryChapter[] = [
       "A private chef prepares and plates a bespoke six-course tasting menu right at your villa's dining pavilion.",
     priceUsd: 95,
     includedForGuests: false,
-    image: "/images/nhu-private-dining.jpg",
+    image: "/images/nhu-private-dining.webp",
     sommelierVi: "Kết hợp cùng: Gói Sommelier 4 ly rượu vang Pháp & Chile tuyển chọn theo từng món ăn.",
     sommelierEn: "Paired with: Optional 4-glass Old & New World Sommelier wine flight.",
     courses: [
@@ -203,7 +203,7 @@ export const DiningPage = () => {
                 src={activeChapter.image}
                 alt={isVi ? activeChapter.titleVi : activeChapter.titleEn}
                 className="h-full w-full object-cover transition duration-700"
-              />
+               loading="lazy" decoding="async" />
               <div className="absolute bottom-4 left-4 right-4 rounded-2xl bg-black/65 p-4 text-white backdrop-blur-md">
                 <p className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-amber-300">
                   🍷 SOMMELIER & TEA PAIRING

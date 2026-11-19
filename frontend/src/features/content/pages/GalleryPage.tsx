@@ -21,7 +21,7 @@ type ExhibitionFrame = {
 const EXHIBITION_FRAMES: ExhibitionFrame[] = [
   {
     id: "frame-01",
-    src: "/images/nhu-hero-villa-4k.jpg",
+    src: "/images/nhu-hero-villa-4k.webp",
     category: "ARCHITECTURE",
     titleVi: "Toàn Cảnh Hillside Residence Lúc Hoàng Hôn",
     titleEn: "Hillside Residence at Golden Hour",
@@ -34,7 +34,7 @@ const EXHIBITION_FRAMES: ExhibitionFrame[] = [
   },
   {
     id: "frame-02",
-    src: "/images/nhu-infinity-pool.jpg",
+    src: "/images/nhu-infinity-pool.webp",
     category: "WATER",
     titleVi: "Hồ Bơi Vô Cực Khoáng Ấm 30°C Giữa Sương Sớm",
     titleEn: "30°C Heated Mineral Infinity Pool in Morning Mist",
@@ -47,7 +47,7 @@ const EXHIBITION_FRAMES: ExhibitionFrame[] = [
   },
   {
     id: "frame-03",
-    src: "/images/nhu-villa-interior.jpg",
+    src: "/images/nhu-villa-interior.webp",
     category: "INTERIOR",
     titleVi: "Không Gian Phòng Ngủ Master Ngập Tràn Ánh Sáng",
     titleEn: "Sun-Drenched Master Sanctuary Suite",
@@ -60,7 +60,7 @@ const EXHIBITION_FRAMES: ExhibitionFrame[] = [
   },
   {
     id: "frame-04",
-    src: "/images/nhu-private-dining.jpg",
+    src: "/images/nhu-private-dining.webp",
     category: "GASTRONOMY",
     titleVi: "Bàn Tiệc Tối Ánh Nến Bên Hồ Bơi Riêng",
     titleEn: "Candlelit Poolside Chef's Table",
@@ -86,7 +86,7 @@ const EXHIBITION_FRAMES: ExhibitionFrame[] = [
   },
   {
     id: "frame-06",
-    src: "/images/nhu-location-landscape.jpg",
+    src: "/images/nhu-location-landscape.webp",
     category: "WATER",
     titleVi: "Bán Đảo Thông Nguyên Sinh Ven Hồ Tuyền Lâm",
     titleEn: "Private Pine Peninsula on Tuyen Lam Lake",
@@ -161,7 +161,7 @@ export const GalleryPage = () => {
               src={frame.src}
               alt={isVi ? frame.titleVi : frame.titleEn}
               className="h-full min-h-[280px] w-full object-cover transition duration-700 group-hover:scale-105"
-            />
+             loading="lazy" decoding="async" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-85 transition group-hover:opacity-95" />
 
             <div className="absolute left-4 top-4 flex items-center gap-2">
@@ -216,7 +216,7 @@ export const GalleryPage = () => {
                   src={lightboxFrame.src}
                   alt={isVi ? lightboxFrame.titleVi : lightboxFrame.titleEn}
                   className="max-h-[72vh] w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
               </div>
               <div className="flex flex-col justify-between p-6 sm:p-8">
                 <div>

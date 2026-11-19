@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     siteName: 'Nhu Villas',
     images: [
       {
-        url: '/images/nhu-hero-villa-4k.jpg',
+        url: '/images/nhu-hero-villa-4k.webp',
         width: 1600,
         height: 900,
         alt: 'Nhu Villas private pool villa at golden hour',
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     title: 'Nhu Villas | Private Luxury Villa Retreats',
     description:
       'Private pool villas, calm architecture, and refined hospitality for direct luxury stays.',
-    images: ['/images/nhu-hero-villa-4k.jpg'],
+    images: ['/images/nhu-hero-villa-4k.webp'],
   },
   robots: {
     index: true,

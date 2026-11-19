@@ -8,7 +8,7 @@ import { ParticlesBackground } from './ParticlesBackground';
 import { useMouseParallax } from '../hooks/useMouseParallax';
 import { useTranslation } from '../../../shared/i18n/hooks';
 
-const heroImage = '/images/nhu-hero-villa-4k.jpg';
+const heroImage = '/images/nhu-hero-villa-4k.webp';
 
 export function Hero() {
   const { t } = useTranslation();
@@ -43,6 +43,7 @@ export function Hero() {
             fill
             priority
             sizes="100vw"
+            fetchPriority="high"
             className="object-cover object-center"
           />
         </div>

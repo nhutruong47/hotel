@@ -36,7 +36,7 @@ const CURATED_RITUALS: RitualItem[] = [
       "Lướt nhẹ trên mặt hồ phẳng lặng như gương khi làn sương mù còn phủ kín các bán đảo thông. Kết thúc hành trình bằng tách cà phê Arabica Cầu Đất nóng hổi tại bến thuyền riêng.",
     descEn:
       "Glide across mirror-still waters as morning mist rises through the pine peninsula, concluding with hot Cau Dat Arabica coffee on our private jetty.",
-    image: "/images/nhu-location-landscape.jpg",
+    image: "/images/nhu-location-landscape.webp",
     recommendedVillaSlug: "lakefront-family-estate",
     recommendedVillaName: "Lakefront Estate (LE-04)",
   },
@@ -72,7 +72,7 @@ const CURATED_RITUALS: RitualItem[] = [
       "Kết hợp ngâm hồ bơi vô cực gia nhiệt 30°C với liệu trình massage đá bazan núi lửa nóng và tinh dầu thông đỏ ngay trong không gian riêng tư của biệt thự.",
     descEn:
       "Alternate between your 30°C heated infinity pool and a volcanic basalt hot-stone massage performed in the privacy of your residence.",
-    image: "/images/nhu-infinity-pool.jpg",
+    image: "/images/nhu-infinity-pool.webp",
     recommendedVillaSlug: "water-courtyard-villa",
     recommendedVillaName: "Water Courtyard Villa (WC-05)",
   },
@@ -90,7 +90,7 @@ const CURATED_RITUALS: RitualItem[] = [
       "Chuyến du ngoạn riêng tư tới vùng trà cổ hơn 100 năm tuổi ở độ cao 1,650m, tự tay sao trà cùng nghệ nhân bản địa và ngắm biển mây lúc chiều tà.",
     descEn:
       "Journey to century-old tea terraces at 1,650m altitude for a private tea-roasting session with master artisans.",
-    image: "/images/nhu-hero-villa-4k.jpg",
+    image: "/images/nhu-hero-villa-4k.webp",
     recommendedVillaSlug: "hillside-residence-private-pool",
     recommendedVillaName: "Hillside Residence (HR-03)",
   },
@@ -108,7 +108,7 @@ const CURATED_RITUALS: RitualItem[] = [
       "Quản gia biến sân hiên hồ bơi của bạn thành rạp chiếu phim 4K dưới bầu trời sao Đà Lạt, kèm chăn lông cừu ấm, lò sưởi gỗ thông và rượu vang đỏ đun nóng.",
     descEn:
       "Your pool deck transforms into a private starlight theater with cashmere throws, crackling pine fire, and spiced mulled wine.",
-    image: "/images/nhu-private-dining.jpg",
+    image: "/images/nhu-private-dining.webp",
     recommendedVillaSlug: "sanctuary-pool-villa",
     recommendedVillaName: "Sanctuary Pool Villa (PV-02)",
   },
@@ -190,7 +190,7 @@ export const ExperiencesPage = () => {
                       src={ritual.image}
                       alt={isVi ? ritual.titleVi : ritual.titleEn}
                       className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-                    />
+                     loading="lazy" decoding="async" />
                     <span className="absolute left-3 top-3 rounded-full bg-black/65 px-3 py-1 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-md">
                       🕒 {ritual.timeSlot}
                     </span>

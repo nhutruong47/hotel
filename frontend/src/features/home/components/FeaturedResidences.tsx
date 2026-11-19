@@ -18,7 +18,7 @@ const residences = [
     price: 1150,
     reviews: 19,
     rating: 5,
-    image: '/images/nhu-infinity-pool.jpg',
+    image: '/images/nhu-infinity-pool.webp',
   },
   {
     id: 'residence-2',
@@ -28,7 +28,7 @@ const residences = [
     desc: 'A tranquil courtyard villa arranged around reflective water features, featuring fine linens, warm stone elements, and spaces for late breakfast rituals.',
     reviews: 31,
     rating: 5,
-    image: '/images/nhu-garden-pool-villa.jpg',
+    image: '/images/nhu-garden-pool-villa.webp',
   },
   {
     id: 'residence-3',
@@ -38,7 +38,7 @@ const residences = [
     desc: 'A quiet pavilion designed for couples seeking deep shade, the natural sounds of the forest, and an intimate, smaller footprint.',
     reviews: 24,
     rating: 5,
-    image: '/images/nhu-villa-interior.jpg',
+    image: '/images/nhu-villa-interior.webp',
   }
 ];
 
@@ -60,8 +60,8 @@ export function FeaturedResidences() {
   
   const hillsideImages = [
     residences[0].image,
-    '/images/nhu-villa-interior.jpg',
-    '/images/nhu-private-dining.jpg'
+    '/images/nhu-villa-interior.webp',
+    '/images/nhu-private-dining.webp'
   ];
   
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -83,10 +83,10 @@ export function FeaturedResidences() {
         <div className="absolute inset-0 overflow-hidden pointer-events-none [mask-image:radial-gradient(ellipse_200%_80%_at_50%_50%,black_40%,transparent_100%)] [-webkit-mask-image:radial-gradient(ellipse_200%_80%_at_50%_50%,black_40%,transparent_100%)]">
           <div className="absolute inset-0 bg-brand-stone" />
           <img 
-            src="/images/nature-line-art.jpg" 
+            src="/images/nature-line-art.webp" 
             alt="Nature line art background"
             className="absolute inset-0 h-full w-full object-cover opacity-15 invert mix-blend-multiply"
-          />
+           loading="lazy" decoding="async" />
         </div>
 
         <div className="relative mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-12 xl:px-16 z-10">
@@ -99,7 +99,7 @@ export function FeaturedResidences() {
                   src={hillsideImages[0]} 
                   alt="Hillside Pool"
                   className="h-full w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
               </Reveal>
               
               {/* Top Right Stone */}
@@ -108,7 +108,7 @@ export function FeaturedResidences() {
                   src={hillsideImages[1]} 
                   alt="Villa Interior"
                   className="h-full w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
               </Reveal>
               
               {/* Bottom Right Stone */}
@@ -117,7 +117,7 @@ export function FeaturedResidences() {
                   src={hillsideImages[2]} 
                   alt="Private Dining"
                   className="h-full w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
               </Reveal>
             </div>  
 
@@ -183,7 +183,7 @@ export function FeaturedResidences() {
                 src={residences[1].image} 
                 alt={residences[1].title}
                 className="h-full w-full object-cover transition-transform duration-1000 hover:scale-[1.03]"
-              />
+               loading="lazy" decoding="async" />
             </div>
             <div className="mt-8 px-2">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-brand-ink/50">
@@ -211,7 +211,7 @@ export function FeaturedResidences() {
                 src={residences[2].image} 
                 alt={residences[2].title}
                 className="h-full w-full object-cover transition-transform duration-1000 hover:scale-[1.03]"
-              />
+               loading="lazy" decoding="async" />
             </div>
             
             {/* Floating Overlap Card */}

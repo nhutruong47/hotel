@@ -107,7 +107,7 @@ function pushQuadUVs(
 
 /**
  * Cinematic pool reflection layer rendered with a tiny WebGL shader.
- * Falls back gracefully: a static <img> sits behind it in the parent
+ * Falls back gracefully: a static <img loading="lazy" decoding="async"> sits behind it in the parent
  * component, so if this canvas ever fails to initialize, the user sees
  * the same composition minus the ripple (no broken UI).
  */

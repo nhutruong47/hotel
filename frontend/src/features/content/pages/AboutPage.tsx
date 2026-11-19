@@ -16,7 +16,7 @@ const MATERIAL_SPECIMENS = [
       "Bề mặt đá xẻ thô giữ nhiệt tự nhiên vào ban ngày và tỏa hơi ấm dịu nhẹ quanh khu vực hồ bơi vô cực vào ban đêm khi nhiệt độ Đà Lạt xuống 16°C.",
     descEn:
       "Raw-split volcanic basalt retains daytime solar warmth and provides slip-resistant tactile grounding around our heated infinity pools.",
-    image: "/images/nhu-infinity-pool.jpg",
+    image: "/images/nhu-infinity-pool.webp",
   },
   {
     id: "cedar",
@@ -29,7 +29,7 @@ const MATERIAL_SPECIMENS = [
       "Hệ khung dầm và trần gỗ cao 4.8 mét tỏa hương tinh dầu gỗ tự nhiên dịu nhẹ, giúp nhịp tim chậm lại ngay khi bước qua hiên biệt thự.",
     descEn:
       "4.8-meter timber ceilings release subtle phytoncide aromatics, lowering cortisol and framing panoramic pine forest views.",
-    image: "/images/nhu-villa-interior.jpg",
+    image: "/images/nhu-villa-interior.webp",
   },
   {
     id: "thermal",
@@ -42,7 +42,7 @@ const MATERIAL_SPECIMENS = [
       "Mỗi biệt thự sở hữu hồ bơi riêng được gia nhiệt bằng năng lượng mặt trời và bơm nhiệt biến tần, cho phép bơi lội giữa làn sương mù Đà Lạt suốt bốn mùa.",
     descEn:
       "Heated via solar-assisted heat pumps so guests can swim comfortably amidst misty highland mornings year-round.",
-    image: "/images/nhu-hero-villa-4k.jpg",
+    image: "/images/nhu-hero-villa-4k.webp",
   },
 ];
 
@@ -154,7 +154,7 @@ export const AboutPage = () => {
               src={activeMaterial.image}
               alt={isVi ? activeMaterial.titleVi : activeMaterial.titleEn}
               className="h-full w-full object-cover transition duration-700"
-            />
+             loading="lazy" decoding="async" />
             <span className="absolute left-4 top-4 rounded-full bg-black/60 px-3.5 py-1.5 text-[0.65rem] font-bold uppercase tracking-widest text-amber-300 backdrop-blur-md">
               {activeMaterial.badge}
             </span>
@@ -269,10 +269,10 @@ export const AboutPage = () => {
           </div>
           <div className="overflow-hidden rounded-[1.75rem]">
             <img
-              src="/images/nhu-location-landscape.jpg"
+              src="/images/nhu-location-landscape.webp"
               alt="Tuyen Lam Lake Location"
               className="h-full w-full object-cover"
-            />
+             loading="lazy" decoding="async" />
           </div>
         </div>
       </section>

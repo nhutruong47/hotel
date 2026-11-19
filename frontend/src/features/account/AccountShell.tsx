@@ -153,7 +153,7 @@ export function AccountShell({ children }: { children: React.ReactNode }) {
                     src={user.avatarUrl}
                     alt={displayName}
                     className="h-14 w-14 rounded-full object-cover ring-2 ring-brand-forest/20"
-                  />
+                   loading="lazy" decoding="async" />
                 ) : (
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-brand-forest text-xl font-semibold text-brand-white">
                     {initial}

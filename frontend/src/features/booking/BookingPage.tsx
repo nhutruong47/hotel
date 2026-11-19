@@ -468,7 +468,7 @@ export const BookingPage = () => {
                   src={villa.imageUrl}
                   alt={villa.name}
                   className="h-full w-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
                 <div className="absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wider text-white backdrop-blur-md">
                   {villa.roomNumber} · {spec.areaSqm}
                 </div>

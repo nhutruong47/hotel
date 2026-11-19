@@ -217,7 +217,7 @@ export function ProfilePage() {
             <div className="mb-6 flex items-center gap-5">
               <div className="shrink-0">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover ring-2 ring-brand-forest/25" />
+                  <img src={avatarUrl} alt="Avatar" className="h-20 w-20 rounded-full object-cover ring-2 ring-brand-forest/25"  loading="lazy" decoding="async" />
                 ) : (
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-forest text-3xl font-semibold text-brand-white">
                     {displayName[0]?.toUpperCase() || 'U'}

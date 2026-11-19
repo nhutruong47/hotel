@@ -83,7 +83,7 @@ export function WishlistPage() {
                     src={item.room.imageUrl || '/images/placeholder.svg'}
                     alt={item.room.roomNumber}
                     className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                   loading="lazy" decoding="async" />
                 </Link>
                 {/* Remove button */}
                 <button

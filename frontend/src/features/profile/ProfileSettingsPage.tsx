@@ -197,7 +197,7 @@ export const ProfileSettingsPage = () => {
                   src={avatarUrl}
                   alt="Avatar preview"
                   className="h-20 w-20 rounded-full object-cover ring-2 ring-brand-forest/30"
-                />
+                 loading="lazy" decoding="async" />
               ) : (
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-forest text-3xl text-brand-white">
                   {(profile.fullName || profile.username).charAt(0).toUpperCase()}

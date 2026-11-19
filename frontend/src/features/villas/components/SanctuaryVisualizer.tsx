@@ -27,11 +27,11 @@ export interface ArchitecturalSpec {
 }
 
 const DEFAULT_FALLBACK_GALLERY = [
-  '/images/nhu-garden-pool-villa.jpg',
-  '/images/nhu-villa-interior.jpg',
-  '/images/nhu-infinity-pool.jpg',
-  '/images/nhu-private-dining.jpg',
-  '/images/nhu-location-landscape.jpg',
+  '/images/nhu-garden-pool-villa.webp',
+  '/images/nhu-villa-interior.webp',
+  '/images/nhu-infinity-pool.webp',
+  '/images/nhu-private-dining.webp',
+  '/images/nhu-location-landscape.webp',
 ];
 
 export function getArchitecturalSpecs(villa: Villa): ArchitecturalSpec {
@@ -346,7 +346,7 @@ export function SpotlightStageView({
                       : 'border-transparent opacity-60 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
+                  <img src={img} alt="" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -462,10 +462,10 @@ export function EstateBlueprintView({
       <div className="relative min-h-[540px] overflow-hidden rounded-[2.25rem] border border-brand-forest/20 bg-[#10231c] p-6 text-white shadow-[0_28px_90px_rgba(12,28,22,0.25)] sm:p-8">
         {/* Background Atmospheric Image + Topographic SVG Contour Lines */}
         <img
-          src="/images/nhu-location-landscape.jpg"
+          src="/images/nhu-location-landscape.webp"
           alt="Nhu Villas Estate Masterplan"
           className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-luminosity"
-        />
+         loading="lazy" decoding="async" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_75%,rgba(28,88,78,0.45)_0%,rgba(12,28,22,0.92)_75%)]" />
 
         {/* Architectural Topographic SVG Contours */}
@@ -573,7 +573,7 @@ export function EstateBlueprintView({
       <div className="flex flex-col justify-between rounded-[2.25rem] bg-brand-paper p-6 shadow-[0_24px_80px_rgba(32,52,43,0.1)] sm:p-8">
         <div>
           <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem]">
-            <img src={active.imageUrl} alt={active.name} className="h-full w-full object-cover" />
+            <img src={active.imageUrl} alt={active.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
             <div className="absolute left-4 top-4 rounded-full bg-brand-forest-deep/90 px-3.5 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-white backdrop-blur-md">
               📍 {isVi ? spec.zoneVi : spec.zoneEn}
             </div>
@@ -624,7 +624,7 @@ export function EstateBlueprintView({
                 src={img}
                 alt=""
                 className="aspect-[4/3] w-full rounded-xl object-cover"
-              />
+               loading="lazy" decoding="async" />
             ))}
           </div>
         </div>
@@ -734,7 +734,7 @@ export function QuickInspectDrawer({
                 src={gallery[photoIdx % gallery.length]}
                 alt={villa.name}
                 className="h-full w-full object-cover"
-              />
+               loading="lazy" decoding="async" />
               <div className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs text-white backdrop-blur-md">
                 {(photoIdx % gallery.length) + 1} / {gallery.length}
               </div>
@@ -749,7 +749,7 @@ export function QuickInspectDrawer({
                     idx === photoIdx % gallery.length ? 'border-brand-forest scale-105' : 'border-transparent opacity-60'
                   }`}
                 >
-                  <img src={img} alt="" className="h-full w-full object-cover" />
+                  <img src={img} alt="" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                 </button>
               ))}
             </div>
@@ -911,7 +911,7 @@ export function VillaCompareModal({
             return (
               <div key={v.id} className="flex flex-col justify-between rounded-[1.5rem] bg-brand-white p-5 shadow-sm">
                 <div>
-                  <img src={v.imageUrl} alt={v.name} className="aspect-[16/10] w-full rounded-xl object-cover" />
+                  <img src={v.imageUrl} alt={v.name} className="aspect-[16/10] w-full rounded-xl object-cover"  loading="lazy" decoding="async" />
                   <p className="mt-4 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-brand-sage">
                     {v.roomNumber} · {v.roomType}
                   </p>

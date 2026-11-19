@@ -271,7 +271,7 @@ export const WishlistPage = () => {
                   src={item.room.imageUrl || '/images/placeholder.svg'}
                   alt={item.room.roomNumber}
                   className="aspect-[4/3] w-full rounded-[1.55rem] object-cover"
-                />
+                 loading="lazy" decoding="async" />
               </Link>
               <div className="p-5">
                 <h2 className="text-2xl text-brand-charcoal">{`${t('villas.room')} item.room.roomNumber`}</h2>

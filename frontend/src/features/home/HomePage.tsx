@@ -15,11 +15,11 @@ import { useTranslation, useCurrency } from '../../shared/i18n/hooks';
 import { MagneticButton } from '../../shared/components/MagneticButton';
 import { ParallaxImage } from '../../shared/components/ParallaxImage';
 
-const villaExteriorImage = '/images/nhu-garden-pool-villa.jpg';
-const villaInteriorImage = '/images/nhu-villa-interior.jpg';
-const diningImage = '/images/nhu-private-dining.jpg';
-const poolImage = '/images/nhu-infinity-pool.jpg';
-const locationImage = '/images/nhu-location-landscape.jpg';
+const villaExteriorImage = '/images/nhu-garden-pool-villa.webp';
+const villaInteriorImage = '/images/nhu-villa-interior.webp';
+const diningImage = '/images/nhu-private-dining.webp';
+const poolImage = '/images/nhu-infinity-pool.webp';
+const locationImage = '/images/nhu-location-landscape.webp';
 
 const amenities = [
   'Private pool',
@@ -252,7 +252,7 @@ function VillaCollectionSection() {
                     className={`h-full w-full object-cover transition-transform duration-1000 ${
                       isExpanded ? 'scale-100' : 'scale-110'
                     }`}
-                  />
+                   loading="lazy" decoding="async" />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1914]/95 via-[#0b1914]/30 to-black/25" />
 
                   {/* Top Index Pill */}

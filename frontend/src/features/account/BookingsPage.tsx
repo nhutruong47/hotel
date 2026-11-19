@@ -261,7 +261,7 @@ function BookingCard({ booking }: { booking: Booking }) {
                   src={booking.room.imageUrl}
                   alt={`Villa ${booking.room.roomNumber}`}
                   className="h-full w-full object-cover transition-transform hover:scale-105"
-                />
+                 loading="lazy" decoding="async" />
               ) : (
                 <div className="flex h-full w-full min-h-[110px] items-center justify-center bg-brand-forest/8 transition-colors hover:bg-brand-forest/15">
                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-brand-forest/30">
@@ -276,7 +276,7 @@ function BookingCard({ booking }: { booking: Booking }) {
                 src={booking.room.imageUrl}
                 alt={`Villa ${booking.room.roomNumber ?? '—'}`}
                 className="h-full w-full object-cover"
-              />
+               loading="lazy" decoding="async" />
             ) : (
               <div className="flex h-full w-full min-h-[110px] items-center justify-center bg-brand-forest/8">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-brand-forest/30">

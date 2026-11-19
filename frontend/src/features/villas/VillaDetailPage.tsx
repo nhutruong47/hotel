@@ -20,10 +20,10 @@ const InteractiveMap = dynamic(() => import('./components/InteractiveMap'), {
 });
 
 const fallbackImages = [
-  '/images/nhu-hero-villa.jpg',
-  '/images/nhu-villa-interior.jpg',
-  '/images/nhu-infinity-pool.jpg',
-  '/images/nhu-private-dining.jpg',
+  '/images/nhu-hero-villa.webp',
+  '/images/nhu-villa-interior.webp',
+  '/images/nhu-infinity-pool.webp',
+  '/images/nhu-private-dining.webp',
 ];
 
 interface Review {
@@ -94,7 +94,7 @@ function GalleryLightbox({
           src={images[currentIndex]}
           alt={`Gallery ${currentIndex + 1}`}
           className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
-        />
+         loading="lazy" decoding="async" />
         <p className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-4 py-2 text-sm text-white">
           {currentIndex + 1} / {images.length}
         </p>
@@ -362,7 +362,7 @@ function SanctuaryRhythmSection({ villa, galleryImages }: { villa: Villa; galler
 
         <div className="grid items-center gap-8 rounded-[2.2rem] border border-white/12 bg-white/5 p-6 backdrop-blur-md lg:grid-cols-[1.15fr_0.85fr] sm:p-8">
           <div className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem]">
-            <img src={current.image} alt={current.titleVi} className="h-full w-full object-cover transition duration-700" />
+            <img src={current.image} alt={current.titleVi} className="h-full w-full object-cover transition duration-700"  loading="lazy" decoding="async" />
             <div className="absolute left-4 top-4 rounded-full bg-black/55 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-amber-300 backdrop-blur-md">
               {current.icon} {current.time} — {isVi ? spec.zoneVi : spec.zoneEn}
             </div>

@@ -35,7 +35,7 @@ public class FileApi {
         MediaType mediaType = lower.endsWith(".png") ? MediaType.IMAGE_PNG : MediaType.IMAGE_JPEG;
         return ResponseEntity.ok()
                 .contentType(mediaType)
-                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePrivate())
+                .cacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic())
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + safeName + "\"")
                 .header("X-Content-Type-Options", "nosniff")
                 .body(file);
