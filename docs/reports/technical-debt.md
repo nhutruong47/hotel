@@ -58,14 +58,51 @@ Loại nợ: **Code** (thiết kế/code smell), **Arch** (kiến trúc/boundary
 | TD-41 | Doc | Tài liệu mâu thuẫn (README: GiST, PG17, role CUSTOMER/INSPECTOR; ARCHITECTURE.md DB section; skills deploy/run-locally SQL Server) | `README.md`, `docs/ARCHITECTURE.md`, `.agents/skills/*` | Onboarding sai | S | P2 | Liên tục |
 | TD-42 | Ops | Scripts chết trong `tools/` (Python one-off với đường dẫn cá nhân) | `tools/` | Nhiễu | S | P3 | P5 |
 | TD-43 | Code | H2 ship trong jar prod (runtime scope) | `backend/pom.xml` | Bề mặt tấn công, kích thước | S | P2 | P2-DB |
+| TD-44 | Data/Code | Tiền tệ lẫn lộn: giá seed thang USD (450…) trong hệ thống VND; phụ thu khách "25" | `config/DataInitializer.java`; `BookingService.java:185-192` (baseline) | Thu sai tiền (450 VND), Stripe từ chối | S | P1 | P1-Payment (phát hiện khi làm P1) |
+| TD-45 | Code | Hóa đơn PDF in `$` và tính `Net Total = Total − Discount` (trừ giảm giá 2 lần) | `common/service/InvoiceService.java:54,61-63` (baseline) | Chứng từ sai | S | P1 | P1-Payment (phát hiện khi làm P1) |
+| TD-46 | Code | Prompt AI concierge báo giá USD, phụ thu "25 USD" | `common/service/GeminiService.java:55,76,203` (baseline) | Tư vấn sai giá | S | P2 | P1-Payment (phát hiện khi làm P1) |
+| TD-47 | Sec | Mật khẩu tài khoản demo hardcode trong seed | `config/DataInitializer.java:552` | Ai biết mật khẩu đăng nhập được tài khoản demo trên môi trường chạy profile `seed` | S | P2 | P5 |
+| TD-48 | Data | `upsertVilla` ghi đè giá villa mỗi lần khởi động với profile `seed` | `config/DataInitializer.java` (`upsertVilla`) | Giá admin sửa bị mất khi restart | S | P2 | P2-DB |
+| TD-49 | Test | Chưa có test phân quyền tham số hóa endpoint × role (AC-06) | `src/test` | Sai quyền khó phát hiện khi thêm endpoint | M | P1 | P6 |
+| TD-50 | Test | Reuse Stripe Checkout Session/PaymentIntent không có kiểm thử tự động | `payment/api/PaymentApi.java` (`createStripeCheckout`), `PaymentService.findReusableIntent` | Regression thu tiền 2 lần không bị phát hiện | M | P1 | P6 (Stripe test mode / stripe-mock) |
+
+## 1b. Trạng thái xử lý (cập nhật 2026-11-20)
+
+| ID | Trạng thái | Nhánh | Ghi chú / bằng chứng |
+|---|---|---|---|
+| TD-01 | ✔ Đã xử lý | `feature/p0-hardening` | `booking/model/Occupancy.java`; `DayUseOverlapIntegrationTest` |
+| TD-02 | ✔ Đã xử lý | `feature/p0-hardening` | `PaymentServiceTest` (P0-03) |
+| TD-03 | ✔ Đã xử lý | `feature/p0-hardening` | DTO + `ReadOnlyTransactions`; `NoEntityLeakIntegrationTest` |
+| TD-04 | ✔ Đã xử lý | `feature/p0-hardening` | V13; `BookingIntegrityIT` |
+| TD-05 | ✔ Đã xử lý | `feature/p0-hardening` | Testcontainers/failsafe; CI `./mvnw -B verify` |
+| TD-06 | ✔ Đã xử lý | `feature/p0-hardening` | `CsrfCookieFilterTest` |
+| TD-07 | ✔ Đã xử lý | `feature/p1-security-payment` | Refund thủ công `PENDING_MANUAL` (V14); adapter không báo success giả; `ManualRefundIT` |
+| TD-08 | ⚠ Đã sửa, chưa test tự động | `feature/p1-security-payment` | Reuse session/intent + idempotency key; xem TD-50 |
+| TD-09 | ✔ Đã xử lý | `feature/p1-security-payment` | `PaymentService.recordUnappliedTransfer`; `SepayWebhookApiTest` |
+| TD-10 | ✔ Đã xử lý | `feature/p1-security-payment` | `VoucherService.releaseDiscountCode`; `BookingPolicyIntegrationTest` |
+| TD-11 | ✔ Đã xử lý | `feature/p1-security-payment` | `modifyBooking` viết lại (ADR-0009 Q3); `BookingPolicyIntegrationTest` |
+| TD-12 | ⚠ Một phần | `feature/p1-security-payment` | Natural idempotency (cùng khách/villa/ngày/số khách khi hold còn hiệu lực); chưa dùng header `Idempotency-Key` |
+| TD-13 | ✔ Đã xử lý | `feature/p1-security-payment` | `security/Authz.java`; còn thiếu test ma trận (TD-49) |
+| TD-14 | ✔ Đã xử lý | `feature/p1-security-payment` | `AdminCredentialValidatorTest` |
+| TD-15 | ✔ Đã xử lý | `feature/p1-security-payment` | `app.auth.auto-verify-without-email`; `UserServiceVerificationPolicyTest` |
+| TD-16 | ✔ Đã xử lý | `feature/p1-security-payment` | `NEXT_PUBLIC_ENABLE_DEMO_LOGIN`; mật khẩu seed còn lại → TD-47 |
+| TD-17 | ⚠ Một phần | `feature/p1-security-payment` | Rate limiter: evict window hết hạn, chỉ áp `/api/**`, bucket nhạy cảm riêng (`RateLimitFilterTest`). Vẫn in-memory (session, rate limit, lockout) → P3/P5 |
+| TD-18 | ❌ Mở | — | P5 |
+| TD-39 | ⚠ Giảm tác động | `feature/p1-security-payment` | Dữ liệu chuyển sang VND (≥ 100.000) nên heuristic `<100000 = USD` không còn kích hoạt với giá villa; heuristic vẫn còn trong FE |
+| TD-40 | ✔ Đã xử lý | `feature/p1-security-payment` | `SessionProvider.refresh` coi `user:null` từ server là chính thức |
+| TD-44 | ✔ Đã xử lý | `feature/p1-security-payment` | ADR-0009 Q6; `PricingPolicy` + seed VND + `CurrencySanityCheck`; `PricingPolicyTest`. Dữ liệu prod cần chuyển đổi khi deploy (R-26) |
+| TD-45 | ✔ Đã xử lý | `feature/p1-security-payment` | `InvoiceService` in Subtotal/Discount/Phí/VAT/Total bằng VND; không trừ giảm giá lần hai. Chưa có test PDF |
+| TD-46 | ✔ Đã xử lý | `feature/p1-security-payment` | Prompt dùng VND + phụ thu cấu hình. Chưa có test |
+
+Các mục không liệt kê ở bảng này giữ nguyên trạng thái **Mở** theo phase trong bảng §1.
 
 ## 2. Tổng hợp
 
 | Ưu tiên | Số mục | Effort ước lượng |
 |---|---:|---|
-| P0 | 6 | ~1.5 tuần |
-| P1 | 15 | ~4 tuần |
-| P2 | 17 | ~5 tuần |
+| P0 | 6 | ~1.5 tuần — **6/6 đã xử lý** (P0) |
+| P1 | 15 (+4 mới: TD-44, TD-45, TD-49, TD-50) | ~4 tuần — đã xử lý 12, một phần 3 (TD-08, TD-12, TD-17); còn mở TD-18, TD-31, TD-32, TD-33, TD-35, TD-49, TD-50 |
+| P2 | 17 (+4 mới: TD-46, TD-47, TD-48; TD-39, TD-40 đã xử lý/giảm) | ~5 tuần |
 | P3 | 5 | ~2 tuần |
 
 ## 3. Quy tắc quản lý nợ

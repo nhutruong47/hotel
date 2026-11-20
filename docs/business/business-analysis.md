@@ -10,7 +10,10 @@
 **Quy ước**
 - `[Nguồn: …]` — quy tắc có căn cứ trong tài liệu được chấp nhận hoặc mã nguồn.
 - **[CẦN XÁC NHẬN]** — quy tắc chưa có căn cứ hoặc hiện có mâu thuẫn; cần chủ villa/PO xác nhận trước khi triển khai. Không được hiện thực hóa như sự thật.
+- **✔ Đã chốt — ADR-0009 Qn** — câu hỏi đã được nhóm kiến trúc chốt theo ủy quyền của repo owner (2026-11-20), xem [ADR-0009](../adr/0009-business-policy-decisions.md). Triển khai trên nhánh `feature/p1-security-payment`.
 - `Hiện trạng`: ✔ có · ⚠ một phần · ❌ chưa có.
+
+> **Cập nhật 2026-11-20 (P1):** Q1–Q7, Q9, Q11 đã chốt trong ADR-0009 và được hiện thực + kiểm thử. Q8 (housekeeping) và Q10 (SLA) vẫn mở/là mục tiêu P4–P5. Các mục **[CẦN XÁC NHẬN]** còn lại trong tài liệu (early/late check-in, housekeeping, inventory, rate plan, đặt cọc) chưa được chốt.
 
 ---
 
@@ -42,14 +45,14 @@
 | D4 | Guest management | ⚠ | Hồ sơ user, wishlist, review; không có guest profile tách khỏi tài khoản đăng nhập |
 | D5 | Reservation management | ✔ | State machine, hold 15', voucher/promotion, sửa/hủy |
 | D6 | Check-in / Check-out | ✔ | STAFF thao tác; không có ID/giấy tờ, không có early/late fee |
-| D7 | Payment | ✔ / ⚠ | Stripe, SePay, manual; thiếu reconciliation tự động |
-| D8 | Refund | ⚠ | Policy tự tính; SePay/manual hoàn giả lập (R-08) |
+| D7 | Payment | ✔ / ⚠ | Stripe, SePay, manual; P1: tiền lệch/trễ/trùng được ghi nhận + cờ `review_required` (ADR-0009 Q4); chưa có job đối soát tự động với Stripe API |
+| D8 | Refund | ✔ | Policy tự tính; P1: SePay/manual đi quy trình `PENDING_MANUAL` → ADMIN xác nhận mã giao dịch ngân hàng (ADR-0009 Q5) |
 | D9 | Housekeeping | ⚠ | Chỉ có `VillaInspection` (SCHEDULED → IN_PROGRESS → PASSED/FLAGGED_ISSUES → REPAIRED); không có trạng thái buồng phòng, task dọn |
 | D10 | Inventory | ❌ | Không có (minibar/amenity kit/linen) |
 | D11 | Employee management | ⚠ | Chỉ có role trên `users`; không ca làm, không phân công |
 | D12 | Reporting | ✔ | Doanh thu, occupancy, Excel/PDF |
 | D13 | Notification | ✔ | Outbox + RabbitMQ email + in-app |
-| D14 | Audit | ✔ | `audit_logs` (180 ngày), `booking_status_transitions` |
+| D14 | Audit | ✔ | `audit_logs` (180 ngày; `PAYMENT_*` 10 năm — ADR-0009 Q9), `booking_status_transitions` |
 
 ---
 
@@ -61,28 +64,28 @@
 |---|---|---|---|
 | BR-B01 | Vòng đời: `PENDING_PAYMENT → PAID → CHECKED_IN → CHECKED_OUT → COMPLETED`; nhánh `PENDING_PAYMENT → CANCELLED/EXPIRED`, `PAID → CANCELLED/NO_SHOW`. `COMPLETED, CANCELLED, EXPIRED, NO_SHOW` là terminal | `BOOKING_LIFECYCLE_AND_RBAC.md:10-30`; `BookingStateMachine.java` | ✔ |
 | BR-B02 | Chỉ thanh toán thành công mới được đưa booking sang `PAID`; cập nhật trạng thái chung không được làm việc này | `BOOKING_LIFECYCLE_AND_RBAC.md:29-30` | ✔ |
-| BR-B03 | Một villa không được có hai booking "đang hiệu lực" (khác `CANCELLED/EXPIRED/NO_SHOW`) chồng khoảng `[check_in, check_out)` | `BookingRepository.java:72-87` | ✔ cho ≥1 đêm; ❌ cho 0 đêm |
-| BR-B04 | Hold tồn kho 15 phút (`APP_BOOKING_HOLD_MINUTES`); `holdExpiresAt` là nguồn chân lý; hết hạn → `EXPIRED`, trả voucher, nhả ngày | `BOOKING_LIFECYCLE_AND_RBAC.md:32-42`; `BookingService.java:337` | ✔ (promotion chưa trả lại — TD-10) |
-| BR-B05 | Thanh toán đến sau khi hết hạn: đối soát thủ công, **không** hồi sinh booking đã hết hạn | `BOOKING_LIFECYCLE_AND_RBAC.md:40-42` | ⚠ code ghi PAID kèm ghi chú review |
+| BR-B03 | Một villa không được có hai booking "đang hiệu lực" (khác `CANCELLED/EXPIRED/NO_SHOW`) chồng khoảng `[check_in, check_out)` | `BookingRepository.java:72-87` | ✔ cho ≥1 đêm; ✔ cho 0 đêm từ P0 (`booking/model/Occupancy.java`, V13 `bookings_no_overlap`) |
+| BR-B04 | Hold tồn kho 15 phút (`APP_BOOKING_HOLD_MINUTES`); `holdExpiresAt` là nguồn chân lý; hết hạn → `EXPIRED`, trả voucher, nhả ngày | `BOOKING_LIFECYCLE_AND_RBAC.md:32-42`; `BookingService.java:337` | ✔ (P1: promotion cũng được trả lượt — `VoucherService.releaseDiscountCode`, `BookingPolicyIntegrationTest.expiredHoldReleasesPromotionUse`) |
+| BR-B05 | Thanh toán đến sau khi hết hạn: đối soát thủ công, **không** hồi sinh booking đã hết hạn | `BOOKING_LIFECYCLE_AND_RBAC.md:40-42` | ✔ ghi PAID + `review_required` + báo ADMIN (ADR-0009 Q4) |
 | BR-B06 | Ngày check-in không trước hôm nay | `BookingService.java:946` | ✔ |
 | BR-B07 | Số khách ≤ sức chứa villa | `BookingService.java:250` | ✔ |
-| BR-B08 | Không đặt trùng lịch bảo trì villa | `BookingService.java:243-248` | ✔ khi tạo; ❌ khi sửa (TD-11) |
-| BR-B09 | **Day-use** (check-in = check-out) được phép với giá 50% một đêm | `BookingService.java:55,171-172`; `BookingServiceTest.java:145`; `BUSINESS_ANALYSIS.md:81` | ⚠ **[CẦN XÁC NHẬN]**: có còn bán day-use không? Nếu có: day-use có chiếm cả ngày (chặn khách check-out/check-in cùng ngày) hay chỉ khung giờ? `BOOKING_LIFECYCLE_AND_RBAC.md` không nhắc tới day-use. **Tạm thời (P0)**: giữ day-use, coi như chiếm trọn ngày `[d, d+1)` — `booking/model/Occupancy.java`, V13 |
-| BR-B10 | Min/max stay theo villa (mặc định 1 / 30 đêm) | `db/postgresql/V1__init.sql:86`; `room/model/Room.java:112-115` | ⚠ **không được enforce** trong `createBooking` (không có tham chiếu `getMinimumStay`). Lưu ý `minimum_stay = 1` mâu thuẫn với day-use 0 đêm (BR-B09) — **[CẦN XÁC NHẬN]** |
+| BR-B08 | Không đặt trùng lịch bảo trì villa | `BookingService.java:243-248` | ✔ khi tạo; ✔ khi sửa từ P1 (`BookingService.modifyBooking`) |
+| BR-B09 | **Day-use** (check-in = check-out) được phép với giá 50% một đêm | `BookingService.java:55,171-172`; `BookingServiceTest.java:145`; `BUSINESS_ANALYSIS.md:81` | ✔ Đã chốt — ADR-0009 Q1: giữ day-use, chiếm trọn ngày `[d, d+1)` (`booking/model/Occupancy.java`, V13), giá 50% một đêm (`booking/service/PricingPolicy.java`), miễn min-stay |
+| BR-B10 | Min/max stay theo villa (mặc định 1 / 30 đêm) | `db/postgresql/V1__init.sql:86`; `room/model/Room.java:112-115` | ✔ Đã chốt — ADR-0009 Q11: booking qua đêm phải có số đêm trong `[minimum_stay, maximum_stay]` (lỗi `MIN_STAY_NOT_MET` / `MAX_STAY_EXCEEDED`); day-use được miễn (`BookingService.validateStayLength`) |
 | BR-B11 | Sửa booking chỉ khi `PENDING_PAYMENT` hoặc `PAID` | `BookingService.java:615-619` | ✔ |
-| BR-B12 | Sửa booking `PAID` làm thay đổi tổng tiền → thu thêm/hoàn chênh lệch | — | **[CẦN XÁC NHẬN]** chính sách chênh lệch |
-| BR-B13 | No-show: booking `PAID` không check-in, đánh dấu sau khi **qua ngày check-out** | `BookingScheduler.java:108-120` | ⚠ **[CẦN XÁC NHẬN]** mốc no-show (thường là sau giờ check-in ngày đến) và có hoàn tiền không |
+| BR-B12 | Sửa booking `PAID` làm thay đổi tổng tiền → thu thêm/hoàn chênh lệch | — | ✔ Đã chốt — ADR-0009 Q3: `PENDING_PAYMENT` được tính lại giá đầy đủ; `PAID` chỉ tự sửa khi tổng **không đổi**, nếu đổi → `MODIFICATION_REQUIRES_SUPPORT` (hủy theo policy + đặt lại, hoặc ADMIN xử lý) |
+| BR-B13 | No-show: booking `PAID` không check-in, đánh dấu sau khi **qua ngày check-out** | `BookingScheduler.java:108-120` | ✔ Đã chốt — ADR-0009 Q2: giữ mốc tự động sau ngày check-out (không giải phóng sớm villa có thể đang có khách); STAFF đánh dấu thủ công từ ngày sau check-in; no-show không hoàn tiền (BR-R01 <1 ngày = 0%) |
 | BR-B14 | Auto-complete booking `CHECKED_OUT` sau ngày check-out | `BookingScheduler.java:71-85` | ✔ |
-| BR-B15 | Một tài khoản chỉ hủy/sửa booking của mình (trừ ADMIN) | `BookingService.java:514,612` | ✔ |
-| BR-B16 | Tạo booking idempotent theo `Idempotency-Key` | — | ❌ đề xuất (TD-12) |
+| BR-B15 | Một tài khoản chỉ hủy/sửa booking của mình (trừ ADMIN); STAFF+ được **xem** mọi booking (hàng đợi vận hành) | `BookingService.java:514,612`; P1: `security/Authz.java` | ✔ |
+| BR-B16 | Tạo booking idempotent | — | ✔ P1 (dạng "natural idempotency"): cùng khách gửi lại đúng villa/ngày/số khách khi hold còn hiệu lực → trả lại booking cũ thay vì 409 (`BookingService.findIdempotentReplay`, `BookingFlowIntegrationTest.testDuplicateSubmitIsIdempotent`). Header `Idempotency-Key` chưa dùng cho booking |
 
 ### 3.2 Pricing & khuyến mãi
 
 | ID | Quy tắc | Nguồn | Hiện trạng |
 |---|---|---|---|
-| BR-P01 | Tổng = subtotal − giảm giá + phí dịch vụ 8% + VAT 10% (phí và thuế tính trên subtotal **trước** giảm giá) | `BookingService.java:61-62,194-196,316` | ✔ — **[CẦN XÁC NHẬN]** VAT/phí tính trước hay sau giảm giá theo quy định kế toán |
+| BR-P01 | Tổng = (subtotal − giảm giá) + phí dịch vụ 8% + VAT 10%. **Baseline**: phí và thuế tính trên subtotal **trước** giảm giá (`BookingService.java:61-62,194-196,316`) | `booking/service/PricingPolicy.java` (P1) | ✔ Đã chốt — ADR-0009 Q7: phí dịch vụ 8% trên `subtotal − discount`; VAT 10% trên `(subtotal − discount) + phí dịch vụ` (Thông tư 219/2013/TT-BTC Điều 7, thông lệ "++"). Booking cũ giữ nguyên số tiền |
 | BR-P02 | Đêm thứ Sáu, thứ Bảy +15% | `BookingService.java:178-181` | ✔ |
-| BR-P03 | Phụ thu khách thứ 3 trở đi: 25/đêm/khách | `BookingService.java:185-192` | ⚠ **[CẦN XÁC NHẬN]** đơn vị tiền (25 VND là vô nghĩa; tiền tệ hệ thống là VND `DECIMAL(12,0)`) |
+| BR-P03 | Phụ thu khách thứ 3 trở đi: 25/đêm/khách (baseline) | `BookingService.java:185-192`; P1: `PricingPolicy.java` | ✔ Đã chốt — ADR-0009 Q6: tiền tệ duy nhất VND; phụ thu cấu hình `app.pricing.extra-guest-fee-per-night` (env `APP_PRICING_EXTRA_GUEST_FEE`), mặc định **625.000 VND**/khách/đêm từ khách thứ 3 |
 | BR-P04 | Tiền tệ VND, không có số lẻ | Schema `DECIMAL(12,0)` | ✔ |
 | BR-P05 | Voucher: cố định hoặc %, trừ số lượng nguyên tử (`quantity > 0`) | `VoucherService`; `BookingService.java:259-280` | ✔ |
 | BR-P06 | Promotion: áp dụng theo villa, số đêm tối thiểu, giá trị tối thiểu, giới hạn lượt | `BookingService.java:281-313` | ✔ |
@@ -97,8 +100,8 @@
 | BR-PAY02 | Webhook khóa row payment; sự kiện thành công lặp lại là idempotent; thành công đến sau thất bại vẫn được settle | `BOOKING_LIFECYCLE_AND_RBAC.md:49-50` | ✔ |
 | BR-PAY03 | Chỉ webhook Stripe (chữ ký) và SePay (API key) là public; không có webhook nhận status từ caller | `BOOKING_LIFECYCLE_AND_RBAC.md:57-61` | ✔ |
 | BR-PAY04 | Tra cứu Stripe session phải kiểm tra quyền sở hữu booking | `BOOKING_LIFECYCLE_AND_RBAC.md:54-56` | ✔ |
-| BR-PAY05 | Một booking chỉ được có **một** payment thành công | — (suy ra từ BR-PAY01) | ⚠ **[CẦN XÁC NHẬN]**: thanh toán trùng xử lý thế nào — tự động refund hay đối soát tay? Code hiện ghi PAID + note |
-| BR-PAY06 | SePay đối chiếu theo nội dung `NV-<bookingId>` + số tiền chính xác; giao dịch trễ được ghi nhận để đối soát | `BOOKING_LIFECYCLE_AND_RBAC.md:57-58`; `SepayWebhookApi.java` | ⚠ mismatch không được ghi nhận (TD-09) |
+| BR-PAY05 | Một booking chỉ được có **một** payment thành công | — (suy ra từ BR-PAY01) | ✔ Đã chốt — ADR-0009 Q4: tiền trùng/trễ/sai số tiền **luôn được ghi nhận** (`PAID` + `review_required` + lý do), báo ADMIN in-app, **không tự động hoàn**; webhook không còn ném lỗi vì lệch tiền. Hàng đợi: `GET /payments?reviewRequired=true` |
+| BR-PAY06 | SePay đối chiếu theo nội dung `NV-<bookingId>` + số tiền chính xác; giao dịch trễ được ghi nhận để đối soát | `BOOKING_LIFECYCLE_AND_RBAC.md:57-58`; `SepayWebhookApi.java` | ✔ P1: mismatch được ghi thành payment cờ review, không xác nhận booking (`PaymentService.recordUnappliedTransfer`, `SepayWebhookApiTest`) |
 | BR-PAY07 | Đặt cọc / thanh toán nhiều lần | — | ❌ **[CẦN XÁC NHẬN]** |
 
 ### 3.4 Refund & hủy
@@ -109,9 +112,9 @@
 | BR-R02 | Refund yêu cầu `Idempotency-Key`; lặp key thành công trả kết quả cũ; gateway từ chối không tăng tổng hoàn | `BOOKING_LIFECYCLE_AND_RBAC.md:62-64` | ✔ |
 | BR-R03 | Tổng hoàn ≤ số đã thanh toán | `PaymentService.java:384-388` | ✔ |
 | BR-R04 | Hoàn 100% một booking `PAID/PENDING_PAYMENT` → booking `CANCELLED` | `PaymentService.java:444-450` | ✔ |
-| BR-R05 | Hoàn tiền cho thanh toán chuyển khoản (SePay/manual) là quy trình **thủ công** cần xác nhận người chuyển | — | ❌ hiện giả lập thành công — **[CẦN XÁC NHẬN]** quy trình và SLA |
+| BR-R05 | Hoàn tiền cho thanh toán chuyển khoản (SePay/manual) là quy trình **thủ công** cần xác nhận người chuyển | P1: `PaymentService.refund/confirmManualRefund/rejectManualRefund`; V14 | ✔ Đã chốt — ADR-0009 Q5: refund không phải thẻ Stripe thật → `PENDING_MANUAL`; ADMIN chuyển khoản rồi xác nhận kèm `bankReference` → `SUCCEEDED` (hoặc `FAILED` khi hủy yêu cầu). Refund đang chờ được tính vào giới hạn hoàn. SLA mục tiêu 5 ngày làm việc (chưa enforce) |
 | BR-R06 | Chỉ ADMIN được hoàn tiền/hủy hành chính | `BOOKING_LIFECYCLE_AND_RBAC.md:138` | ✔ |
-| BR-R07 | Khách cung cấp thông tin ngân hàng khi hủy booking chuyển khoản | `BookingService.java:541-543` | ✔ — **[CẦN XÁC NHẬN]** thời gian lưu trữ dữ liệu ngân hàng |
+| BR-R07 | Khách cung cấp thông tin ngân hàng khi hủy booking chuyển khoản | `BookingService.java:541-543` | ✔ Đã chốt — ADR-0009 Q9: thông tin ngân hàng hoàn tiền bị xóa **180 ngày** sau khi hủy nếu không còn refund `PENDING_MANUAL` (job `BookingScheduler.purgeRefundBankDetails`, 00:30 hằng ngày; `ManualRefundIT`) |
 
 ### 3.5 Check-in / Check-out
 
@@ -145,13 +148,13 @@
 
 | ID | Quy tắc | Nguồn | Hiện trạng |
 |---|---|---|---|
-| BR-ID01 | Role hierarchy `ADMIN > MANAGER > STAFF > USER`; backend là nơi phân quyền duy nhất | `BOOKING_LIFECYCLE_AND_RBAC.md:124-142` | ⚠ check thủ công không theo hierarchy |
+| BR-ID01 | Role hierarchy `ADMIN > MANAGER > STAFF > USER`; backend là nơi phân quyền duy nhất | `BOOKING_LIFECYCLE_AND_RBAC.md:124-142` | ✔ P1: mọi check dùng `security/Authz.java` (`UserRole.includes`); không còn `"ADMIN".equals(...)` trong controller/service |
 | BR-ID02 | Email chuẩn hóa `trim + lowercase`, unique | `BOOKING_LIFECYCLE_AND_RBAC.md:104-107` | ✔ |
-| BR-ID03 | Đăng ký không tạo phiên cho tới khi xác minh email | `BOOKING_LIFECYCLE_AND_RBAC.md:109-112` | ⚠ bị bỏ qua khi email tắt (`UserService.java:170-172`) |
+| BR-ID03 | Đăng ký không tạo phiên cho tới khi xác minh email | `BOOKING_LIFECYCLE_AND_RBAC.md:109-112` | ✔ P1: tự xác minh khi không có email chỉ khi bật tường minh `app.auth.auto-verify-without-email` (mặc định `false`); nếu email tắt và cờ tắt → đăng ký trả `REGISTRATION_UNAVAILABLE` (`UserServiceVerificationPolicyTest`) |
 | BR-ID04 | Khóa tài khoản sau 5 lần sai trong 15' | `LoginAttemptService.java` | ✔ (in-memory) |
 | BR-N01 | Email qua outbox cùng transaction nghiệp vụ; at-least-once; nội dung phải an toàn khi lặp | `BOOKING_LIFECYCLE_AND_RBAC.md:66-79` | ✔ |
 | BR-N02 | Thông báo in-app chỉ chủ sở hữu thao tác được; ID không tồn tại/không sở hữu đều 404 | `BOOKING_LIFECYCLE_AND_RBAC.md:81-86` | ✔ |
-| BR-A01 | Audit log lưu 180 ngày, redact bí mật | `AuditLogService`; `BookingScheduler.java:145` | ✔ — **[CẦN XÁC NHẬN]** 180 ngày có đủ cho yêu cầu kế toán/thuế (thường ≥ 5–10 năm cho chứng từ thanh toán) |
+| BR-A01 | Audit log lưu 180 ngày, redact bí mật | `AuditLogService`; `BookingScheduler.java:145` | ✔ Đã chốt — ADR-0009 Q9: hành động thường lưu 180 ngày; hành động tài chính `PAYMENT_*` lưu **10 năm** (Luật Kế toán 2015 Điều 41) — `AuditLogService.purgeExpiredLogs` |
 
 ---
 
@@ -171,9 +174,9 @@ flowchart TD
     WH --> V{Số tiền khớp<br/>và còn hold?}
     SW --> V
     V -- Có --> PAID[PAID + email xác nhận]
-    V -- Hết hold --> REC[Ghi nhận + đối soát tay<br/>không hồi sinh booking]
-    V -- Sai số tiền --> MM[CẦN XÁC NHẬN: lưu AMOUNT_MISMATCH]
-    B -. quá 15' .-> EXP[EXPIRED, trả voucher]
+    V -- Hết hold / trùng --> REC[Ghi PAID + review_required<br/>báo ADMIN, không hồi sinh booking]
+    V -- Sai số tiền --> MM[Ghi PAID + review_required<br/>booking giữ PENDING — ADR-0009 Q4]
+    B -. quá 15' .-> EXP[EXPIRED, trả voucher/promotion]
 ```
 
 ### 4.2 Lưu trú
@@ -197,9 +200,11 @@ flowchart TD
     POL --> ADM[ADMIN thực hiện refund<br/>Idempotency-Key]
     ADM --> G{Kênh}
     G -- Stripe --> SR[Stripe refund API]
-    G -- SePay/manual --> MR[CẦN XÁC NHẬN: chuyển khoản tay + xác nhận]
+    G -- SePay/manual --> MR[PENDING_MANUAL<br/>ADMIN chuyển khoản]
+    MR --> CF{ADMIN xác nhận<br/>bankReference?}
+    CF -- Có --> OK
+    CF -- Hủy yêu cầu --> RF[refund FAILED, tổng hoàn không đổi]
     SR --> OK[payment REFUNDED / PARTIALLY_REFUNDED]
-    MR --> OK
 ```
 
 ### 4.4 Housekeeping (đề xuất, chờ xác nhận)
@@ -222,14 +227,14 @@ flowchart LR
 |---|---|---|---|---|
 | FR-01 | Tìm villa theo ngày, số khách, giá, loại | D3/D5 | Must | ✔ |
 | FR-02 | Tạo booking với hold tồn kho, voucher/promotion | D5 | Must | ✔ |
-| FR-03 | Chặn mọi đặt chồng lịch, kể cả dưới tải đồng thời | D5 | Must | ⚠ (0 đêm) |
-| FR-04 | Tạo booking idempotent (retry an toàn) | D5 | Should | ❌ |
+| FR-03 | Chặn mọi đặt chồng lịch, kể cả dưới tải đồng thời | D5 | Must | ✔ (P0: V13 + Occupancy; `BookingIntegrityIT`) |
+| FR-04 | Tạo booking idempotent (retry an toàn) | D5 | Should | ✔ (P1, natural idempotency) |
 | FR-05 | Thanh toán Stripe và chuyển khoản SePay, tự xác nhận | D7 | Must | ✔ |
-| FR-06 | Không thu tiền hai lần cho một booking | D7 | Must | ⚠ |
-| FR-07 | Đối soát giao dịch (trễ, sai số tiền, trùng) | D7 | Must | ❌ |
-| FR-08 | Hủy theo policy, hoàn tiền idempotent, phản ánh đúng số đã hoàn | D8 | Must | ⚠ |
+| FR-06 | Không thu tiền hai lần cho một booking | D7 | Must | ⚠ P1: tái sử dụng Stripe Checkout Session/PaymentIntent + idempotency key; chưa kiểm thử tự động với Stripe thật |
+| FR-07 | Đối soát giao dịch (trễ, sai số tiền, trùng) | D7 | Must | ⚠ P1: ghi nhận + cờ review + hàng đợi ADMIN; chưa có job đối soát với Stripe API |
+| FR-08 | Hủy theo policy, hoàn tiền idempotent, phản ánh đúng số đã hoàn | D8 | Must | ✔ (P0 refund double-count; P1 refund thủ công 2 bước) |
 | FR-09 | Check-in, check-out, no-show bởi STAFF | D6 | Must | ✔ |
-| FR-10 | Sửa ngày/số khách với tái định giá và kiểm tra lịch đầy đủ | D5 | Should | ⚠ |
+| FR-10 | Sửa ngày/số khách với tái định giá và kiểm tra lịch đầy đủ | D5 | Should | ✔ (P1, ADR-0009 Q3) |
 | FR-11 | Trạng thái buồng phòng và task dọn | D9 | Should | ❌ |
 | FR-12 | Lịch bảo trì chặn bán | D3/D9 | Must | ✔ |
 | FR-13 | Thông báo email/in-app theo sự kiện booking/payment | D13 | Must | ✔ |
@@ -286,16 +291,16 @@ Các giá trị mục tiêu là **đề xuất** cho quy mô single-property; đ
 
 ## 9. Câu hỏi mở (tổng hợp [CẦN XÁC NHẬN])
 
-| # | Câu hỏi | Ảnh hưởng | Người quyết |
-|---|---|---|---|
-| Q1 | Có tiếp tục bán **day-use** (BR-B09)? Nếu có, day-use chiếm cả ngày hay khung giờ? | Thiết kế constraint V13, validateDates | PO / chủ villa |
-| Q2 | Mốc **no-show** và chính sách tiền khi no-show (BR-B13) | Scheduler | PO |
-| Q3 | Sửa booking PAID làm đổi giá: thu thêm/hoàn chênh lệch thế nào (BR-B12) | Payment | PO + kế toán |
-| Q4 | Thanh toán trùng: auto-refund hay đối soát tay (BR-PAY05) | Payment | PO + kế toán |
-| Q5 | Quy trình/SLA hoàn tiền chuyển khoản (BR-R05) | Refund | Kế toán |
-| Q6 | Phụ thu khách thêm: mức VND thực tế (BR-P03) | Pricing | PO |
-| Q7 | Phí/VAT tính trước hay sau giảm giá (BR-P01) | Pricing, hóa đơn | Kế toán |
-| Q8 | Mô hình housekeeping (BR-H01..H06), role Housekeeper | P4 | Vận hành |
-| Q9 | Thời gian lưu audit log và dữ liệu ngân hàng (BR-A01, BR-R07) | Retention | Pháp chế |
-| Q10 | SLA availability, RPO/RTO (NFR-03/04) | DevOps | PO |
-| Q11 | Min/max stay có được enforce (BR-B10) | Booking | PO |
+| # | Câu hỏi | Ảnh hưởng | Người quyết | Trạng thái |
+|---|---|---|---|---|
+| Q1 | Có tiếp tục bán **day-use** (BR-B09)? Nếu có, day-use chiếm cả ngày hay khung giờ? | Thiết kế constraint V13, validateDates | PO / chủ villa | ✔ Đã chốt — ADR-0009 Q1: giữ day-use, chiếm trọn ngày, miễn min-stay |
+| Q2 | Mốc **no-show** và chính sách tiền khi no-show (BR-B13) | Scheduler | PO | ✔ Đã chốt — ADR-0009 Q2: tự động sau ngày check-out; STAFF thủ công từ ngày sau check-in; không hoàn tiền |
+| Q3 | Sửa booking PAID làm đổi giá: thu thêm/hoàn chênh lệch thế nào (BR-B12) | Payment | PO + kế toán | ✔ Đã chốt — ADR-0009 Q3: PAID chỉ tự sửa khi tổng không đổi, còn lại `MODIFICATION_REQUIRES_SUPPORT` |
+| Q4 | Thanh toán trùng: auto-refund hay đối soát tay (BR-PAY05) | Payment | PO + kế toán | ✔ Đã chốt — ADR-0009 Q4: ghi nhận + `review_required` + báo ADMIN; không auto-refund |
+| Q5 | Quy trình/SLA hoàn tiền chuyển khoản (BR-R05) | Refund | Kế toán | ✔ Đã chốt — ADR-0009 Q5: `PENDING_MANUAL` → ADMIN xác nhận `bankReference`; SLA mục tiêu 5 ngày làm việc |
+| Q6 | Phụ thu khách thêm: mức VND thực tế (BR-P03) | Pricing | PO | ✔ Đã chốt — ADR-0009 Q6: hệ thống chỉ dùng VND; 625.000 VND/khách/đêm (cấu hình được) |
+| Q7 | Phí/VAT tính trước hay sau giảm giá (BR-P01) | Pricing, hóa đơn | Kế toán | ✔ Đã chốt — ADR-0009 Q7: phí trên giá sau giảm; VAT trên giá sau giảm + phí |
+| Q8 | Mô hình housekeeping (BR-H01..H06), role Housekeeper | P4 | Vận hành | Còn mở — tạm gộp Housekeeper vào STAFF; quyết ở P4 |
+| Q9 | Thời gian lưu audit log và dữ liệu ngân hàng (BR-A01, BR-R07) | Retention | Pháp chế | ✔ Đã chốt — ADR-0009 Q9: audit 180 ngày / `PAYMENT_*` 10 năm; bank details 180 ngày sau hủy |
+| Q10 | SLA availability, RPO/RTO (NFR-03/04) | DevOps | PO | Còn mở (mục tiêu) — ADR-0009 Q10 đặt mục tiêu 99.5%, RPO ≤ 24h, RTO ≤ 4h cho P5; chưa cam kết SLA |
+| Q11 | Min/max stay có được enforce (BR-B10) | Booking | PO | ✔ Đã chốt — ADR-0009 Q11: enforce cho booking qua đêm, day-use được miễn |

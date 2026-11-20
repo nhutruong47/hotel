@@ -40,8 +40,8 @@ Sau `V12__align_entity_schema.sql`. Có 25 bảng. Khóa chính `BIGSERIAL` tr�
 | 12 | `reviews` | FK user/room/booking | không CHECK rating 1–5; không UNIQUE per booking |
 | 13 | `review_photos` | FK review | không PK, không index |
 | 14 | `wishlists` | UNIQUE (user_id, room_id) | — |
-| 15 | `payments` | `transaction_ref` UNIQUE; `intent_id` UNIQUE; `version` | status/method/gateway không CHECK |
-| 16 | `payment_refunds` | UNIQUE (payment_id, idempotency_key); CHECK status, amount > 0 | — |
+| 15 | `payments` | `transaction_ref` UNIQUE; `intent_id` UNIQUE; `version`; `review_required`/`review_reason` + partial index (V14) | status/method/gateway không CHECK |
+| 16 | `payment_refunds` | UNIQUE (payment_id, idempotency_key); CHECK status (thêm `PENDING_MANUAL` ở V14), amount > 0; `bank_reference`, FK `confirmed_by`, `confirmed_at`, CHECK `confirmed_at IS NULL OR bank_reference IS NOT NULL` (V14) | — |
 | 17 | `notifications` | FK user; index (user_id, is_read) | — |
 | 18 | `notification_outbox` | CHECK status, attempts ≥ 0; `version` | — |
 | 19 | `audit_logs` | index entity | `user_id` không FK (chủ đích, append-only) |
@@ -52,7 +52,7 @@ Sau `V12__align_entity_schema.sql`. Có 25 bảng. Khóa chính `BIGSERIAL` tr�
 | 24 | `villa_maintenances` | CHECK end > start | status không CHECK; overlap chỉ kiểm ở code |
 | 25 | `villa_inspections` | FK room (CASCADE) | `SERIAL/INT` + `TIMESTAMPTZ` lệch chuẩn |
 
-Drift giữa entity và schema: 23 entity dùng `Integer id`, schema dùng `BIGINT`. Chỉ `PaymentRefund`, `NotificationOutbox` và `AuditLog` dùng `Long`. Cần `PostgresMigrationIT` để xác nhận `ddl-auto=validate` có chấp nhận hay không.
+Drift giữa entity và schema: 23 entity dùng `Integer id`, schema dùng `BIGINT`. Chỉ `PaymentRefund`, `NotificationOutbox` và `AuditLog` dùng `Long`. `PostgresMigrationIT` (P0, PostgreSQL 16.6) xác nhận `ddl-auto=validate` **chấp nhận** drift này; vẫn là nợ kỹ thuật (TD-19) cần chuẩn hóa ở P2.
 
 ---
 
@@ -61,7 +61,7 @@ Drift giữa entity và schema: 23 entity dùng `Integer id`, schema dùng `BIGI
 ### 3.1 Mục tiêu
 
 - Đặt lưới an toàn ở DB cho invariant BR-B03: một villa không có hai booking hiệu lực chồng lịch.
-- Day-use (`check_in_date = check_out_date`, BR-B09) **được giữ** và chiếm trọn ngày `[d, d+1)`. Đây là cách khớp với `booking/model/Occupancy.java` trên nhánh `feature/p0-hardening`. Câu hỏi Q1 trong [business-analysis.md](../business/business-analysis.md#9-câu-hỏi-mở-tổng-hợp-cần-xác-nhận) vẫn mở. Nếu PO quyết định bỏ day-use, chỉ cần đổi CHECK thành `>` ở migration sau.
+- Day-use (`check_in_date = check_out_date`, BR-B09) **được giữ** và chiếm trọn ngày `[d, d+1)`. Đây là cách khớp với `booking/model/Occupancy.java` trên nhánh `feature/p0-hardening`. Q1 đã chốt trong [ADR-0009](../adr/0009-business-policy-decisions.md) (giữ day-use, chiếm trọn ngày). Nếu sau này bỏ day-use, chỉ cần đổi CHECK thành `>` ở migration mới.
 - Status "không chiếm chỗ" gồm `CANCELLED`, `EXPIRED`, `NO_SHOW`. Danh sách này phải đồng bộ với `BookingRepository` và `BookingStatus`.
 
 ### 3.2 Script: `db/postgresql/V13__booking_integrity.sql` (thiết kế)
@@ -148,23 +148,61 @@ Sau rollback phải deploy lại bản ứng dụng trước V13, hoặc giữ b
 
 ---
 
+## 3b. V14 — Payment review & manual refunds (P1)
+
+File: `backend/src/main/resources/db/postgresql/V14__payment_review_and_manual_refunds.sql`. Quyết định nghiệp vụ: [ADR-0009](../adr/0009-business-policy-decisions.md) Q4 (ghi nhận + đối soát tiền trễ/trùng/sai số tiền) và Q5 (hoàn tiền chuyển khoản thủ công 2 bước). **Chỉ thêm (additive)**, không sửa dòng dữ liệu hiện có.
+
+| Bảng | Thay đổi | Ghi chú |
+|---|---|---|
+| `payments` | `review_required BOOLEAN NOT NULL DEFAULT FALSE`; `review_reason VARCHAR(500)` | Entity `Payment.reviewRequired/reviewReason`, `Payment.flagForReview(reason)` |
+| `payments` | `idx_payments_review_required ON payments (created_at DESC) WHERE review_required` | Partial index cho hàng đợi `GET /payments?reviewRequired=true` |
+| `payment_refunds` | CHECK `chk_payment_refund_status` thêm `PENDING_MANUAL` (`PROCESSING, PENDING_MANUAL, SUCCEEDED, FAILED`) | Thiết kế ban đầu ghi `MANUAL_PENDING`; tên thực tế là `PENDING_MANUAL` |
+| `payment_refunds` | `bank_reference VARCHAR(128)`; `confirmed_by BIGINT` + FK `fk_payment_refunds_confirmed_by → users(id)`; `confirmed_at TIMESTAMP` | Entity `PaymentRefund.bankReference/confirmedBy/confirmedAt` |
+| `payment_refunds` | CHECK `chk_payment_refund_manual_reference`: `confirmed_at IS NULL OR bank_reference IS NOT NULL` | Refund thủ công đã xác nhận bắt buộc có mã giao dịch ngân hàng |
+
+Vòng đời refund:
+
+| Từ | Đến | Kích hoạt | Ảnh hưởng tổng tiền |
+|---|---|---|---|
+| — | `PROCESSING` | ADMIN refund payment thẻ Stripe thật (`PaymentGateway.supportsAutomaticRefund = true`) | Chưa |
+| `PROCESSING` | `SUCCEEDED` / `FAILED` | Stripe trả kết quả | `SUCCEEDED`: cộng `payments.refund_amount`, đồng bộ `bookings.refund_amount` |
+| — | `PENDING_MANUAL` | ADMIN refund payment SePay/chuyển khoản/manual/mock | Chưa; số tiền đã được "giữ chỗ" khi kiểm tra over-refund |
+| `PENDING_MANUAL` | `SUCCEEDED` | `POST /payments/{id}/refunds/{refundId}/confirm {bankReference}` | Cộng tổng hoàn; hoàn 100% booking `PAID` → `CANCELLED` |
+| `PENDING_MANUAL` | `FAILED` | `POST /payments/{id}/refunds/{refundId}/reject` | Không |
+
+### 3b.1 Rollback: `db/rollback/U14__payment_review_and_manual_refunds.sql`
+
+- **Guard**: DO-block `RAISE EXCEPTION` nếu còn refund `PENDING_MANUAL` (CHECK cũ không chứa trạng thái này). Phải xác nhận hoặc hủy các yêu cầu đó trước.
+- Xóa CHECK `chk_payment_refund_manual_reference`, FK `fk_payment_refunds_confirmed_by`, các cột `confirmed_at`, `confirmed_by`, `bank_reference`; khôi phục CHECK status 3 giá trị; xóa index và cột `review_*` của `payments`; xóa dòng `flyway_schema_history` version `14`.
+- **Lưu ý**: rollback làm **mất** dữ liệu `bank_reference`/`confirmed_*` và cờ review. Backup trước khi chạy.
+
+### 3b.2 Kiểm chứng (PostgreSQL 16.6, 2026-11-20)
+
+| Kiểm thử | Kết quả |
+|---|---|
+| `PostgresMigrationIT` (V1→V14 + Hibernate `validate`) | Pass; `manualRefundWorkflowSchemaExists` xác nhận CHECK có `PENDING_MANUAL` và cột `review_required` |
+| `ManualRefundIT` | Refund chuyển khoản → `PENDING_MANUAL` (tổng không đổi) → job retention giữ bank details → xác nhận `VCB-IT-001` → `REFUNDED`, refund `SUCCEEDED` → job xóa bank details |
+| Chạy tay | Chèn refund `PENDING_MANUAL` → U14 dừng với `U14 aborted: PENDING_MANUAL refunds exist…`; chuyển sang `FAILED` → U14 rollback thành công (cột `review_required` biến mất) → chạy lại V14 thành công |
+
+---
+
 ## 4. Thay đổi schema mục tiêu (P2 và sau đó)
 
-Thứ tự đề xuất. Số version thực tế cấp phát khi triển khai.
+Thứ tự đề xuất. Số version thực tế cấp phát khi triển khai. **Đánh số lại 2026-11-20**: V14 đã được dùng cho payment review/manual refunds (P1), nên các migration kế hoạch dịch lên một số.
 
 | Migration | Nội dung | Loại | Preflight / rủi ro | Rollback |
 |---|---|---|---|---|
-| V14 `rooms_integrity` | `rooms.slug` UNIQUE (preflight trùng slug); `rooms.version` `SET DEFAULT 0` + backfill + `NOT NULL`; index `room_gallery_images(room_id)`, `review_photos(review_id)`, `promotion_rooms(room_id)`; port index V2/V3 còn thiếu (`payments(intent_id)` nếu chưa có, `notifications(user_id, created_at)`) | Additive | Trùng slug → dừng | Drop constraint/index |
-| V15 `booking_discount_refs` | Expand: thêm `bookings.voucher_id` FK `vouchers` và `promotion_id` FK `promotions`, backfill từ `applied_voucher_code`, giữ cột cũ. Thêm FK `bookings.approved_by → users(id)` (preflight id mồ côi) | Expand | Không FK thẳng `applied_voucher_code → vouchers.code` được, vì cột chứa cả promo code (`BookingService.java:275,305`) | Drop cột/FK mới |
-| V16 `domain_checks` | CHECK: `reviews.rating BETWEEN 1 AND 5`; amount/price ≥ 0 trên bookings/payments/vouchers/promotions; `bookings.guests > 0`; `promotions.start_date <= end_date`; CHECK enum cho `payments.status/method/gateway`, `booking_status_transitions.*_status`, `contact_messages.status/priority`, `villa_maintenances.status`, `villa_inspections.*`; UNIQUE `reviews(booking_id)` (preflight trùng); UNIQUE `promotions(promo_code)` WHERE NOT NULL | Additive | Dữ liệu cũ vi phạm → dừng | Drop constraint |
-| V17 `inspection_id_alignment` | `villa_inspections.id/room_id/inspector_id` đổi `INT → BIGINT`; `TIMESTAMPTZ → TIMESTAMP` (hoặc chuẩn hóa toàn hệ thống về `TIMESTAMPTZ`; quyết định ở ADR riêng). Code: mọi entity `Integer id → Long` (không đổi DB vì đã `BIGINT`) | Type change | Rewrite bảng nhỏ | `ALTER TYPE` ngược |
-| V18 `audit_columns` | Chuẩn audit: `created_at NOT NULL DEFAULT now()`, `updated_at`, `created_by`, `updated_by` (FK `users`, nullable) cho bảng nghiệp vụ do staff quản lý (rooms, room_types, amenities, vouchers, promotions, villa_maintenances, villa_inspections, blogs, faq_items). `bookings.modified_at → updated_at` theo expand/contract. Bật Spring Data JPA Auditing | Expand | — | Drop cột mới |
-| V19 `properties` | Bảng `properties(id, code UNIQUE, name, timezone, check_in_time, check_out_time, currency, ...)`, seed 1 dòng; `rooms.property_id BIGINT NOT NULL DEFAULT 1 REFERENCES properties`; `vouchers.property_id`, `promotions.property_id` nullable (NULL = toàn hệ thống) | Additive | — | Drop cột/bảng |
-| V20 `payment_hardening` | `payment_webhook_events(provider, event_id) UNIQUE` để dedupe ở tầng event; `reconciliation_items` (AMOUNT_MISMATCH, LATE, DUPLICATE); thêm `MANUAL_PENDING` vào CHECK `payment_refunds.status`; partial UNIQUE một payment thành công cho mỗi booking chỉ sau khi Q4 được quyết | Additive | Q4 | Drop |
-| V21 `booking_idempotency` | `booking_idempotency(user_id, idempotency_key) UNIQUE, request_hash, booking_id, created_at`, retention 24h | Additive | — | Drop |
-| V22 `shedlock` | Bảng `shedlock` cho scheduler | Additive | — | Drop |
-| V23 `refund_bank_encryption` | Expand: `refund_account_number_enc BYTEA`, mã hóa ở tầng ứng dụng (AES-GCM, key từ env/KMS), backfill bằng job, rồi contract xóa plaintext ở release sau | Expand/Contract | Quản lý key | Giữ cột cũ đến contract |
-| V24 `housekeeping` (P4) | `room_status(room_id PK, status, updated_at, version)`, `housekeeping_tasks(id, room_id, booking_id, type, status, assignee_id, due_at, started_at, completed_at, inspected_by, version, ...)`, CHECK status, index `(status, due_at)`, `(assignee_id, status)` | Additive | BA xác nhận (Q8) | Drop |
+| V15 `rooms_integrity` | `rooms.slug` UNIQUE (preflight trùng slug); `rooms.version` `SET DEFAULT 0` + backfill + `NOT NULL`; index `room_gallery_images(room_id)`, `review_photos(review_id)`, `promotion_rooms(room_id)`; port index V2/V3 còn thiếu (`payments(intent_id)` nếu chưa có, `notifications(user_id, created_at)`) | Additive | Trùng slug → dừng | Drop constraint/index |
+| V16 `booking_discount_refs` | Expand: thêm `bookings.voucher_id` FK `vouchers` và `promotion_id` FK `promotions`, backfill từ `applied_voucher_code`, giữ cột cũ. Thêm FK `bookings.approved_by → users(id)` (preflight id mồ côi) | Expand | Không FK thẳng `applied_voucher_code → vouchers.code` được, vì cột chứa cả promo code (`BookingService.java:275,305`) | Drop cột/FK mới |
+| V17 `domain_checks` | CHECK: `reviews.rating BETWEEN 1 AND 5`; amount/price ≥ 0 trên bookings/payments/vouchers/promotions; `bookings.guests > 0`; `promotions.start_date <= end_date`; CHECK enum cho `payments.status/method/gateway`, `booking_status_transitions.*_status`, `contact_messages.status/priority`, `villa_maintenances.status`, `villa_inspections.*`; UNIQUE `reviews(booking_id)` (preflight trùng); UNIQUE `promotions(promo_code)` WHERE NOT NULL | Additive | Dữ liệu cũ vi phạm → dừng | Drop constraint |
+| V18 `inspection_id_alignment` | `villa_inspections.id/room_id/inspector_id` đổi `INT → BIGINT`; `TIMESTAMPTZ → TIMESTAMP` (hoặc chuẩn hóa toàn hệ thống về `TIMESTAMPTZ`; quyết định ở ADR riêng). Code: mọi entity `Integer id → Long` (không đổi DB vì đã `BIGINT`) | Type change | Rewrite bảng nhỏ | `ALTER TYPE` ngược |
+| V19 `audit_columns` | Chuẩn audit: `created_at NOT NULL DEFAULT now()`, `updated_at`, `created_by`, `updated_by` (FK `users`, nullable) cho bảng nghiệp vụ do staff quản lý (rooms, room_types, amenities, vouchers, promotions, villa_maintenances, villa_inspections, blogs, faq_items). `bookings.modified_at → updated_at` theo expand/contract. Bật Spring Data JPA Auditing | Expand | — | Drop cột mới |
+| V20 `properties` | Bảng `properties(id, code UNIQUE, name, timezone, check_in_time, check_out_time, currency, ...)`, seed 1 dòng; `rooms.property_id BIGINT NOT NULL DEFAULT 1 REFERENCES properties`; `vouchers.property_id`, `promotions.property_id` nullable (NULL = toàn hệ thống) | Additive | — | Drop cột/bảng |
+| V21 `payment_hardening` | `payment_webhook_events(provider, event_id) UNIQUE` để dedupe ở tầng event. ~~`reconciliation_items`~~ và ~~`MANUAL_PENDING`~~ đã thay bằng cờ `payments.review_required` và trạng thái `PENDING_MANUAL` ở V14. **Không** thêm partial UNIQUE 
+| V22 `booking_idempotency` (tùy chọn) | `booking_idempotency(user_id, idempotency_key) UNIQUE, request_hash, booking_id, created_at`, retention 24h. P1 đã có natural idempotency (cùng khách/villa/ngày/số khách khi hold còn hiệu lực) — chỉ làm khi client cần retry với payload khác | Additive | — | Drop |
+| V23 `shedlock` | Bảng `shedlock` cho scheduler | Additive | — | Drop |
+| V24 `refund_bank_encryption` | Expand: `refund_account_number_enc BYTEA`, mã hóa ở tầng ứng dụng (AES-GCM, key từ env/KMS), backfill bằng job, rồi contract xóa plaintext ở release sau | Expand/Contract | Quản lý key | Giữ cột cũ đến contract |
+| V25 `housekeeping` (P4) | `room_status(room_id PK, status, updated_at, version)`, `housekeeping_tasks(id, room_id, booking_id, type, status, assignee_id, due_at, started_at, completed_at, inspected_by, version, ...)`, CHECK status, index `(status, due_at)`, `(assignee_id, status)` | Additive | BA xác nhận (Q8) | Drop |
 | Dọn dẹp | Archive `db/migration` (H2), `db/postgresql-legacy`, `database/migration.sql`, `database/update_constraint.sql`, `backend/*.sql` vào `database/archive/` kèm README. Chuyển H2 sang scope `test` hoặc bỏ hẳn | Repo | Profile `dev` chuyển sang PostgreSQL qua compose | — |
 
 ---
@@ -180,7 +218,9 @@ Thứ tự đề xuất. Số version thực tế cấp phát khi triển khai.
 | Payment theo booking | `idx_payments_booking_status` | — |
 | Outbox dispatch | `(status, available_at, created_at)` (V8) | — |
 | Audit tra cứu | `idx_audit_entity`, `idx_audit_created` | — |
-| Housekeeping board | — | `(status, due_at)`, `(assignee_id, status)` (V24) |
+| Housekeeping board | — | `(status, due_at)`, `(assignee_id, status)` (V25) |
+| Hàng đợi đối soát payment | `idx_payments_review_required` (partial, V14) | — |
+| Hàng đợi refund thủ công | `idx_payment_refunds_status` (V7) | — |
 
 Quy tắc: mọi FK có index; index mới tạo bằng `CREATE INDEX CONCURRENTLY` trong migration riêng (Flyway: `-- flyway:executeInTransaction=false`) khi bảng lớn hơn 1 triệu dòng. Hiện chưa cần.
 
@@ -210,14 +250,14 @@ Quy tắc: mọi FK có index; index mới tạo bằng `CREATE INDEX CONCURRENT
 
 Không áp dụng `deleted_at` chung cho mọi bảng (theo yêu cầu "Soft delete chỉ khi nghiệp vụ cần").
 
-## 8. Data retention (đề xuất, cần xác nhận pháp lý)
+## 8. Data retention
 
 | Dữ liệu | Đề xuất | Căn cứ / ghi chú |
 |---|---|---|
-| Booking, payment, refund, hóa đơn | ≥ 10 năm | Chứng từ kế toán. **[CẦN XÁC NHẬN]** với kế toán theo Luật Kế toán |
-| `audit_logs` | Hiện 180 ngày (`BookingScheduler.java:145`). Đề xuất: 1 năm online + archive | **[CẦN XÁC NHẬN]** (Q9) |
+| Booking, payment, refund, hóa đơn | ≥ 10 năm, không xóa | ✔ ADR-0009 Q9 — Luật Kế toán 2015 Điều 41. Không có job xóa các bảng này |
+| `audit_logs` | Hành động thường: **180 ngày**; hành động tài chính `PAYMENT_*` (`PAYMENT_CREATE`, `PAYMENT_CONFIRM`, `PAYMENT_FAIL`, `PAYMENT_REFUND`, `PAYMENT_REFUND_CONFIRM`, `PAYMENT_REFUND_REJECT`, `PAYMENT_WEBHOOK_RECEIVED`): **10 năm** | ✔ ADR-0009 Q9. `AuditLogService.purgeExpiredLogs` (`AuditLogRepository.deleteOperationalBefore` / `deleteFinancialBefore`), job `BookingScheduler.cleanupOldAuditLogs` 00:00 hằng ngày |
 | `notification_outbox` đã publish | Payload xóa ngay sau publish; metadata purge theo cấu hình | `BOOKING_LIFECYCLE_AND_RBAC.md:73-75` |
-| Thông tin ngân hàng hoàn tiền | Xóa hoặc mask 90 ngày sau khi hoàn tất refund | **[CẦN XÁC NHẬN]** |
+| Thông tin ngân hàng hoàn tiền (`bookings.refund_bank_name/refund_account_number/refund_account_name`) | Xóa (set NULL) **180 ngày** sau `cancelled_at`, **trừ khi** booking còn refund `PENDING_MANUAL` | ✔ ADR-0009 Q9 — Nghị định 13/2023/NĐ-CP (tối thiểu hóa dữ liệu). `BookingRepository.purgeRefundBankDetails`, job `BookingScheduler.purgeRefundBankDetails` 00:30 hằng ngày; kiểm chứng `ManualRefundIT`. Mã hóa khi lưu vẫn là kế hoạch (V24) |
 | `chat_messages` (AI) | 90 ngày | Đề xuất |
 | `contact_messages` | 2 năm | Đề xuất |
 | Backup | Hằng ngày giữ 7, hằng tuần giữ 4, hằng tháng giữ 12 | [ADR-0007](../adr/0007-docker-compose-vps-deployment.md) |

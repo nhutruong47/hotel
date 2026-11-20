@@ -12,14 +12,16 @@ Cập nhật: 2026-11-20. Tài liệu cũ **không bị xóa**. Khi thông tin m
 | Tài liệu | Nội dung |
 |---|---|
 | [reports/architecture-assessment.md](reports/architecture-assessment.md) | Đánh giá kiến trúc, điểm chất lượng, phát hiện FE/BE/DB/Security/Infra, những gì giữ lại, refactor hoặc thiết kế lại |
-| [reports/technical-debt.md](reports/technical-debt.md) | Danh sách nợ kỹ thuật TD-01..TD-43 (vị trí, tác động, effort, ưu tiên) |
-| [reports/risk-register.md](reports/risk-register.md) | Danh sách rủi ro R-01..R-25, heat map, owner, trạng thái |
+| [reports/technical-debt.md](reports/technical-debt.md) | Danh sách nợ kỹ thuật TD-01..TD-50 (vị trí, tác động, effort, ưu tiên) và trạng thái xử lý P0/P1 |
+| [reports/risk-register.md](reports/risk-register.md) | Danh sách rủi ro R-01..R-27, heat map, owner, trạng thái, bằng chứng đóng rủi ro P0/P1 |
 | [architecture/current-architecture.md](architecture/current-architecture.md) | Kiến trúc hiện tại (C4 L1–L3, luồng booking/payment, bảo mật, hạ tầng) |
 | [architecture/target-architecture.md](architecture/target-architecture.md) | Kiến trúc mục tiêu: modular monolith, module, C4, deployment, dependency |
-| [architecture/database-design.md](architecture/database-design.md) | Schema, V13 (chống overlap) kèm rollback, lộ trình V14–V24, index/locking/retention |
-| [business/business-analysis.md](business/business-analysis.md) | Actor, business rule, workflow, FR/NFR, acceptance criteria, câu hỏi **[CẦN XÁC NHẬN]** |
-| [roadmap/implementation-plan.md](roadmap/implementation-plan.md) | Priority matrix, các phase P0–P7, migration/cutover plan, Definition of Done |
-| [adr/](adr/README.md) | Architecture Decision Records 0001–0008 |
+| [architecture/database-design.md](architecture/database-design.md) | Schema, V13 (chống overlap) và V14 (đối soát payment, refund thủ công) kèm rollback, lộ trình V15–V25, index/locking/retention |
+| [business/business-analysis.md](business/business-analysis.md) | Actor, business rule, workflow, FR/NFR, acceptance criteria; câu hỏi Q1–Q11 (đã chốt phần lớn trong ADR-0009) |
+| [roadmap/implementation-plan.md](roadmap/implementation-plan.md) | Priority matrix, các phase P0–P7 (kết quả P0/P1), migration/cutover plan, Definition of Done |
+| [adr/](adr/README.md) | Architecture Decision Records 0001–0009 |
+| [adr/0009-business-policy-decisions.md](adr/0009-business-policy-decisions.md) | Chốt chính sách nghiệp vụ: day-use, no-show, sửa booking, đối soát, hoàn tiền thủ công, VND, VAT, lưu trữ, min/max stay |
+| [operations/p1-release-notes.md](operations/p1-release-notes.md) | Release notes P1: thay đổi API, biến môi trường mới, checklist deploy (chuyển giá sang VND, SMTP), thay đổi người dùng thấy |
 
 ## 2. Tài liệu hiện có và trạng thái
 
@@ -27,7 +29,7 @@ Cập nhật: 2026-11-20. Tài liệu cũ **không bị xóa**. Khi thông tin m
 |---|---|---|
 | [BOOKING_LIFECYCLE_AND_RBAC.md](BOOKING_LIFECYCLE_AND_RBAC.md) | Vòng đời booking, payment integrity, RBAC | ✅ Hiện hành (nguồn chân lý) |
 | [API_STANDARDS.md](API_STANDARDS.md) | Hợp đồng controller/envelope (có architecture test) | ✅ Hiện hành |
-| [API_DOCUMENTATION.md](API_DOCUMENTATION.md) | Mô tả REST API | ⚠ Cần đối chiếu: response admin/payment đổi sang DTO ở P0 |
+| [API_DOCUMENTATION.md](API_DOCUMENTATION.md) | Mô tả REST API | ⚠ Cần đối chiếu: response admin/payment đổi sang DTO ở P0; endpoint/ mã lỗi mới của P1 chỉ có trong [operations/p1-release-notes.md](operations/p1-release-notes.md) §2 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Layering, xử lý lỗi | ⚠ **Một phần lỗi thời**: mục DB (khoảng dòng 19, 102–107, 170) nói `ddl-auto=update`, Flyway chưa bật, SQL Server. Xem `architecture/database-design.md` |
 | [ARCHITECTURE_DECISION.md](ARCHITECTURE_DECISION.md) | Chọn runtime frontend + REST | ⚠ Đường dẫn cũ (`hotel/`, `src/`, nay là `backend/`, `legacy-mvc/`) |
 | [BUSINESS_ANALYSIS.md](BUSINESS_ANALYSIS.md) | Gap analysis cũ | ⚠ **Lỗi thời**: mô tả trước khi có payment, STAFF/MANAGER, Next.js. Thay thế bởi `business/business-analysis.md` |

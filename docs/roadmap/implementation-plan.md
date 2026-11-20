@@ -3,6 +3,7 @@
 | Thuộc tính | Giá trị |
 |---|---|
 | Ngày | 2026-11-20 |
+| Trạng thái | P0 xong trên `feature/p0-hardening` (CI xanh). P1 xong phần lớn trên `feature/p1-security-payment` — xem §3 P1. Cả hai chờ merge `develop` |
 | Chiến lược | Incremental refactoring (strangler) — không big-bang rewrite, hệ thống luôn chạy được sau mỗi bước |
 | Đầu vào | [architecture-assessment.md](../reports/architecture-assessment.md), [technical-debt.md](../reports/technical-debt.md), [risk-register.md](../reports/risk-register.md), [target-architecture.md](../architecture/target-architecture.md) |
 
@@ -21,9 +22,9 @@
 | Ưu tiên | Hạng mục | Impact | Effort | Rủi ro xử lý | TD / Risk |
 |---|---|---|---|---|---|
 | **P0** | CSRF cookie; day-use overlap; refund double-count; DTO thay entity; V13 EXCLUDE; Testcontainers + CI `verify`; rotate Gemini key (repo owner) | Cao | S–M | R-01..R-07, R-24 | TD-01..06 |
-| **P1-Security** | `@PreAuthorize` + RoleHierarchy; bỏ `admin123`; email verification ở prod; ẩn demo login; Spring Session + rate limit + lockout trên Redis; FE session stale; gitleaks + OWASP dependency-check/Dependabot | Cao | M | R-11..R-15, R-18 | TD-13..18, TD-40 |
-| **P1-Payment** | Reuse Stripe session/intent; refund SePay/manual `MANUAL_PENDING`; lưu SePay mismatch; reconciliation job; release promotion; sửa `modifyBooking`; Idempotency-Key tạo booking; dedupe webhook event | Cao | M | R-08..R-10, R-20, R-21 | TD-07..12 |
-| **P2-DB** | V14–V23 (xem [database-design.md §4](../architecture/database-design.md#4-thay-đổi-schema-mục-tiêu-p2-và-sau-đó)); `Integer → Long`; archive H2/SQL Server/legacy-mvc | Trung bình – Cao | M–L | R-07 | TD-19..25, TD-37, TD-43 |
+| **P1-Security** | `@PreAuthorize` + RoleHierarchy; bỏ `admin123`; email verification ở prod; ẩn demo login; Spring Session + rate limit + lockout trên Redis; FE session stale; gitleaks + OWASP dependency-check/Dependabot — **phần lớn xong; Redis/Spring Session, OWASP dependency-check, `middleware.ts` chuyển sang P3/P5** | Cao | M | R-11..R-15, R-18 | TD-13..18, TD-40 |
+| **P1-Payment** | Reuse Stripe session/intent; refund SePay/manual `PENDING_MANUAL`; lưu SePay mismatch; reconciliation job; release promotion; sửa `modifyBooking`; Idempotency-Key tạo booking; dedupe webhook event — **phần lớn xong; reconciliation job với Stripe API, bảng dedupe webhook event, bảng `booking_idempotency` chuyển sang P2/P3** | Cao | M | R-08..R-10, R-20, R-21 | TD-07..12 |
+| **P2-DB** | V15–V25 (đánh số lại; xem [database-design.md §4](../architecture/database-design.md#4-thay-đổi-schema-mục-tiêu-p2-và-sau-đó)); `Integer → Long`; archive H2/SQL Server/legacy-mvc | Trung bình – Cao | M–L | R-07 | TD-19..25, TD-37, TD-43 |
 | **P3-Modular** | Package theo module; Facade; ArchUnit; tách `BookingService`/`AdminApi`; ShedLock; dọn dead code | Trung bình | L | R-23 | TD-26..30, TD-36 |
 | **P4-Housekeeping** | Room status, cleaning task, assignment, gắn inspection (sau khi Q8 được trả lời) | Trung bình | M | R-22 | — |
 | **P5-DevOps/Obs** | Compose dev/staging/prod; nginx TLS; CI build image → GHCR → deploy VPS; Micrometer/Prometheus/Grafana/Loki; JSON log; pg_dump + restore drill; `.env.example` chuẩn | Cao | M | R-15..R-17, R-19 | TD-31..34, TD-42 |
@@ -46,24 +47,44 @@ Ghi chú thứ tự: P5 có thể chạy song song với P2/P3 (do DevOps đảm
 | 6 | Testcontainers + failsafe; CI `./mvnw -B verify` | CI xanh, có log các IT đã chạy |
 | 7 | Rotate Gemini key | Repo owner xác nhận key cũ đã bị revoke |
 
-### P1-Security
+### P1-Security (nhánh `feature/p1-security-payment`)
 
-- `SecurityConfig`: `RoleHierarchy`, `@EnableMethodSecurity`. Thay 16 chỗ `"ADMIN".equals(...)` bằng `@PreAuthorize`/`hasRole` theo ma trận `BOOKING_LIFECYCLE_AND_RBAC.md:130-139`. Viết test tham số hóa cho từng endpoint × role (AC-06).
-- `AdminCredentialValidator`: chỉ dùng default khi profile `dev` được khai báo tường minh; ngoài trường hợp đó thiếu `APP_ADMIN_PASSWORD` thì fail-fast.
-- `UserService.login`: ở prod không tự verify email. Bắt buộc có email provider; nếu không có thì chặn đăng ký.
-- FE: demo login chỉ hiện khi `NEXT_PUBLIC_ENABLE_DEMO_LOGIN=true` (dev/staging); sửa `SessionProvider` để xóa cache khi server trả `user:null`; thêm `middleware.ts` chặn `/admin` khi không có session cookie (chỉ cải thiện UX, backend vẫn là nơi quyết định).
-- Spring Session Redis; Bucket4j-Redis cho `/auth/login`, `POST /bookings`, `/ai/recommend`; `ClientIpResolver` chỉ tin `X-Forwarded-For` từ IP của nginx.
-- CI: gitleaks (cấu hình allowlist cho commit `efd7e35` **sau khi** key đã được rotate), Dependabot, OWASP dependency-check.
+Kế hoạch ban đầu được giữ ở cột "Việc"; cột "Kết quả" ghi những gì thực sự đã làm. Quyết định nghiệp vụ liên quan: [ADR-0009](../adr/0009-business-policy-decisions.md).
 
-### P1-Payment
+| # | Việc (kế hoạch) | Kết quả | Bằng chứng |
+|---|---|---|---|
+| S1 | `RoleHierarchy` + `@PreAuthorize`, thay 16 chỗ `"ADMIN".equals(...)`; test tham số hóa endpoint × role (AC-06) | ✔ Thay bằng helper `security/Authz.java` (`UserRole.includes`); `SessionAuthBridgeFilter` đã cấp authority theo hierarchy nên `hasRole('MANAGER')` đúng cho ADMIN. Xem booking/payment: owner hoặc STAFF+; `GET /payments`: MANAGER+; refund/xác nhận refund: ADMIN. ⚠ Chưa có test tham số hóa đầy đủ (TD-49 → P6) | Các case role sẵn có trong `BookingFlowIntegrationTest`, `NoEntityLeakIntegrationTest` |
+| S2 | `AdminCredentialValidator`: default chỉ khi profile `dev` tường minh | ✔ Profile khác không có credentials → bỏ qua bootstrap (log WARN); `prod` fail-fast | `AdminCredentialValidatorTest` (6) |
+| S3 | Không tự verify email ở prod | ✔ Opt-in `app.auth.auto-verify-without-email` (mặc định `false`; `true` ở `dev`/`postgres`/test); email tắt + cờ tắt → `REGISTRATION_UNAVAILABLE` | `UserServiceVerificationPolicyTest` (3) |
+| S4 | FE: demo login sau flag; `SessionProvider` xóa cache khi `user:null`; `middleware.ts` | ✔ Demo login (`NEXT_PUBLIC_ENABLE_DEMO_LOGIN` + `NEXT_PUBLIC_DEMO_LOGIN_PASSWORD`); ✔ `SessionProvider`; ❌ `middleware.ts` chưa làm | CI `frontend-check` (tsc + build); chưa có test UI |
+| S5 | Spring Session Redis; Bucket4j-Redis; `ClientIpResolver` chỉ tin nginx | ⚠ Rate limiter viết lại nhưng **vẫn in-memory**: chỉ áp `/api/**`, bucket nhạy cảm riêng (`login/register/forgot/reset/resend/ai/contact/POST bookings`, mặc định 10/phút/IP), evict window hết hạn. Spring Session Redis, Bucket4j-Redis, trusted proxy list → P3/P5 | `RateLimitFilterTest` (4) |
+| S6 | CI: gitleaks, Dependabot, OWASP dependency-check | ✔ gitleaks 8.21.2 quét working tree (`.gitleaks.toml`, job `secret-scan`); ✔ `.github/dependabot.yml` (maven, npm, actions). ❌ OWASP dependency-check → P6. Lịch sử git không được quét (key cũ chờ rotate, R-01) | Chạy local: `no leaks found` |
 
-- Mỗi booking chỉ có một Stripe Checkout Session đang `open`: tái sử dụng nếu còn hạn, và truyền idempotency key `booking-{id}-attempt-{n}`.
-- Refund không đi qua Stripe → `MANUAL_PENDING`; ADMIN xác nhận đã chuyển khoản (có số tham chiếu) → `SUCCEEDED`.
-- SePay mismatch/late/duplicate → ghi `reconciliation_items` và gửi thông báo cho ADMIN.
-- Job đối soát hằng ngày (ShedLock): so payment `PENDING` với Stripe API, liệt kê booking `EXPIRED` có tiền vào.
-- `releasePromotionUse` khi expire/cancel. Viết lại `modifyBooking` dùng chung `PricingService` và kiểm tra availability/maintenance; nếu booking đã PAID thì phần chênh lệch đi qua payment/refund (theo Q3).
-- `POST /bookings` nhận `Idempotency-Key` (bảng `booking_idempotency`).
+### P1-Payment (nhánh `feature/p1-security-payment`)
 
+| # | Việc (kế hoạch) | Kết quả | Bằng chứng |
+|---|---|---|---|
+| P1 | Một Stripe Checkout Session `open` mỗi booking; idempotency key | ✔ Reuse session `open` cùng số tiền; session cũ (hết hạn/đổi tiền) bị expire + payment `FAILED` "Superseded"; key `checkout-{booking}-{amount}-{attempt}`; `expires_at` = now + 31'. ✔ Reuse PaymentIntent còn confirm được (`/payments/intent`). Chặn Stripe khi tổng < 10.000 VND | ⚠ **Chưa có test tự động** (cần Stripe test mode / stripe-mock — TD-50) |
+| P2 | Refund không qua Stripe → trạng thái chờ thủ công | ✔ `PENDING_MANUAL` (V14) → `POST /payments/{id}/refunds/{refundId}/confirm {bankReference}` hoặc `/reject`; refund chờ được tính vào giới hạn hoàn; adapter không bao giờ báo success giả; UI admin "Manual refunds awaiting bank transfer" | `PaymentServiceTest$ReconciliationAndManualRefundTests` (7), `StripePaymentAdapterTest`, `ManualRefundIT` |
+| P3 | SePay mismatch/late/duplicate → `reconciliation_items` + báo ADMIN | ✔ Thay bằng cờ `payments.review_required` + `review_reason` (V14), thông báo in-app cho ADMIN, hàng đợi `GET /payments?reviewRequired=true`; Stripe webhook lệch tiền không còn throw | `SepayWebhookApiTest`, `webhookAmountMismatchIsRecordedNotThrown` |
+| P4 | Job đối soát hằng ngày với Stripe API (ShedLock) | ❌ Chuyển P3 (cùng ShedLock, V23) | — |
+| P5 | Release promotion; viết lại `modifyBooking` | ✔ `VoucherService.releaseDiscountCode`; `modifyBooking` tái định giá qua `booking/service/PricingPolicy.java`, kiểm tra availability + bảo trì + min/max stay; `PAID` đổi tổng → `MODIFICATION_REQUIRES_SUPPORT` (ADR-0009 Q3) | `BookingPolicyIntegrationTest` (6), `BookingServiceTest` |
+| P6 | `POST /bookings` nhận `Idempotency-Key` | ⚠ Natural idempotency thay thế: cùng khách gửi lại cùng villa/ngày/số khách khi hold còn hiệu lực → trả booking cũ. Bảng `booking_idempotency` (V22) tùy chọn | `BookingFlowIntegrationTest.testDuplicateSubmitIsIdempotent` |
+| P7 (thêm) | Chính sách giá & tiền tệ (ADR-0009 Q6, Q7, Q11) | ✔ `PricingPolicy` (VND; phụ thu 625.000 VND cấu hình được; phí/VAT sau giảm giá); `pricing-preview` nhận `code`, FE hiển thị số của server; seed VND; `CurrencySanityCheck`; hóa đơn PDF VND không trừ giảm giá 2 lần; prompt Gemini VND | `PricingPolicyTest` (6), `BookingServiceTest` cập nhật |
+| P8 (thêm) | Lưu trữ dữ liệu (ADR-0009 Q9) | ✔ Audit `PAYMENT_*` 10 năm / còn lại 180 ngày; xóa bank details 180 ngày sau hủy (trừ refund `PENDING_MANUAL`) | `ManualRefundIT` |
+
+**Kết quả kiểm thử P1 (local, 2026-11-20):** 226 unit/H2 test xanh; 10 PostgreSQL IT xanh trên PostgreSQL 16.6; rollback U14 → áp lại V14 thành công. Frontend chỉ kiểm chứng qua CI.
+
+**Chuyển sang phase sau:**
+
+| Hạng mục | Phase mới | Lý do |
+|---|---|---|
+| Spring Session Redis, Bucket4j-Redis (rate limit/lockout phân tán), trusted proxy list cho `ClientIpResolver` | P3/P5 (cùng compose có Redis ở prod) | Chỉ cần khi chạy ≥ 2 instance (R-18) |
+| ShedLock + job đối soát với Stripe API | P3 (V23) | Cần distributed lock trước |
+| Bảng dedupe webhook event (`payment_webhook_events`) | P2 (V21) | Idempotency hiện dựa trên unique `transaction_ref`/`intent_id` + row lock — đủ cho quy mô hiện tại |
+| nginx TLS/headers/CORS | P5 | Hạ tầng VPS |
+| OWASP dependency-check, test ma trận role × endpoint, test Stripe test mode | P6 | Chất lượng |
+| `middleware.ts` FE | P5 (cùng hardening FE) | Chỉ cải thiện UX |
 ### P2-DB, P3-Modular, P4-Housekeeping
 
 Xem [database-design.md §4](../architecture/database-design.md#4-thay-đổi-schema-mục-tiêu-p2-và-sau-đó) và [target-architecture.md §2](../architecture/target-architecture.md#2-module). Thứ tự refactor module: `payment` (nhỏ, nhiều vi phạm boundary) → `booking` (tách service) → `property` → `identity` → `notification`/`audit` → `reporting` → `content`/`guest`.
@@ -123,9 +144,9 @@ Cutover từ Render/Vercel sang VPS:
 
 | Tiêu chí | Bằng chứng | Phase |
 |---|---|---|
-| Business workflows rõ ràng | [business-analysis.md](../business/business-analysis.md), các câu hỏi Q1–Q11 đã được trả lời | BA |
+| Business workflows rõ ràng | [business-analysis.md](../business/business-analysis.md); Q1–Q7, Q9, Q11 đã chốt ([ADR-0009](../adr/0009-business-policy-decisions.md)); còn Q8, Q10 | BA |
 | Architecture có tài liệu, module boundary xác định | [target-architecture.md](../architecture/target-architecture.md), ArchUnit xanh | P3 |
-| Database thiết kế hợp lý | [database-design.md](../architecture/database-design.md), V13–V23 | P0/P2 |
+| Database thiết kế hợp lý | [database-design.md](../architecture/database-design.md), V13–V14 (xong), V15–V25 (kế hoạch) | P0/P1/P2 |
 | Booking concurrency được kiểm thử | `BookingConcurrencyPostgresIT`, k6 | P0/P6 |
 | Payment chống xử lý trùng | Unique ref/intent, dedupe webhook event, IT | P0/P1 |
 | Security được đánh giá | Security report (ASVS L2 checklist + ZAP) | P1/P6 |
