@@ -33,7 +33,7 @@ jobs:
       # The wrapper downloads Maven itself (setup-java only caches ~/.m2/repository).
       # Caching the distribution removes that network call on most runs.
       - name: Cache Maven wrapper distribution
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.m2/wrapper
           key: maven-wrapper-${{ hashFiles('backend/.mvn/wrapper/maven-wrapper.properties') }}
