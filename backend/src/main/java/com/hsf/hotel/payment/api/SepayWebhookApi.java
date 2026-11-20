@@ -38,15 +38,18 @@ public class SepayWebhookApi {
     private final BookingRepository bookingRepository;
     private final BookingService bookingService;
     private final PaymentRepository paymentRepository;
+    private final com.hsf.hotel.payment.service.PaymentService paymentService;
     private final String configuredApiKey;
 
     public SepayWebhookApi(BookingRepository bookingRepository,
                            BookingService bookingService,
                            PaymentRepository paymentRepository,
+                           com.hsf.hotel.payment.service.PaymentService paymentService,
                            @Value("${SEPAY_API_KEY:}") String configuredApiKey) {
         this.bookingRepository = bookingRepository;
         this.bookingService = bookingService;
         this.paymentRepository = paymentRepository;
+        this.paymentService = paymentService;
         this.configuredApiKey = configuredApiKey;
     }
 
@@ -127,16 +130,7 @@ public class SepayWebhookApi {
         }
         BigDecimal expectedAmount = booking.getTotalPrice() != null
                 ? booking.getTotalPrice() : BigDecimal.ZERO;
-        if (expectedAmount.compareTo(payload.transferAmount) != 0) {
-            log.warn("SePay amount mismatch for booking #{}: expected={}, received={}",
-                    bookingId, expectedAmount, payload.transferAmount);
-            return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                    "success", false,
-                    "reason", "Payment amount mismatch",
-                    "requiresReview", true)));
-        }
-
-        // 5. Idempotency check by immutable SePay transaction identity.
+        // 5. Immutable SePay transaction identity (idempotency key).
         String transactionRef;
         if (payload.referenceCode != null && !payload.referenceCode.isBlank()) {
             transactionRef = payload.referenceCode.trim();
@@ -145,6 +139,22 @@ public class SepayWebhookApi {
         } else {
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
                     "success", false, "reason", "Missing transaction identity")));
+        }
+
+        if (expectedAmount.compareTo(payload.transferAmount) != 0) {
+            // ADR-0009 Q4: the money is in our account, so it must be recorded —
+            // as a flagged payment that does NOT confirm the booking.
+            log.warn("SePay amount mismatch for booking #{}: expected={}, received={}",
+                    bookingId, expectedAmount, payload.transferAmount);
+            paymentService.recordUnappliedTransfer(booking, payload.transferAmount, transactionRef,
+                    "SePay transfer: Gateway " + payload.gateway + ", Account " + payload.accountNumber,
+                    "Amount mismatch: booking total " + expectedAmount + " VND, received "
+                            + payload.transferAmount + " VND; booking not confirmed");
+            return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                    "success", false,
+                    "reason", "Payment amount mismatch",
+                    "requiresReview", true,
+                    "transactionRef", transactionRef)));
         }
 
         Optional<Payment> existingPayment = paymentRepository.findByTransactionRef(transactionRef);
@@ -192,6 +202,8 @@ public class SepayWebhookApi {
             payment.setNotes(payment.getNotes() + "; late payment for booking status " + booking.getStatus()
                     + " - manual review/refund required");
             paymentRepository.save(payment);
+            paymentService.flagPaymentForReview(payment.getId(),
+                    "Late or duplicate transfer while booking was " + booking.getStatus());
             log.warn("Recorded late SePay payment {} for booking #{} in status {}",
                     transactionRef, bookingId, booking.getStatus());
         }

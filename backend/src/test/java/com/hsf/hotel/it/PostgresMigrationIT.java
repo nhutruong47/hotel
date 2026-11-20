@@ -27,7 +27,19 @@ class PostgresMigrationIT extends AbstractPostgresIT {
         String latest = jdbc.queryForObject(
                 "SELECT version FROM flyway_schema_history WHERE success AND version IS NOT NULL "
                         + "ORDER BY installed_rank DESC LIMIT 1", String.class);
-        assertThat(latest).isEqualTo("13");
+        assertThat(latest).isEqualTo("14");
+    }
+
+    @Test
+    void manualRefundWorkflowSchemaExists() {
+        String check = jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'chk_payment_refund_status'",
+                String.class);
+        assertThat(check).contains("PENDING_MANUAL");
+        Integer reviewColumn = jdbc.queryForObject(
+                "SELECT count(*) FROM information_schema.columns "
+                        + "WHERE table_name = 'payments' AND column_name = 'review_required'", Integer.class);
+        assertThat(reviewColumn).isEqualTo(1);
     }
 
     @Test

@@ -102,7 +102,7 @@ public class DataInitializer implements CommandLineRunner {
             "GV-01",
             "garden-pool-villa-da-lat",
             poolVilla,
-            BigDecimal.valueOf(450),
+            new BigDecimal("11250000"), // VND (ADR-0009 Q6: 450 x 25,000)
             2, 1, true,
             BigDecimal.valueOf(4.9), 38L,
             "A one-bedroom garden villa with a private heated pool, shaded stone terrace, and open-air living room overlooking pine valleys.",
@@ -126,7 +126,7 @@ public class DataInitializer implements CommandLineRunner {
             "TF-02",
             "two-bedroom-family-villa",
             familyVilla,
-            BigDecimal.valueOf(720),
+            new BigDecimal("18000000"), // VND
             4, 2, true,
             BigDecimal.valueOf(4.85), 27L,
             "Two quiet bedrooms, generous timber-and-linen living space, and a private courtyard terrace prepared for slow family mornings.",
@@ -150,7 +150,7 @@ public class DataInitializer implements CommandLineRunner {
             "HR-03",
             "hillside-residence-private-pool",
             residence,
-            BigDecimal.valueOf(1150),
+            new BigDecimal("28750000"), // VND
             6, 3, true,
             BigDecimal.valueOf(4.95), 19L,
             "A larger private hillside residence designed for hosted chef dinners, longer retreats, and unforgettable sunset infinity-pool rituals.",
@@ -174,7 +174,7 @@ public class DataInitializer implements CommandLineRunner {
             "SE-04",
             "signature-four-bedroom-estate",
             signature,
-            BigDecimal.valueOf(2500),
+            new BigDecimal("62500000"), // VND
             8, 4, true,
             BigDecimal.valueOf(5.0), 12L,
             "The largest estate in our collection, offering panoramic lake and pine forest views, four master suites, private spa pavilion, and 24/7 butler service.",
@@ -198,7 +198,7 @@ public class DataInitializer implements CommandLineRunner {
             "WC-05",
             "water-courtyard-villa",
             poolVilla,
-            BigDecimal.valueOf(560),
+            new BigDecimal("14000000"), // VND
             2, 1, true,
             BigDecimal.valueOf(4.9), 31L,
             "A tranquil courtyard villa arranged around reflective water features, natural stone, organic linen, and sunlit spaces for late breakfast rituals.",
@@ -222,7 +222,7 @@ public class DataInitializer implements CommandLineRunner {
             "FP-06",
             "forest-pavilion",
             pavilion,
-            BigDecimal.valueOf(390),
+            new BigDecimal("9750000"), // VND
             2, 1, true,
             BigDecimal.valueOf(4.8), 24L,
             "An intimate architectural pavilion crafted for couples seeking deep pine shade, the natural sound of mountain streams, and complete seclusion.",
@@ -394,7 +394,7 @@ public class DataInitializer implements CommandLineRunner {
         p1.setCountdownEndDate(LocalDateTime.now().plusDays(14));
         p1.setDiscountPercent(BigDecimal.valueOf(15));
         p1.setMinimumNights(2);
-        p1.setMinimumBookingAmount(BigDecimal.valueOf(300));
+        p1.setMinimumBookingAmount(new BigDecimal("7500000"));
         p1.setPromoCode("SUMMER15");
         p1.setImageUrl("/images/nhu-infinity-pool.jpg");
         p1.setDisplayOrder(1);
@@ -433,7 +433,7 @@ public class DataInitializer implements CommandLineRunner {
         p3.setCountdownEndDate(LocalDateTime.now().plusDays(30));
         p3.setDiscountPercent(BigDecimal.valueOf(20));
         p3.setMinimumNights(2);
-        p3.setMinimumBookingAmount(BigDecimal.valueOf(400));
+        p3.setMinimumBookingAmount(new BigDecimal("10000000"));
         p3.setPromoCode("HONEYMOON20");
         p3.setImageUrl("/images/nhu-private-dining.jpg");
         p3.setDisplayOrder(3);
@@ -502,7 +502,7 @@ public class DataInitializer implements CommandLineRunner {
     private void initializeVouchers() {
         createVoucherIfMissing("WELCOME10", BigDecimal.valueOf(10), true, 100, LocalDate.now().plusYears(1));
         createVoucherIfMissing("NHUVILLAS20", BigDecimal.valueOf(20), true, 50, LocalDate.now().plusYears(1));
-        createVoucherIfMissing("VIP100", BigDecimal.valueOf(100), false, 50, LocalDate.now().plusYears(1));
+        createVoucherIfMissing("VIP100", new BigDecimal("2500000"), false, 50, LocalDate.now().plusYears(1));
     }
 
     private void createVoucherIfMissing(String code, BigDecimal amount, boolean isPercent, int quantity, LocalDate expiry) {

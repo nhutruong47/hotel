@@ -51,21 +51,34 @@ public class InvoiceService {
             for (Payment payment : payments) {
                 table.addCell(new Cell().add(new Paragraph(String.valueOf(payment.getId()))));
                 table.addCell(new Cell().add(new Paragraph(payment.getCreatedAt() != null ? payment.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE) : "")));
-                table.addCell(new Cell().add(new Paragraph("$" + payment.getAmount())));
+                table.addCell(new Cell().add(new Paragraph(vnd(payment.getAmount()))));
                 table.addCell(new Cell().add(new Paragraph(payment.getStatus().name())));
             }
 
             document.add(table);
 
+            // ADR-0009 Q6/Q7: amounts are VND; totalPrice already includes the discount,
+            // service fee and VAT (it was previously reduced by the discount a second time).
             document.add(new Paragraph("\n"));
-            document.add(new Paragraph("Total: $" + booking.getTotalPrice()).setBold());
-            document.add(new Paragraph("Discount: $" + booking.getDiscountAmount()));
-            document.add(new Paragraph("Net Total: $" + booking.getTotalPrice().subtract(booking.getDiscountAmount())).setBold());
+            document.add(new Paragraph("Subtotal: " + vnd(booking.getSubtotalPrice())));
+            document.add(new Paragraph("Discount: -" + vnd(booking.getDiscountAmount())));
+            document.add(new Paragraph("Service fee (8%): " + vnd(booking.getServiceFee())));
+            document.add(new Paragraph("VAT (10%): " + vnd(booking.getTaxAmount())));
+            document.add(new Paragraph("Total: " + vnd(booking.getTotalPrice())).setBold());
+            if (booking.getRefundAmount() != null && booking.getRefundAmount().signum() > 0) {
+                document.add(new Paragraph("Refunded: " + vnd(booking.getRefundAmount())));
+            }
 
             document.close();
             return baos.toByteArray();
         } catch (Exception e) {
             throw new FileStorageException("Error generating invoice PDF", e);
         }
+    }
+
+    /** "1,234,000 VND" — whole VND, matching the DECIMAL(12,0) money columns. */
+    static String vnd(java.math.BigDecimal amount) {
+        java.math.BigDecimal value = amount != null ? amount : java.math.BigDecimal.ZERO;
+        return String.format(java.util.Locale.US, "%,.0f VND", value);
     }
 }

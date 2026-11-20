@@ -153,4 +153,17 @@ public class BookingScheduler {
             log.error("Scheduler: Error during audit log cleanup: {}", e.getMessage(), e);
         }
     }
+
+    /**
+     * ADR-0009 Q9: daily at 00:30 erase guests' refund bank details 180 days after
+     * cancellation (skipped while a manual refund is still pending).
+     */
+    @Scheduled(cron = "0 30 0 * * *")
+    public void purgeRefundBankDetails() {
+        try {
+            bookingService.purgeExpiredRefundBankDetails();
+        } catch (Exception e) {
+            log.error("Scheduler: Error while purging refund bank details: {}", e.getMessage(), e);
+        }
+    }
 }

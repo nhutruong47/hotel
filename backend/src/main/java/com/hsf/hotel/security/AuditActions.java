@@ -36,6 +36,8 @@ public final class AuditActions {
     public static final String PAYMENT_CONFIRM = "PAYMENT_CONFIRM";
     public static final String PAYMENT_FAIL = "PAYMENT_FAIL";
     public static final String PAYMENT_REFUND = "PAYMENT_REFUND";
+    public static final String PAYMENT_REFUND_CONFIRM = "PAYMENT_REFUND_CONFIRM";
+    public static final String PAYMENT_REFUND_REJECT = "PAYMENT_REFUND_REJECT";
     public static final String PAYMENT_WEBHOOK_RECEIVED = "PAYMENT_WEBHOOK_RECEIVED";
 
     // Admin actions

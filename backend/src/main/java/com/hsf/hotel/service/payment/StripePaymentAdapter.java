@@ -182,19 +182,24 @@ public class StripePaymentAdapter implements PaymentGateway {
     }
 
     @Override
-    public boolean refund(Payment payment, BigDecimal amount, String idempotencyKey) {
-        if (!enabled || !stripeConfig.isConfigured()) {
-            log.debug("Stripe not configured, mock refund success");
-            payment.setRawResponse(String.format(
-                    "{\"status\": \"refunded\", \"amount\": %s, \"mode\": \"mock\"}", amount.toPlainString()));
-            return true;
-        }
+    public boolean supportsAutomaticRefund(Payment payment) {
+        return enabled && stripeConfig.isConfigured()
+                && payment != null
+                && payment.getGateway() == Payment.PaymentGateway.STRIPE
+                && payment.getIntentId() != null
+                && !payment.getIntentId().startsWith("pi_mock_");
+    }
 
-        if (payment.getIntentId() == null || payment.getIntentId().startsWith("pi_mock_")) {
-            log.debug("Mock intent detected, simulating refund");
-            payment.setRawResponse(String.format(
-                    "{\"status\": \"refunded\", \"amount\": %s, \"mode\": \"mock\"}", amount.toPlainString()));
-            return true;
+    @Override
+    public boolean refund(Payment payment, BigDecimal amount, String idempotencyKey) {
+        // Never fake a refund (ADR-0009 Q5): without a real Stripe charge there is
+        // nothing to refund automatically; PaymentService routes such payments to
+        // the manual bank-transfer workflow. Returning false here is a guard.
+        if (!enabled || !stripeConfig.isConfigured()
+                || payment.getIntentId() == null || payment.getIntentId().startsWith("pi_mock_")) {
+            log.warn("Automatic refund unavailable for payment {} (no real Stripe charge)", payment.getId());
+            payment.setRawResponse("{\"status\": \"not_refunded\", \"reason\": \"automatic refund unavailable\"}");
+            return false;
         }
 
         try {
@@ -303,5 +308,61 @@ public class StripePaymentAdapter implements PaymentGateway {
      */
     public boolean isRealStripeEnabled() {
         return enabled && stripeConfig.isConfigured();
+    }
+
+    /* ---------------- payment reuse (no double charging, R-09) ---------------- */
+
+    /**
+     * Client secret of an existing PaymentIntent that can still be confirmed, so a
+     * retried /payments/intent call reuses it instead of creating a second intent
+     * the guest could also pay. Null when the intent is not reusable.
+     */
+    public String retrieveReusableClientSecret(String intentId) {
+        if (!isRealStripeEnabled() || intentId == null || intentId.startsWith("pi_mock_")) {
+            return null;
+        }
+        try {
+            PaymentIntent intent = PaymentIntent.retrieve(intentId);
+            String status = intent.getStatus();
+            boolean reusable = "requires_payment_method".equals(status)
+                    || "requires_confirmation".equals(status)
+                    || "requires_action".equals(status);
+            return reusable ? intent.getClientSecret() : null;
+        } catch (StripeException e) {
+            log.warn("Could not retrieve PaymentIntent {} for reuse: {}", intentId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** Snapshot of a Stripe Checkout Session relevant for reuse decisions. */
+    public record CheckoutSessionView(String id, String status, String url, Long amountTotal) {
+        public boolean isOpen() {
+            return "open".equals(status) && url != null;
+        }
+    }
+
+    public CheckoutSessionView retrieveCheckoutSession(String sessionId) {
+        if (!isRealStripeEnabled() || sessionId == null) {
+            return null;
+        }
+        try {
+            com.stripe.model.checkout.Session s = com.stripe.model.checkout.Session.retrieve(sessionId);
+            return new CheckoutSessionView(s.getId(), s.getStatus(), s.getUrl(), s.getAmountTotal());
+        } catch (StripeException e) {
+            log.warn("Could not retrieve Checkout Session {}: {}", sessionId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** Expire an open session so it can no longer be paid (e.g. the booking total changed). */
+    public void expireCheckoutSession(String sessionId) {
+        if (!isRealStripeEnabled() || sessionId == null) {
+            return;
+        }
+        try {
+            com.stripe.model.checkout.Session.retrieve(sessionId).expire();
+        } catch (StripeException e) {
+            log.warn("Could not expire Checkout Session {}: {}", sessionId, e.getMessage());
+        }
     }
 }

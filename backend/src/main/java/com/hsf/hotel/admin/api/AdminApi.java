@@ -26,6 +26,8 @@ import com.hsf.hotel.voucher.model.Voucher;
 import com.hsf.hotel.room.repository.RoomTypeRepository;
 import com.hsf.hotel.voucher.repository.VoucherRepository;
 import com.hsf.hotel.security.AuditActions;
+import com.hsf.hotel.security.Authz;
+import com.hsf.hotel.user.model.UserRole;
 import com.hsf.hotel.room.service.AmenityService;
 import com.hsf.hotel.admin.service.AuditLogService;
 import com.hsf.hotel.booking.service.BookingService;
@@ -106,7 +108,7 @@ public class AdminApi {
 
     private User requireAdmin(HttpSession session) {
         Object u = session.getAttribute("user");
-        if (!(u instanceof User user) || !"ADMIN".equals(user.getRole())) {
+        if (!(u instanceof User user) || !Authz.atLeast(user, UserRole.ADMIN)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Admin only");
         }
         return user;
@@ -117,9 +119,7 @@ public class AdminApi {
         if (!(u instanceof User user)) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, ErrorCodes.UNAUTHORIZED, "Please login");
         }
-        if (!"ADMIN".equals(user.getRole())
-                && !"MANAGER".equals(user.getRole())
-                && !"STAFF".equals(user.getRole())) {
+        if (!Authz.atLeast(user, UserRole.STAFF)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Staff, Manager or Admin only");
         }
         return user;
@@ -130,7 +130,7 @@ public class AdminApi {
         if (!(u instanceof User user)) {
             throw new ApiException(HttpStatus.UNAUTHORIZED, ErrorCodes.UNAUTHORIZED, "Please login");
         }
-        if (!"ADMIN".equals(user.getRole()) && !"MANAGER".equals(user.getRole())) {
+        if (!Authz.atLeast(user, UserRole.MANAGER)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Manager or Admin only");
         }
         return user;

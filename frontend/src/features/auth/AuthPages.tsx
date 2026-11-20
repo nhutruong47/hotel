@@ -8,6 +8,12 @@ import { api, API_PATHS, ApiError } from '../../shared/api/client';
 import { useSession, type SessionUser } from '../../shared/auth/SessionProvider';
 import { useTranslation } from '../../shared/i18n/hooks';
 
+// R-13: one-click demo accounts only where explicitly enabled (local/staging).
+// The password is injected at build time and never committed to source.
+const DEMO_LOGIN_PASSWORD = process.env.NEXT_PUBLIC_DEMO_LOGIN_PASSWORD ?? '';
+const DEMO_LOGIN_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === 'true' && DEMO_LOGIN_PASSWORD.length > 0;
+
 type AuthResponse = SessionUser;
 type RegisterResponse = { message: string; user: SessionUser };
 
@@ -270,8 +276,12 @@ export const LoginPage = () => {
   const [infoMsg, setInfoMsg] = useState<string | null>(
     reason === 'login_required'
       ? isVi
-        ? 'Vui lòng đăng nhập hoặc chọn Thẻ Thành Viên Mẫu bên dưới để truy cập không gian riêng tư.'
-        : 'Please sign in or select a Digital Keycard below to access your private sanctuary portal.'
+        ? DEMO_LOGIN_ENABLED
+          ? 'Vui lòng đăng nhập hoặc chọn Thẻ Thành Viên Mẫu bên dưới để truy cập không gian riêng tư.'
+          : 'Vui lòng đăng nhập để truy cập không gian riêng tư.'
+        : DEMO_LOGIN_ENABLED
+          ? 'Please sign in or select a Digital Keycard below to access your private sanctuary portal.'
+          : 'Please sign in to access your private sanctuary portal.'
       : reason === 'verify_email'
         ? isVi
           ? 'Tài khoản đã được khởi tạo! Quý khách có thể đăng nhập ngay bên dưới.'
@@ -334,7 +344,7 @@ export const LoginPage = () => {
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <button
           type="button"
-          onClick={() => handleInstantKeycard('minh.anh.guest', 'GuestReview@2026!', true)}
+          onClick={() => handleInstantKeycard('minh.anh.guest', DEMO_LOGIN_PASSWORD, true)}
           className="group flex flex-col justify-between rounded-2xl border border-white/15 bg-black/35 p-4 text-left transition hover:border-amber-300 hover:bg-black/55"
         >
           <div className="flex items-center justify-between">
@@ -349,7 +359,7 @@ export const LoginPage = () => {
 
         <button
           type="button"
-          onClick={() => handleInstantKeycard('alex.chen.guest', 'GuestReview@2026!', true)}
+          onClick={() => handleInstantKeycard('alex.chen.guest', DEMO_LOGIN_PASSWORD, true)}
           className="group flex flex-col justify-between rounded-2xl border border-white/15 bg-black/35 p-4 text-left transition hover:border-amber-300 hover:bg-black/55"
         >
           <div className="flex items-center justify-between">
@@ -370,7 +380,7 @@ export const LoginPage = () => {
       eyebrow={t('auth.loginEyebrow')}
       headline={t('auth.loginTitle')}
       lead={t('auth.loginLead')}
-      quickAccessSlot={quickKeycardDeck}
+      quickAccessSlot={DEMO_LOGIN_ENABLED ? quickKeycardDeck : undefined}
       perks={[
         t('auth.loginPerk1'),
         t('auth.loginPerk2'),
@@ -409,7 +419,7 @@ export const LoginPage = () => {
             }}
             required
             autoComplete="username"
-            placeholder={isVi ? 'Nhập username (vd: admin, minh.anh.guest) hoặc email' : t('forms.placeholder.email')}
+            placeholder={isVi ? 'Nhập username hoặc email' : t('forms.placeholder.email')}
             className="h-13 w-full rounded-2xl border border-brand-stone bg-brand-paper/60 px-5 text-brand-ink outline-none transition placeholder:text-brand-ink/40 focus:border-brand-forest focus:bg-brand-white focus:ring-2 focus:ring-brand-sage/30"
           />
         </label>
@@ -437,14 +447,15 @@ export const LoginPage = () => {
           />
         </label>
 
-        {/* Quick Fill Pills inside the form card */}
+        {/* Quick Fill Pills inside the form card (demo environments only) */}
+        {DEMO_LOGIN_ENABLED && (
         <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-brand-sand/70 px-3.5 py-2.5 text-xs">
           <span className="font-semibold text-brand-ink/60">
             {isVi ? 'Chọn nhanh:' : 'Quick fill:'}
           </span>
           <button
             type="button"
-            onClick={() => handleInstantKeycard('minh.anh.guest', 'GuestReview@2026!', true)}
+            onClick={() => handleInstantKeycard('minh.anh.guest', DEMO_LOGIN_PASSWORD, true)}
             className="rounded-full bg-brand-forest px-3 py-1 font-semibold text-white transition hover:bg-brand-forest-deep"
           >
             👑 {isVi ? 'Khách VIP (1-Click)' : 'VIP Guest (1-Click)'}
@@ -462,6 +473,7 @@ export const LoginPage = () => {
             🛡️ Admin (admin)
           </button>
         </div>
+        )}
 
         <label className="flex cursor-pointer select-none items-center gap-3 text-sm text-brand-ink/66">
           <input

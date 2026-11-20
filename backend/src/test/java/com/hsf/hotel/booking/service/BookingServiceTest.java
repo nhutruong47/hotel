@@ -135,10 +135,10 @@ class BookingServiceTest {
             assertEquals(BigDecimal.valueOf(1350), pricing.subtotal());
             // 8% service fee = 108
             assertEquals(BigDecimal.valueOf(108), pricing.serviceFee());
-            // 10% tax = 135
-            assertEquals(BigDecimal.valueOf(135), pricing.taxAmount());
-            // Total = 1350 + 108 + 135 = 1593
-            assertEquals(BigDecimal.valueOf(1593), pricing.total());
+            // ADR-0009 Q7: VAT 10% on (subtotal + service fee) = 10% x 1458 = 145.8 -> 146
+            assertEquals(BigDecimal.valueOf(146), pricing.taxAmount());
+            // Total = 1350 + 108 + 146 = 1604
+            assertEquals(BigDecimal.valueOf(1604), pricing.total());
         }
 
         @Test
@@ -172,10 +172,10 @@ class BookingServiceTest {
             assertEquals(BigDecimal.valueOf(5000), pricing.subtotal());
             // 8% service fee = 400
             assertEquals(BigDecimal.valueOf(400), pricing.serviceFee());
-            // 10% tax = 500
-            assertEquals(BigDecimal.valueOf(500), pricing.taxAmount());
-            // Total = 5000 + 400 + 500 = 5900
-            assertEquals(BigDecimal.valueOf(5900), pricing.total());
+            // VAT 10% on (5000 + 400) = 540
+            assertEquals(BigDecimal.valueOf(540), pricing.taxAmount());
+            // Total = 5000 + 400 + 540 = 5940
+            assertEquals(BigDecimal.valueOf(5940), pricing.total());
         }
 
         @Test
@@ -238,7 +238,7 @@ class BookingServiceTest {
             otherUser.setUsername("other");
             otherUser.setRole(UserRole.USER);
 
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
 
             assertThrows(com.hsf.hotel.exception.ForbiddenException.class, () -> {
                 bookingService.modifyBooking(100, otherUser, 
@@ -250,7 +250,7 @@ class BookingServiceTest {
         @DisplayName("Should throw exception when modifying cancelled booking")
         void testModifyCancelledBooking() {
             testBooking.setStatus(BookingStatus.CANCELLED);
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
 
             BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> {
                 bookingService.modifyBooking(100, testUser,
@@ -263,9 +263,7 @@ class BookingServiceTest {
         @Test
         @DisplayName("Should throw exception when guest count exceeds capacity")
         void testModifyBookingExceedsCapacity() {
-            when(bookingRepository.findById(100)).thenReturn(Optional.of(testBooking));
-            when(bookingRepository.findConflictingBookingsForUpdateExcluding(any(), anyInt(), any(), any()))
-                    .thenReturn(List.of());
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
 
             BusinessRuleException exception = assertThrows(BusinessRuleException.class, () -> {
                 bookingService.modifyBooking(100, testUser,

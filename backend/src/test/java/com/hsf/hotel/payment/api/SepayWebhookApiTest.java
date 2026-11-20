@@ -20,6 +20,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +30,7 @@ class SepayWebhookApiTest {
     @Mock private BookingRepository bookingRepository;
     @Mock private BookingService bookingService;
     @Mock private PaymentRepository paymentRepository;
+    @Mock private com.hsf.hotel.payment.service.PaymentService paymentService;
     @Mock private HttpServletRequest request;
 
     private SepayWebhookApi api;
@@ -35,7 +38,7 @@ class SepayWebhookApiTest {
 
     @BeforeEach
     void setUp() {
-        api = new SepayWebhookApi(bookingRepository, bookingService, paymentRepository, "secret-key");
+        api = new SepayWebhookApi(bookingRepository, bookingService, paymentRepository, paymentService, "secret-key");
         booking = new Booking();
         booking.setId(42);
         booking.setStatus(BookingStatus.PENDING_PAYMENT);
@@ -52,7 +55,8 @@ class SepayWebhookApiTest {
     }
 
     @Test
-    void rejectsAmountMismatchBeforeWritingPayment() {
+    void recordsAmountMismatchAsFlaggedPaymentWithoutConfirmingBooking() {
+        // ADR-0009 Q4: the money arrived, so it must be recorded (flagged), never dropped.
         SepayWebhookApi.SepayTransactionPayload payload = payload();
         payload.transferAmount = BigDecimal.valueOf(999_999);
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
@@ -60,6 +64,8 @@ class SepayWebhookApiTest {
         var response = api.handleSepayWebhook(payload, "Apikey secret-key", request);
 
         assertEquals(200, response.getStatusCode().value());
+        verify(paymentService).recordUnappliedTransfer(eq(booking), eq(BigDecimal.valueOf(999_999)),
+                eq("SEPAY-9001"), any(), contains("Amount mismatch"));
         verify(paymentRepository, never()).save(any());
         verify(bookingService, never()).confirmPayment(any(), any(), any());
     }
@@ -95,6 +101,7 @@ class SepayWebhookApiTest {
         ArgumentCaptor<Payment> payment = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository, atLeastOnce()).save(payment.capture());
         assertTrue(payment.getValue().getNotes().contains("manual review/refund required"));
+        verify(paymentService).flagPaymentForReview(any(), contains("Late or duplicate"));
         assertEquals(BookingStatus.EXPIRED, booking.getStatus());
     }
 

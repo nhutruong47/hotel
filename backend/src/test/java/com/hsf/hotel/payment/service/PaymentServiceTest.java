@@ -236,6 +236,7 @@ class PaymentServiceTest {
             assertEquals(Payment.PaymentStatus.PAID, result.getStatus());
             assertEquals(BookingStatus.EXPIRED, testBooking.getStatus());
             assertTrue(result.getNotes().contains("manual review/refund required"));
+            assertTrue(result.getReviewRequired(), "late payment must be flagged for reconciliation");
             verify(bookingRepository, never()).save(any());
         }
 
@@ -484,6 +485,7 @@ class PaymentServiceTest {
             when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
             when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
             when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+            when(paymentGateway.supportsAutomaticRefund(any())).thenReturn(true);
             when(paymentGateway.refund(any(), any(), eq("refund-4"))).thenReturn(true);
             when(bookingRepository.save(any())).thenReturn(testBooking);
 
@@ -504,6 +506,7 @@ class PaymentServiceTest {
             when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
             when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
             when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+            when(paymentGateway.supportsAutomaticRefund(any())).thenReturn(true);
             when(paymentGateway.refund(any(), any(), eq("refund-5"))).thenReturn(true);
             when(bookingRepository.save(any())).thenReturn(testBooking);
 
@@ -529,6 +532,7 @@ class PaymentServiceTest {
             when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
             when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
             when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+            when(paymentGateway.supportsAutomaticRefund(any())).thenReturn(true);
             when(paymentGateway.refund(any(), any(), eq("refund-p0-03"))).thenReturn(true);
             when(bookingRepository.save(any())).thenReturn(testBooking);
 
@@ -553,6 +557,7 @@ class PaymentServiceTest {
             when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
             when(paymentRepository.findByBookingIdOrderByCreatedAtDesc(100))
                     .thenReturn(List.of(duplicateLatePayment, testPayment));
+            when(paymentGateway.supportsAutomaticRefund(any())).thenReturn(true);
             when(paymentGateway.refund(any(), any(), eq("refund-p0-03b"))).thenReturn(true);
             when(bookingRepository.save(any())).thenReturn(testBooking);
 
@@ -600,7 +605,7 @@ class PaymentServiceTest {
             testPayment.setStatus(Payment.PaymentStatus.PAID);
             testPayment.setRefundAmount(BigDecimal.ZERO);
             when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
-            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
+            when(paymentGateway.supportsAutomaticRefund(any())).thenReturn(true);
             when(paymentGateway.refund(testPayment, BigDecimal.valueOf(100), "failed-refund"))
                     .thenReturn(false);
 
@@ -612,6 +617,135 @@ class PaymentServiceTest {
             verify(paymentRepository, never()).save(any());
             verify(paymentRefundRepository, atLeastOnce()).save(argThat(refund ->
                     refund.getStatus() == PaymentRefund.RefundStatus.FAILED));
+        }
+    }
+
+    @Nested
+    @DisplayName("ADR-0009: reconciliation and manual refunds")
+    class ReconciliationAndManualRefundTests {
+
+        @Test
+        @DisplayName("Webhook with wrong amount records the money, flags it and does not confirm the booking")
+        void webhookAmountMismatchIsRecordedNotThrown() {
+            testPayment.setStatus(Payment.PaymentStatus.PENDING);
+            testPayment.setAmount(BigDecimal.valueOf(800)); // booking total is 900
+            when(paymentRepository.findByIntentIdForUpdate("pi_mock_123")).thenReturn(Optional.of(testPayment));
+            when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+
+            Payment result = paymentService.handleWebhook("pi_mock_123", "succeeded", "{}");
+
+            assertEquals(Payment.PaymentStatus.PAID, result.getStatus());
+            assertTrue(result.getReviewRequired());
+            assertTrue(result.getReviewReason().contains("Amount mismatch"));
+            assertEquals(BookingStatus.PENDING_PAYMENT, testBooking.getStatus());
+            verify(bookingRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("Refund of a bank-transfer payment is PENDING_MANUAL: no gateway call, totals unchanged")
+        void nonCardRefundGoesToManualWorkflow() {
+            testPayment.setStatus(Payment.PaymentStatus.PAID);
+            testPayment.setAmount(BigDecimal.valueOf(1000));
+            testPayment.setRefundAmount(BigDecimal.ZERO);
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(paymentGateway.supportsAutomaticRefund(testPayment)).thenReturn(false);
+
+            Payment result = paymentService.refund(1, BigDecimal.valueOf(1000), "Hủy theo chính sách", testUser, "manual-1");
+
+            assertEquals(Payment.PaymentStatus.PAID, result.getStatus());
+            assertEquals(0, BigDecimal.ZERO.compareTo(result.getRefundAmount()));
+            verify(paymentGateway, never()).refund(any(), any(), any());
+            verify(paymentRefundRepository).save(argThat(r ->
+                    r.getStatus() == PaymentRefund.RefundStatus.PENDING_MANUAL
+                            && r.getAmount().compareTo(BigDecimal.valueOf(1000)) == 0));
+        }
+
+        @Test
+        @DisplayName("Pending manual refunds count against the paid amount (no over-refund)")
+        void pendingManualRefundsReserveAmount() {
+            testPayment.setStatus(Payment.PaymentStatus.PAID);
+            testPayment.setAmount(BigDecimal.valueOf(1000));
+            testPayment.setRefundAmount(BigDecimal.ZERO);
+            PaymentRefund pending = new PaymentRefund();
+            pending.setPayment(testPayment);
+            pending.setAmount(BigDecimal.valueOf(700));
+            pending.setStatus(PaymentRefund.RefundStatus.PENDING_MANUAL);
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(paymentRefundRepository.findByPaymentIdAndStatusIn(eq(1), any())).thenReturn(List.of(pending));
+
+            BusinessRuleException ex = assertThrows(BusinessRuleException.class, () ->
+                    paymentService.refund(1, BigDecimal.valueOf(400), "second", testUser, "manual-2"));
+            assertEquals("REFUND_OVERFLOW", ex.getCode());
+        }
+
+        @Test
+        @DisplayName("ADMIN confirmation with bank reference completes the refund and cancels the booking")
+        void confirmManualRefund() {
+            testPayment.setStatus(Payment.PaymentStatus.PAID);
+            testPayment.setAmount(BigDecimal.valueOf(1000));
+            testPayment.setRefundAmount(BigDecimal.ZERO);
+            testBooking.setStatus(BookingStatus.PAID);
+            PaymentRefund pending = new PaymentRefund();
+            pending.setPayment(testPayment);
+            pending.setAmount(BigDecimal.valueOf(1000));
+            pending.setReason("Hủy theo chính sách");
+            pending.setStatus(PaymentRefund.RefundStatus.PENDING_MANUAL);
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(paymentRefundRepository.findById(55L)).thenReturn(Optional.of(pending));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
+            when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+
+            Payment result = paymentService.confirmManualRefund(1, 55L, " VCB-20261120-001 ", testUser);
+
+            assertEquals(Payment.PaymentStatus.REFUNDED, result.getStatus());
+            assertEquals(0, BigDecimal.valueOf(1000).compareTo(result.getRefundAmount()));
+            assertEquals(PaymentRefund.RefundStatus.SUCCEEDED, pending.getStatus());
+            assertEquals("VCB-20261120-001", pending.getBankReference());
+            assertNotNull(pending.getConfirmedAt());
+            assertEquals(BookingStatus.CANCELLED, testBooking.getStatus());
+        }
+
+        @Test
+        @DisplayName("Confirmation requires a bank reference")
+        void confirmRequiresBankReference() {
+            BusinessRuleException ex = assertThrows(BusinessRuleException.class, () ->
+                    paymentService.confirmManualRefund(1, 55L, "  ", testUser));
+            assertEquals("BANK_REFERENCE_REQUIRED", ex.getCode());
+            verify(paymentRepository, never()).findByIdForUpdate(any());
+        }
+
+        @Test
+        @DisplayName("A refund belonging to another payment cannot be confirmed")
+        void cannotConfirmRefundOfAnotherPayment() {
+            Payment other = new Payment();
+            other.setId(2);
+            PaymentRefund foreign = new PaymentRefund();
+            foreign.setPayment(other);
+            foreign.setStatus(PaymentRefund.RefundStatus.PENDING_MANUAL);
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(paymentRefundRepository.findById(77L)).thenReturn(Optional.of(foreign));
+
+            assertThrows(ResourceNotFoundException.class, () ->
+                    paymentService.confirmManualRefund(1, 77L, "REF", testUser));
+        }
+
+        @Test
+        @DisplayName("Rejecting a pending manual refund marks it FAILED without touching totals")
+        void rejectManualRefund() {
+            testPayment.setStatus(Payment.PaymentStatus.PAID);
+            testPayment.setRefundAmount(BigDecimal.ZERO);
+            PaymentRefund pending = new PaymentRefund();
+            pending.setPayment(testPayment);
+            pending.setAmount(BigDecimal.valueOf(300));
+            pending.setStatus(PaymentRefund.RefundStatus.PENDING_MANUAL);
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(paymentRefundRepository.findById(56L)).thenReturn(Optional.of(pending));
+
+            paymentService.rejectManualRefund(1, 56L, "Khách đổi ý", testUser);
+
+            assertEquals(PaymentRefund.RefundStatus.FAILED, pending.getStatus());
+            assertEquals(0, BigDecimal.ZERO.compareTo(testPayment.getRefundAmount()));
+            assertEquals(Payment.PaymentStatus.PAID, testPayment.getStatus());
         }
     }
 

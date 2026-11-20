@@ -110,7 +110,32 @@ public class Payment {
 
     private LocalDateTime refundedAt;
 
+    /**
+     * Money was received but cannot be applied automatically (late, duplicate or
+     * wrong amount). It stays recorded and is surfaced to ADMIN (ADR-0009 Q4).
+     */
+    @Column(name = "review_required", nullable = false)
+    private Boolean reviewRequired = Boolean.FALSE;
+
+    @Column(name = "review_reason", length = 500)
+    private String reviewReason;
+
     public Payment() {}
+
+    public Boolean getReviewRequired() { return reviewRequired; }
+    public void setReviewRequired(Boolean reviewRequired) { this.reviewRequired = reviewRequired != null && reviewRequired; }
+    public String getReviewReason() { return reviewReason; }
+    public void setReviewReason(String reviewReason) { this.reviewReason = reviewReason; }
+
+    /** Flag this payment for manual reconciliation, keeping the first reason when called repeatedly. */
+    public void flagForReview(String reason) {
+        this.reviewRequired = Boolean.TRUE;
+        if (reason != null && !reason.isBlank()) {
+            String merged = this.reviewReason == null || this.reviewReason.isBlank()
+                    ? reason : this.reviewReason + "; " + reason;
+            this.reviewReason = merged.length() > 500 ? merged.substring(0, 500) : merged;
+        }
+    }
 
     public Payment(Booking booking, BigDecimal amount, PaymentMethod method, PaymentStatus status, String transactionRef) {
         this.booking = booking;

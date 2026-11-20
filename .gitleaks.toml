@@ -1,0 +1,20 @@
+# gitleaks configuration (CI job "secret-scan", see .github/workflows/ci.yml).
+# Default rules plus a narrow allowlist for generated output and documented
+# placeholders. Never allowlist a real credential: rotate it instead (risk R-01).
+title = "Nhu Villas secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Build output, local logs and documented example tokens"
+paths = [
+  '''(^|[\\/])target[\\/]''',
+  '''(^|[\\/])logs[\\/]''',
+  '''(^|[\\/])node_modules[\\/]''',
+  '''(^|[\\/])\.next[\\/]''',
+]
+regexes = [
+  # Truncated JWT header used as an example response in docs/API_DOCUMENTATION.md
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
+]

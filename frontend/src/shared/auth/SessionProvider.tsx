@@ -60,15 +60,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const refresh = useCallback(async () => {
         try {
             const data = await api.get<{ user: SessionUser | null }>(API_PATHS.auth.session);
-            if (data?.user) {
-                setUser(data.user);
-            } else {
-                const cached = readCachedSession();
-                if (!cached) {
-                    setUser(null);
-                }
-            }
+            // The server is authoritative: an explicit "no user" answer means the
+            // session expired or was revoked, so the cached identity must go too
+            // (otherwise the UI shows a signed-in user until the next 401).
+            setUser(data?.user ?? null);
         } catch {
+            // Network/server error: keep a cached identity rather than flashing
+            // the user out; the next authenticated call will settle it.
             if (!readCachedSession()) {
                 setUser(null);
             }

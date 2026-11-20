@@ -95,13 +95,14 @@ class StripePaymentAdapterTest {
         }
 
         @Test
-        @DisplayName("Mock refund should always succeed")
-        void testMockRefund() {
+        @DisplayName("Without a real Stripe charge the adapter must NOT report a refund (ADR-0009 Q5)")
+        void testMockRefundIsNeverFaked() {
             boolean result = adapter.refund(testPayment, BigDecimal.valueOf(500));
 
-            assertTrue(result);
+            assertFalse(result);
+            assertFalse(adapter.supportsAutomaticRefund(testPayment));
             assertNotNull(testPayment.getRawResponse());
-            assertTrue(testPayment.getRawResponse().contains("refunded"));
+            assertTrue(testPayment.getRawResponse().contains("not_refunded"));
         }
 
         @Test
@@ -246,10 +247,11 @@ class StripePaymentAdapterTest {
         @DisplayName("Should handle payment with null currency")
         void testPaymentWithNullCurrency() {
             testPayment.setCurrency(null);
-            
+
             boolean result = adapter.refund(testPayment, BigDecimal.valueOf(100));
-            
-            assertTrue(result);
+
+            // Stripe disabled in this test: no automatic refund is possible.
+            assertFalse(result);
         }
     }
 }

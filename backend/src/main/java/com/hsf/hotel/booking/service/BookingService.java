@@ -52,14 +52,21 @@ import java.util.Optional;
 public class BookingService {
 
     private static final Logger log = LoggerFactory.getLogger(BookingService.class);
-    private static final BigDecimal DAY_USE_PRICE_FACTOR = new BigDecimal("0.5");
     private static final int FULL_REFUND_DAYS = 3;
     private static final int PARTIAL_REFUND_DAYS = 1;
     private static final int FULL_REFUND_PERCENT = 100;
     private static final int PARTIAL_REFUND_PERCENT = 50;
     private static final BigDecimal PERCENT_DIVISOR = BigDecimal.valueOf(100);
-    private static final BigDecimal SERVICE_FEE_RATE = new BigDecimal("0.08"); // 8%
-    private static final BigDecimal TAX_RATE = new BigDecimal("0.10"); // 10% VAT
+
+    /** Pricing rules (ADR-0009). Setter-injected so manual construction in tests keeps working. */
+    private PricingPolicy pricingPolicy = PricingPolicy.defaults();
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setPricingPolicy(PricingPolicy pricingPolicy) {
+        if (pricingPolicy != null) {
+            this.pricingPolicy = pricingPolicy;
+        }
+    }
 
     private final BookingRepository bookingRepository;
     private final BookingStatusTransitionRepository transitionRepository;
@@ -167,35 +174,130 @@ public class BookingService {
     }
 
     public PricingBreakdown calculatePricing(Room room, LocalDate checkIn, LocalDate checkOut, Integer guests) {
-        long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
-        BigDecimal subtotal = BigDecimal.ZERO;
-        if (nights == 0) {
-            subtotal = room.getPricePerNight().multiply(DAY_USE_PRICE_FACTOR);
-        } else {
-            LocalDate current = checkIn;
-            while (current.isBefore(checkOut)) {
-                java.time.DayOfWeek dow = current.getDayOfWeek();
-                BigDecimal nightRate = room.getPricePerNight();
-                // Weekend surcharge (+15% on Friday and Saturday nights)
-                if (dow == java.time.DayOfWeek.FRIDAY || dow == java.time.DayOfWeek.SATURDAY) {
-                    nightRate = nightRate.multiply(new BigDecimal("1.15")).setScale(0, RoundingMode.HALF_UP);
-                }
-                subtotal = subtotal.add(nightRate);
-                current = current.plusDays(1);
-            }
-            // Extra guest fee ($25/night/guest for guests beyond base 2)
-            if (guests != null && guests > 2 && room.getCapacity() != null && room.getCapacity() > 2) {
-                int extraGuests = guests - 2;
-                BigDecimal extraGuestFee = BigDecimal.valueOf(extraGuests)
-                        .multiply(new BigDecimal("25"))
-                        .multiply(BigDecimal.valueOf(nights));
-                subtotal = subtotal.add(extraGuestFee);
-            }
+        PricingPolicy.Quote q = pricingPolicy.quote(
+                pricingPolicy.subtotal(room, checkIn, checkOut, guests), BigDecimal.ZERO);
+        return new PricingBreakdown(q.subtotal(), q.serviceFee(), q.taxAmount(), q.total());
+    }
+
+    /** Result of resolving a voucher/promotion code against a stay (no usage consumed). */
+    public record DiscountResolution(String appliedCode, BigDecimal discount,
+                                     Voucher voucher, com.hsf.hotel.promotion.model.Promotion promotion) {
+        static DiscountResolution none() {
+            return new DiscountResolution(null, BigDecimal.ZERO, null, null);
         }
-        BigDecimal serviceFee = subtotal.multiply(SERVICE_FEE_RATE).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal taxAmount = subtotal.multiply(TAX_RATE).setScale(0, RoundingMode.HALF_UP);
-        BigDecimal total = subtotal.add(serviceFee).add(taxAmount);
-        return new PricingBreakdown(subtotal, serviceFee, taxAmount, total);
+    }
+
+    /** Full server-side quote (subtotal, discount, fee, VAT, total) for a prospective stay. */
+    public record BookingQuote(PricingPolicy.Quote pricing, String appliedCode) {}
+
+    /**
+     * Prices a prospective stay including an optional discount code, without
+     * consuming the code. Throws {@link BusinessRuleException} with the same codes
+     * {@link #createBooking} would, so previews and bookings never disagree.
+     */
+    public BookingQuote quote(Room room, LocalDate checkIn, LocalDate checkOut, Integer guests, String code) {
+        BigDecimal subtotal = pricingPolicy.subtotal(room, checkIn, checkOut, guests);
+        DiscountResolution discount = resolveDiscount(code, room, checkIn, checkOut, subtotal);
+        return new BookingQuote(pricingPolicy.quote(subtotal, discount.discount()), discount.appliedCode());
+    }
+
+    /** Validates a voucher/promotion code for a stay and computes its discount. */
+    DiscountResolution resolveDiscount(String code, Room room, LocalDate checkIn, LocalDate checkOut,
+                                       BigDecimal subtotal) {
+        if (code == null || code.trim().isEmpty()) {
+            return DiscountResolution.none();
+        }
+        VoucherService.VoucherValidationResult vres = voucherService.validateVoucher(code);
+        if (!vres.valid) {
+            throw new BusinessRuleException("VOUCHER_INVALID",
+                    vres.message != null ? vres.message : "Voucher không hợp lệ");
+        }
+        BigDecimal discount = BigDecimal.ZERO;
+        if (vres.voucher != null) {
+            Voucher v = vres.voucher;
+            discount = Boolean.TRUE.equals(v.getPercent())
+                    ? subtotal.multiply(v.getAmount()).divide(PERCENT_DIVISOR, 0, RoundingMode.HALF_UP)
+                    : v.getAmount();
+            return new DiscountResolution(v.getCode(), cap(discount, subtotal), v, null);
+        }
+        if (vres.promotion != null) {
+            com.hsf.hotel.promotion.model.Promotion p = vres.promotion;
+            if (p.getRooms() != null && !p.getRooms().isEmpty()
+                    && p.getRooms().stream().noneMatch(r -> r.getId() != null && r.getId().equals(room.getId()))) {
+                throw new BusinessRuleException("PROMOTION_INVALID_FOR_ROOM",
+                        "Mã ưu đãi này không áp dụng cho villa đã chọn");
+            }
+            long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
+            if (p.getMinimumNights() != null && nights < p.getMinimumNights()) {
+                throw new BusinessRuleException("PROMOTION_MIN_NIGHTS_NOT_MET",
+                        "Mã ưu đãi yêu cầu đặt tối thiểu " + p.getMinimumNights() + " đêm");
+            }
+            if (p.getMinimumBookingAmount() != null && subtotal.compareTo(p.getMinimumBookingAmount()) < 0) {
+                throw new BusinessRuleException("PROMOTION_MIN_AMOUNT_NOT_MET",
+                        "Mã ưu đãi yêu cầu giá trị đặt phòng tối thiểu từ " + p.getMinimumBookingAmount());
+            }
+            if (p.getDiscountPercent() != null) {
+                discount = subtotal.multiply(p.getDiscountPercent()).divide(PERCENT_DIVISOR, 0, RoundingMode.HALF_UP);
+            } else if (p.getDiscountAmount() != null) {
+                discount = p.getDiscountAmount();
+            }
+            return new DiscountResolution(p.getPromoCode(), cap(discount, subtotal), null, p);
+        }
+        return DiscountResolution.none();
+    }
+
+    private static BigDecimal cap(BigDecimal discount, BigDecimal subtotal) {
+        if (discount == null || discount.signum() < 0) return BigDecimal.ZERO;
+        return discount.compareTo(subtotal) > 0 ? subtotal : discount;
+    }
+
+    /** Q11 (ADR-0009): overnight stays must respect the villa's min/max stay; day-use is exempt. */
+    private static void validateStayLength(Room room, LocalDate checkIn, LocalDate checkOut) {
+        long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
+        if (nights <= 0) {
+            return;
+        }
+        Integer min = room.getMinimumStay();
+        if (min != null && min > 0 && nights < min) {
+            throw new BusinessRuleException("MIN_STAY_NOT_MET",
+                    "Villa yêu cầu lưu trú tối thiểu " + min + " đêm");
+        }
+        Integer max = room.getMaximumStay();
+        if (max != null && max > 0 && nights > max) {
+            throw new BusinessRuleException("MAX_STAY_EXCEEDED",
+                    "Villa chỉ nhận lưu trú tối đa " + max + " đêm");
+        }
+    }
+
+    /**
+     * Natural idempotency for booking creation: if the only conflicting booking is
+     * this guest's own still-valid hold for exactly the same stay, it is a replay.
+     */
+    private static Booking findIdempotentReplay(List<Booking> conflicts, User user,
+                                                LocalDate checkIn, LocalDate checkOut, Integer guests) {
+        if (conflicts == null || conflicts.size() != 1 || user == null || user.getId() == null) {
+            return null;
+        }
+        Booking existing = conflicts.get(0);
+        boolean sameGuest = existing.getUser() != null && user.getId().equals(existing.getUser().getId());
+        boolean sameStay = checkIn.equals(existing.getCheckInDate()) && checkOut.equals(existing.getCheckOutDate())
+                && java.util.Objects.equals(guests, existing.getGuests());
+        boolean liveHold = existing.getStatus() == BookingStatus.PENDING_PAYMENT
+                && (existing.getHoldExpiresAt() == null || existing.getHoldExpiresAt().isAfter(LocalDateTime.now()));
+        return sameGuest && sameStay && liveHold ? existing : null;
+    }
+
+    /** Return the voucher/promotion use consumed by a booking that never settled. */
+    private void releaseDiscount(Booking booking) {
+        if (booking.getAppliedVoucherCode() == null) {
+            return;
+        }
+        try {
+            voucherService.releaseDiscountCode(booking.getAppliedVoucherCode());
+        } catch (Exception ex) {
+            log.warn("Failed to release discount code {} for booking #{}: {}",
+                    booking.getAppliedVoucherCode(), booking.getId(), ex.getMessage());
+        }
     }
 
     /**
@@ -239,9 +341,17 @@ public class BookingService {
 
         LocalDate occupiedUntil = Occupancy.exclusiveEnd(checkIn, checkOut);
         List<Booking> conflicts = bookingRepository.findConflictingBookingsForUpdate(lockedRoom, checkIn, occupiedUntil);
+        Booking replay = findIdempotentReplay(conflicts, user, checkIn, checkOut, guests);
+        if (replay != null) {
+            // Same guest re-submitting the same stay (double click, network retry):
+            // return the hold they already own instead of a confusing 409.
+            log.info("Idempotent replay of booking #{} for user {}", replay.getId(), user.getUsername());
+            return replay;
+        }
         if (!conflicts.isEmpty() || !Boolean.TRUE.equals(lockedRoom.getIsAvailable())) {
             throw new BusinessRuleException("ROOM_UNAVAILABLE", "Phòng đã được đặt trong khoảng thời gian này");
         }
+        validateStayLength(lockedRoom, checkIn, checkOut);
 
         if (maintenanceRepository != null) {
             var maintConflicts = maintenanceRepository.findConflictingMaintenances(lockedRoom, checkIn, occupiedUntil);
@@ -255,74 +365,27 @@ public class BookingService {
                     "Số khách vượt quá sức chứa của phòng (tối đa " + lockedRoom.getCapacity() + ")");
         }
 
-        PricingBreakdown pricing = calculatePricing(lockedRoom, checkIn, checkOut, guests);
-        String appliedCode = null;
-        BigDecimal discount = BigDecimal.ZERO;
-
-        if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-            VoucherService.VoucherValidationResult vres = voucherService.validateVoucher(voucherCode);
-            if (!vres.valid) {
-                throw new BusinessRuleException("VOUCHER_INVALID",
-                        vres.message != null ? vres.message : "Voucher không hợp lệ");
+        BigDecimal subtotal = pricingPolicy.subtotal(lockedRoom, checkIn, checkOut, guests);
+        DiscountResolution resolved = resolveDiscount(voucherCode, lockedRoom, checkIn, checkOut, subtotal);
+        if (resolved.voucher() != null) {
+            boolean consumed = voucherService.consumeVoucher(resolved.voucher());
+            if (!consumed) {
+                throw new BusinessRuleException("VOUCHER_EXHAUSTED",
+                        "Voucher vừa được sử dụng bởi giao dịch khác, vui lòng thử lại");
             }
-            if (vres.voucher != null) {
-                Voucher v = vres.voucher;
-                if (Boolean.TRUE.equals(v.getPercent())) {
-                    discount = pricing.subtotal().multiply(v.getAmount()).divide(BigDecimal.valueOf(100));
-                } else {
-                    discount = v.getAmount();
-                }
-                if (discount.compareTo(pricing.subtotal()) > 0) {
-                    discount = pricing.subtotal();
-                }
-                appliedCode = v.getCode();
-                boolean consumed = voucherService.consumeVoucher(v);
-                if (!consumed) {
-                    throw new BusinessRuleException("VOUCHER_EXHAUSTED",
-                            "Voucher vừa được sử dụng bởi giao dịch khác, vui lòng thử lại");
-                }
-            } else if (vres.promotion != null) {
-                com.hsf.hotel.promotion.model.Promotion p = vres.promotion;
-                if (p.getRooms() != null && !p.getRooms().isEmpty() && !p.getRooms().contains(lockedRoom)) {
-                    throw new BusinessRuleException("PROMOTION_INVALID_FOR_ROOM",
-                            "Mã ưu đãi này không áp dụng cho villa đã chọn");
-                }
-                long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
-                if (nights < p.getMinimumNights()) {
-                    throw new BusinessRuleException("PROMOTION_MIN_NIGHTS_NOT_MET",
-                            "Mã ưu đãi yêu cầu đặt tối thiểu " + p.getMinimumNights() + " đêm");
-                }
-                if (pricing.subtotal().compareTo(p.getMinimumBookingAmount()) < 0) {
-                    throw new BusinessRuleException("PROMOTION_MIN_AMOUNT_NOT_MET",
-                            "Mã ưu đãi yêu cầu giá trị đặt phòng tối thiểu từ " + p.getMinimumBookingAmount());
-                }
-
-                if (p.getDiscountPercent() != null) {
-                    discount = pricing.subtotal().multiply(p.getDiscountPercent()).divide(BigDecimal.valueOf(100));
-                } else if (p.getDiscountAmount() != null) {
-                    discount = p.getDiscountAmount();
-                }
-                if (discount.compareTo(pricing.subtotal()) > 0) {
-                    discount = pricing.subtotal();
-                }
-                appliedCode = p.getPromoCode();
-
-                int updated = entityManager.createQuery("UPDATE Promotion p SET p.currentUses = COALESCE(p.currentUses, 0) + 1 WHERE p.id = :id AND (p.maximumUses IS NULL OR COALESCE(p.currentUses, 0) < p.maximumUses)")
-                        .setParameter("id", p.getId())
-                        .executeUpdate();
-                if (updated == 0) {
-                    throw new BusinessRuleException("PROMOTION_EXHAUSTED", "Mã ưu đãi đã hết lượt sử dụng");
-                }
+        } else if (resolved.promotion() != null) {
+            int updated = entityManager.createQuery("UPDATE Promotion p SET p.currentUses = COALESCE(p.currentUses, 0) + 1 WHERE p.id = :id AND (p.maximumUses IS NULL OR COALESCE(p.currentUses, 0) < p.maximumUses)")
+                    .setParameter("id", resolved.promotion().getId())
+                    .executeUpdate();
+            if (updated == 0) {
+                throw new BusinessRuleException("PROMOTION_EXHAUSTED", "Mã ưu đãi đã hết lượt sử dụng");
             }
         }
-
-        BigDecimal finalPrice = pricing.subtotal().subtract(discount).add(pricing.serviceFee()).add(pricing.taxAmount());
-        // Never let the discount drive the total below zero — this protects
-        // against promotions whose nominal value exceeds the subtotal and
-        // against coupon branches that forget to cap.
-        if (finalPrice.signum() < 0) {
-            finalPrice = BigDecimal.ZERO;
-        }
+        // Fee and VAT are charged on the discounted amount (ADR-0009 Q7).
+        PricingPolicy.Quote pricing = pricingPolicy.quote(subtotal, resolved.discount());
+        String appliedCode = resolved.appliedCode();
+        BigDecimal discount = pricing.discount();
+        BigDecimal finalPrice = pricing.total();
 
         LocalDateTime now = LocalDateTime.now();
         Booking booking = new Booking();
@@ -438,14 +501,7 @@ public class BookingService {
         BookingStatus oldStatus = booking.getStatus();
         BookingStateMachine.requireTransition(oldStatus, BookingStatus.EXPIRED);
 
-        if (booking.getAppliedVoucherCode() != null) {
-            try {
-                voucherService.releaseVoucherByCode(booking.getAppliedVoucherCode());
-            } catch (Exception ex) {
-                log.warn("Failed to release voucher {} while expiring booking #{}: {}",
-                        booking.getAppliedVoucherCode(), bookingId, ex.getMessage());
-            }
-        }
+        releaseDiscount(booking);
 
         booking.setStatus(BookingStatus.EXPIRED);
         booking.setCancelledAt(LocalDateTime.now());
@@ -514,7 +570,9 @@ public class BookingService {
     public Booking cancelBooking(Integer bookingId, User user, String reason,
                                  String refundBankName, String refundAccountNumber, String refundAccountName) {
         Booking booking = loadOrThrow(bookingId);
-        if (!booking.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        // RBAC matrix: guests cancel their own booking; administrative cancellation is ADMIN only.
+        if (!com.hsf.hotel.security.Authz.ownerOrAtLeast(user, booking.getUser().getId(),
+                com.hsf.hotel.user.model.UserRole.ADMIN)) {
             throw new ForbiddenException("Bạn không có quyền hủy đơn này");
         }
         if (booking.getStatus() == BookingStatus.CANCELLED) {
@@ -526,16 +584,10 @@ public class BookingService {
         BookingStatus oldStatus = booking.getStatus();
         BookingStateMachine.requireTransition(oldStatus, BookingStatus.CANCELLED);
 
-        // If the booking consumed a voucher unit but the charge never
-        // settled, return the unit so the next user can use the code.
-        if (booking.getAppliedVoucherCode() != null
-                && oldStatus == BookingStatus.PENDING_PAYMENT) {
-            try {
-                voucherService.releaseVoucherByCode(booking.getAppliedVoucherCode());
-            } catch (Exception ex) {
-                log.warn("Failed to release voucher {} during cancel of booking #{}: {}",
-                        booking.getAppliedVoucherCode(), bookingId, ex.getMessage());
-            }
+        // If the booking consumed a voucher/promotion use but the charge never
+        // settled, return the use so the next guest can redeem the code.
+        if (oldStatus == BookingStatus.PENDING_PAYMENT) {
+            releaseDiscount(booking);
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
@@ -609,10 +661,23 @@ public class BookingService {
 
     /* ---------------- booking modification ---------------- */
 
+    /**
+     * Guest/ADMIN modification of dates and/or guest count (ADR-0009 Q3).
+     * <ul>
+     *   <li>{@code PENDING_PAYMENT}: fully re-priced (extra guests, weekend nights,
+     *       fee/VAT) and re-validated (availability, maintenance, min/max stay).
+     *       Any open checkout session for the old amount becomes stale and is
+     *       replaced on the next payment attempt.</li>
+     *   <li>{@code PAID}: allowed only when the total is unchanged; otherwise
+     *       {@code MODIFICATION_REQUIRES_SUPPORT} — no silent price changes on
+     *       money already collected.</li>
+     * </ul>
+     */
     @Transactional
     public Booking modifyBooking(Integer bookingId, User user, LocalDate newCheckIn, LocalDate newCheckOut, Integer newGuests) {
-        Booking booking = loadOrThrow(bookingId);
-        if (!booking.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        Booking booking = loadForUpdateOrThrow(bookingId);
+        if (!com.hsf.hotel.security.Authz.ownerOrAtLeast(user, booking.getUser().getId(),
+                com.hsf.hotel.user.model.UserRole.ADMIN)) {
             throw new ForbiddenException("Bạn không có quyền sửa đơn này");
         }
         BookingStatus status = booking.getStatus();
@@ -620,57 +685,89 @@ public class BookingService {
             throw new BusinessRuleException("INVALID_STATE",
                     "Chỉ có thể sửa đơn ở trạng thái: chờ thanh toán hoặc đã thanh toán");
         }
-        if (newCheckIn != null && newCheckOut != null) {
-            validateDates(newCheckIn, newCheckOut);
-            Room room = booking.getRoom();
-            // Lock the room row to serialize concurrent booking modifications.
-            entityManager.lock(room, LockModeType.PESSIMISTIC_WRITE);
-            // Lock the room row + exclude this booking from the conflict set so
-            // we don't collide with our own date range.
+        if (status == BookingStatus.PENDING_PAYMENT && booking.getHoldExpiresAt() != null
+                && booking.getHoldExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new BusinessRuleException("HOLD_EXPIRED", "Đơn giữ chỗ đã hết hạn, vui lòng đặt lại");
+        }
+        if ((newCheckIn == null) != (newCheckOut == null)) {
+            throw new BusinessRuleException("INVALID_DATE", "Cần cung cấp cả ngày nhận và ngày trả phòng");
+        }
+        LocalDate checkIn = newCheckIn != null ? newCheckIn : booking.getCheckInDate();
+        LocalDate checkOut = newCheckOut != null ? newCheckOut : booking.getCheckOutDate();
+        Integer guests = newGuests != null ? newGuests : booking.getGuests();
+        boolean datesChanged = !checkIn.equals(booking.getCheckInDate()) || !checkOut.equals(booking.getCheckOutDate());
+        boolean guestsChanged = !java.util.Objects.equals(guests, booking.getGuests());
+        if (!datesChanged && !guestsChanged) {
+            return booking;
+        }
+
+        Room room = booking.getRoom();
+        if (guests != null && guests < 1) {
+            throw new BusinessRuleException("INVALID_GUEST_COUNT", "Số khách phải >= 1");
+        }
+        if (guests != null && room.getCapacity() != null && guests > room.getCapacity()) {
+            throw new BusinessRuleException("GUEST_LIMIT_EXCEEDED",
+                    "Số khách vượt quá sức chứa (tối đa " + room.getCapacity() + ")");
+        }
+        if (datesChanged) {
+            validateDates(checkIn, checkOut);
+            // Serialize with concurrent bookings/modifications of the same villa.
+            Room lockedRoom = entityManager.find(Room.class, room.getId(), LockModeType.PESSIMISTIC_WRITE);
+            if (lockedRoom != null) {
+                room = lockedRoom;
+            }
+            LocalDate occupiedUntil = Occupancy.exclusiveEnd(checkIn, checkOut);
             List<Booking> conflicts = bookingRepository
-                    .findConflictingBookingsForUpdateExcluding(room, bookingId, newCheckIn,
-                            Occupancy.exclusiveEnd(newCheckIn, newCheckOut));
+                    .findConflictingBookingsForUpdateExcluding(room, bookingId, checkIn, occupiedUntil);
             if (!conflicts.isEmpty()) {
                 throw new BusinessRuleException("ROOM_UNAVAILABLE", "Phòng đã được đặt trong khoảng thời gian mới");
             }
-            booking.setCheckInDate(newCheckIn);
-            booking.setCheckOutDate(newCheckOut);
-            PricingBreakdown pricing = calculatePricing(room, newCheckIn, newCheckOut);
-            // Discount was issued against the original subtotal; cap it so the
-            // customer is not refunded more than the new stay is worth.
-            BigDecimal discount = booking.getDiscountAmount() != null
-                    ? booking.getDiscountAmount() : BigDecimal.ZERO;
-            if (discount.compareTo(pricing.subtotal()) > 0) {
-                discount = pricing.subtotal();
+            if (maintenanceRepository != null
+                    && !maintenanceRepository.findConflictingMaintenances(room, checkIn, occupiedUntil).isEmpty()) {
+                throw new BusinessRuleException("ROOM_IN_MAINTENANCE", "Phòng đang trong lịch bảo trì vào thời gian này");
             }
-            BigDecimal newTotal = pricing.subtotal()
-                    .subtract(discount)
-                    .add(pricing.serviceFee())
-                    .add(pricing.taxAmount());
-            if (newTotal.signum() < 0) {
-                newTotal = BigDecimal.ZERO;
-            }
-            booking.setSubtotalPrice(pricing.subtotal());
-            booking.setServiceFee(pricing.serviceFee());
-            booking.setTaxAmount(pricing.taxAmount());
-            booking.setDiscountAmount(discount);
-            booking.setTotalPrice(newTotal);
+            validateStayLength(room, checkIn, checkOut);
         }
-        if (newGuests != null) {
-            if (booking.getRoom().getCapacity() != null && newGuests > booking.getRoom().getCapacity()) {
-                throw new BusinessRuleException("GUEST_LIMIT_EXCEEDED",
-                        "Số khách vượt quá sức chứa (tối đa " + booking.getRoom().getCapacity() + ")");
-            }
-            if (newGuests < 1) {
-                throw new BusinessRuleException("INVALID_GUEST_COUNT", "Số khách phải >= 1");
-            }
-            booking.setGuests(newGuests);
+
+        // The discount granted at booking time is kept (capped to the new subtotal).
+        PricingPolicy.Quote pricing = pricingPolicy.quote(
+                pricingPolicy.subtotal(room, checkIn, checkOut, guests), booking.getDiscountAmount());
+        if (status == BookingStatus.PAID && booking.getTotalPrice() != null
+                && pricing.total().compareTo(booking.getTotalPrice()) != 0) {
+            throw new BusinessRuleException("MODIFICATION_REQUIRES_SUPPORT",
+                    "Thay đổi này làm thay đổi tổng tiền của đơn đã thanh toán ("
+                            + booking.getTotalPrice() + " → " + pricing.total()
+                            + " VND). Vui lòng liên hệ bộ phận hỗ trợ hoặc hủy và đặt lại.");
         }
+
+        booking.setCheckInDate(checkIn);
+        booking.setCheckOutDate(checkOut);
+        booking.setGuests(guests);
+        booking.setSubtotalPrice(pricing.subtotal());
+        booking.setDiscountAmount(pricing.discount());
+        booking.setServiceFee(pricing.serviceFee());
+        booking.setTaxAmount(pricing.taxAmount());
+        booking.setTotalPrice(pricing.total());
         booking.setModifiedAt(LocalDateTime.now());
         Booking saved = bookingRepository.save(booking);
         recordTransition(saved, status, status, user, "Booking modified: dates/guests updated");
-        log.info("Booking #{} modified by {}", bookingId, user.getUsername());
+        log.info("Booking #{} modified by {} (total {})", bookingId, user.getUsername(), pricing.total());
         return saved;
+    }
+
+    /** ADR-0009 Q9: refund bank details are kept only 180 days after cancellation. */
+    public static final int REFUND_BANK_DETAILS_RETENTION_DAYS = 180;
+
+    @Transactional
+    public int purgeExpiredRefundBankDetails() {
+        int purged = bookingRepository.purgeRefundBankDetails(
+                LocalDateTime.now().minusDays(REFUND_BANK_DETAILS_RETENTION_DAYS),
+                com.hsf.hotel.payment.model.PaymentRefund.RefundStatus.PENDING_MANUAL);
+        if (purged > 0) {
+            log.info("Erased refund bank details of {} bookings cancelled more than {} days ago",
+                    purged, REFUND_BANK_DETAILS_RETENTION_DAYS);
+        }
+        return purged;
     }
 
     /* ---------------- check-in / check-out ---------------- */

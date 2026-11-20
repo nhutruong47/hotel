@@ -117,6 +117,25 @@ public class VoucherService {
      * Return one voucher unit to the pool. Used when a booking is cancelled
      * or auto-expired before its voucher code was ever redeemed.
      */
+    /**
+     * Return one use of whatever discount code a booking consumed. A booking's
+     * {@code applied_voucher_code} holds either a voucher code or a promotion
+     * promo code; previously only vouchers were ever released, so promotions
+     * leaked uses on every expired/cancelled hold (R-20).
+     */
+    @Transactional
+    public void releaseDiscountCode(String code) {
+        if (code == null || code.isBlank()) {
+            return;
+        }
+        String trimmed = code.trim();
+        if (voucherRepository.findByCodeIgnoreCase(trimmed).isPresent()) {
+            releaseVoucherByCode(trimmed);
+            return;
+        }
+        promotionRepository.decrementUsesByPromoCode(trimmed);
+    }
+
     @Transactional
     public void releaseVoucherByCode(String code) {
         if (code == null || code.isBlank()) {

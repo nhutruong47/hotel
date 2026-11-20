@@ -78,17 +78,28 @@ export const BookingPage = () => {
   const bookedDates = availabilityQuery.data ?? [];
   const nights = calculateNights(checkIn, checkOut);
 
+  // The server quote is authoritative (ADR-0009): it applies the discount code,
+  // the 8% service fee on the discounted subtotal and VAT on subtotal + fee.
+  const appliedCode = appliedVoucher?.code ?? '';
   const pricingQuery = useQuery({
-    queryKey: ['pricing', villa?.id, checkIn, checkOut, guests],
-    queryFn: async () => {
+    queryKey: ['pricing', villa?.id, checkIn, checkOut, guests, appliedCode],
+    queryFn: async (): Promise<{
+      subtotal: number;
+      serviceFee: number;
+      taxAmount: number;
+      total: number;
+      discount?: number;
+    } | null> => {
       if (!villa || nights <= 0) return null;
       try {
+        const codeParam = appliedCode ? `&code=${encodeURIComponent(appliedCode)}` : '';
         return await api.get<{
           subtotal: number;
           serviceFee: number;
           taxAmount: number;
           total: number;
-        }>(`${API_PATHS.bookings.list}/pricing-preview?roomId=${villa.id}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`);
+          discount?: number;
+        }>(`${API_PATHS.bookings.list}/pricing-preview?roomId=${villa.id}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}${codeParam}`);
       } catch {
         const subtotal = nights * villa.pricePerNight;
         const serviceFee = subtotal > 0 ? Math.round(subtotal * 0.08) : 0;
@@ -111,15 +122,22 @@ export const BookingPage = () => {
       : 0,
   };
 
+  const serverQuote = pricingQuery.data;
+  const serverAppliedDiscount = Boolean(appliedVoucher && serverQuote && typeof serverQuote.discount === 'number');
   const discount = useMemo(() => {
     if (!appliedVoucher) return 0;
+    if (serverAppliedDiscount) return Number(serverQuote?.discount ?? 0);
+    // Offline fallback only: approximate locally until the server quote arrives.
     if (appliedVoucher.percent) {
       return Math.round((basePricing.subtotal * appliedVoucher.amount) / 100);
     }
-    return appliedVoucher.amount;
-  }, [appliedVoucher, basePricing.subtotal]);
+    return Math.min(appliedVoucher.amount, basePricing.subtotal);
+  }, [appliedVoucher, basePricing.subtotal, serverAppliedDiscount, serverQuote?.discount]);
 
-  const finalTotal = Math.max(0, basePricing.total - discount);
+  // When the server applied the code, its total already includes discount, fee and VAT.
+  const finalTotal = serverAppliedDiscount
+    ? Number(serverQuote?.total ?? 0)
+    : Math.max(0, basePricing.total - discount);
   const exceedsCapacity = villa ? guests > villa.capacity : false;
   const invalidDates = nights <= 0;
   const validationMessage = useMemo(() => {

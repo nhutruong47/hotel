@@ -24,7 +24,9 @@ public record PaymentResponse(
         String notes,
         LocalDateTime createdAt,
         LocalDateTime completedAt,
-        LocalDateTime refundedAt
+        LocalDateTime refundedAt,
+        Boolean reviewRequired,
+        String reviewReason
 ) {
     public record BookingRef(Integer id, String guestName, String status) {}
 
@@ -48,7 +50,9 @@ public record PaymentResponse(
                 p.getNotes(),
                 p.getCreatedAt(),
                 p.getCompletedAt(),
-                p.getRefundedAt()
+                p.getRefundedAt(),
+                Boolean.TRUE.equals(p.getReviewRequired()),
+                p.getReviewReason()
         );
     }
 }

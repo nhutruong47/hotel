@@ -31,4 +31,14 @@ public interface PaymentGateway {
     default boolean refund(Payment payment, BigDecimal amount, String idempotencyKey) {
         return refund(payment, amount);
     }
+
+    /**
+     * Whether this gateway can actually move money back for {@code payment}.
+     * When false the refund must go through the manual bank-transfer workflow
+     * (ADR-0009 Q5) — a gateway must never report success for money it did not
+     * move. Default: false (safe).
+     */
+    default boolean supportsAutomaticRefund(Payment payment) {
+        return false;
+    }
 }

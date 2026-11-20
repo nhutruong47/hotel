@@ -16,7 +16,10 @@ import java.time.LocalDateTime;
 public class PaymentRefund {
 
     public enum RefundStatus {
+        /** Automatic refund sent to the card gateway, awaiting its answer. */
         PROCESSING,
+        /** Non-card refund requested; ADMIN must transfer the money and confirm (ADR-0009 Q5). */
+        PENDING_MANUAL,
         SUCCEEDED,
         FAILED
     }
@@ -51,6 +54,24 @@ public class PaymentRefund {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    /** Bank transfer reference entered by ADMIN when confirming a manual refund. */
+    @Column(name = "bank_reference", length = 128)
+    private String bankReference;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "confirmed_by")
+    private User confirmedBy;
+
+    @Column(name = "confirmed_at")
+    private LocalDateTime confirmedAt;
+
+    public String getBankReference() { return bankReference; }
+    public void setBankReference(String bankReference) { this.bankReference = bankReference; }
+    public User getConfirmedBy() { return confirmedBy; }
+    public void setConfirmedBy(User confirmedBy) { this.confirmedBy = confirmedBy; }
+    public LocalDateTime getConfirmedAt() { return confirmedAt; }
+    public void setConfirmedAt(LocalDateTime confirmedAt) { this.confirmedAt = confirmedAt; }
 
     public Long getId() { return id; }
     public Payment getPayment() { return payment; }

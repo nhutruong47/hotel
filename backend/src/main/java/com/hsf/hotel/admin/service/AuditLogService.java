@@ -83,16 +83,26 @@ public class AuditLogService {
         return auditLogRepository.findByEntityTypeAndEntityIdOrderByCreatedAtDesc(entityType, entityId);
     }
 
+    /** Financial audit rows (payments/refunds) are accounting records: kept 10 years (ADR-0009 Q9). */
+    public static final String FINANCIAL_ACTION_PREFIX = "PAYMENT_";
+    public static final int FINANCIAL_RETENTION_YEARS = 10;
+
     /**
-     * Removes audit rows older than {@link #RETENTION_DAYS}. Returns the
-     * number of rows deleted so the scheduler can log the result.
+     * Retention sweep (ADR-0009 Q9): operational rows older than {@link #RETENTION_DAYS}
+     * days; financial rows ({@code PAYMENT_*}) only after {@link #FINANCIAL_RETENTION_YEARS}
+     * years (Accounting Law 2015 art. 41). Returns the number of rows deleted.
      */
     @Transactional
     public long purgeExpiredLogs() {
-        long deleted = auditLogRepository.deleteByCreatedAtBefore(
-                LocalDateTime.now().minusDays(RETENTION_DAYS));
+        LocalDateTime now = LocalDateTime.now();
+        long operational = auditLogRepository.deleteOperationalBefore(
+                now.minusDays(RETENTION_DAYS), FINANCIAL_ACTION_PREFIX + "%");
+        long financial = auditLogRepository.deleteFinancialBefore(
+                now.minusYears(FINANCIAL_RETENTION_YEARS), FINANCIAL_ACTION_PREFIX + "%");
+        long deleted = operational + financial;
         if (deleted > 0) {
-            log.info("Purged {} audit-log rows older than {} days", deleted, RETENTION_DAYS);
+            log.info("Purged {} operational audit rows (> {} days) and {} financial rows (> {} years)",
+                    operational, RETENTION_DAYS, financial, FINANCIAL_RETENTION_YEARS);
         }
         return deleted;
     }

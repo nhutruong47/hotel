@@ -28,6 +28,10 @@ public class GeminiService {
     private final WebClient webClient;
     private final RoomRepository roomRepository;
 
+    /** ADR-0009 Q6: quoted to guests in VND, same value the booking engine charges. */
+    @Value("${app.pricing.extra-guest-fee-per-night:625000}")
+    private java.math.BigDecimal extraGuestFeePerNight = new java.math.BigDecimal("625000");
+
     public GeminiService(@Value("${gemini.api.key:}") String apiKey,
                          @Value("${gemini.api.model:gemini-2.0-flash}") String model,
                          RoomRepository roomRepository) {
@@ -52,7 +56,7 @@ public class GeminiService {
 
         String roomsContext = availableRooms.stream()
                 .map(room -> String.format(
-                        "- Biệt thự %s (Mã %s, Loại %s): Sức chứa tối đa %d khách, %d phòng ngủ. Giá gốc: %s USD/đêm. Slug: /villas/%s. Tiện ích: %s. Mô tả: %s",
+                        "- Biệt thự %s (Mã %s, Loại %s): Sức chứa tối đa %d khách, %d phòng ngủ. Giá gốc: %s VND/đêm. Slug: /villas/%s. Tiện ích: %s. Mô tả: %s",
                         room.getRoomTypeDisplayName() != null ? room.getRoomTypeDisplayName() : "Villa",
                         room.getRoomNumber(),
                         room.getRoomType() != null ? room.getRoomType().getName() : "",
@@ -73,7 +77,7 @@ public class GeminiService {
                 CHÍNH SÁCH LƯU TRÚ & DỊCH VỤ:
                 - Check-in: 14:00 | Check-out: 12:00
                 - Giá đã bao gồm bữa sáng buffet/a la carte và dịch vụ dọn phòng hàng ngày.
-                - Phụ thu cuối tuần (Thứ 6, Thứ 7) +15%%. Phụ thu thêm khách: 25 USD/người/đêm.
+                - Phụ thu cuối tuần (Thứ 6, Thứ 7) +15%%. Phụ thu thêm khách (từ khách thứ 3): %s VND/người/đêm. Giá chưa gồm phí dịch vụ 8%% và VAT 10%%.
                 - Hủy phòng trước 3 ngày được hoàn tiền 100%%, từ 1-3 ngày hoàn 50%%, dưới 24h không hoàn tiền.
 
                 YÊU CẦU CỦA KHÁCH HÀNG:
@@ -84,7 +88,9 @@ public class GeminiService {
                 2. Gợi ý 1-2 căn biệt thự phù hợp nhất với nhu cầu, nêu rõ ưu điểm, sức chứa và giá cả.
                 3. Đính kèm đường dẫn xem chi tiết (ví dụ: /villas/garden-pool-villa-da-lat).
                 4. Tuyệt đối không bịa đặt biệt thự hoặc giá cả không có trong danh sách trên.
-                """, roomsContext, userRequest);
+                """, roomsContext,
+                String.format(java.util.Locale.US, "%,.0f", extraGuestFeePerNight),
+                userRequest);
 
         if (apiKey == null || apiKey.isBlank() || apiKey.startsWith("your-")) {
             return genericFallback(availableRooms, userRequest);
@@ -200,7 +206,7 @@ public class GeminiService {
                     room.getRoomTypeDisplayName(), room.getRoomNumber(),
                     room.getCapacity() != null ? room.getCapacity() : 2,
                     room.getBedrooms() != null ? room.getBedrooms() : 1));
-            sb.append(String.format("  Giá tham khảo: $%s USD/đêm | Xem chi tiết: /villas/%s%n",
+            sb.append(String.format("  Giá tham khảo: %s VND/đêm | Xem chi tiết: /villas/%s%n",
                     room.getPricePerNight(),
                     room.getSlug() != null ? room.getSlug() : room.getId()));
             if (room.getDescription() != null && !room.getDescription().isEmpty()) {

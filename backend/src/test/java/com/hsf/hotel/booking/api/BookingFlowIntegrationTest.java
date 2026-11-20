@@ -745,9 +745,9 @@ class BookingFlowIntegrationTest {
                         """.formatted(testRoom.getId(), checkIn, checkOut)))
                     .andExpect(status().isOk());
 
-            // Try to create overlapping booking
+            // Another account tries to book the same dates -> rejected
             mockMvc.perform(post("/api/v1/bookings")
-                    .session(userSession)
+                    .session(adminSession)
                     .with(csrfToken())
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
@@ -759,6 +759,34 @@ class BookingFlowIntegrationTest {
                         }
                         """.formatted(testRoom.getId(), checkIn, checkOut)))
                     .andExpect(status().isUnprocessableEntity());
+        }
+
+        @Test
+        @DisplayName("Same guest re-submitting the same stay gets the existing hold back (idempotent)")
+        void testDuplicateSubmitIsIdempotent() throws Exception {
+            LocalDate checkIn = LocalDate.now().plusDays(20);
+            LocalDate checkOut = LocalDate.now().plusDays(22);
+            String body = """
+                {
+                    "roomId": %d,
+                    "checkIn": "%s",
+                    "checkOut": "%s",
+                    "guestName": "Double Click"
+                }
+                """.formatted(testRoom.getId(), checkIn, checkOut);
+
+            String first = mockMvc.perform(post("/api/v1/bookings").session(userSession).with(csrfToken())
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            String second = mockMvc.perform(post("/api/v1/bookings").session(userSession).with(csrfToken())
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+
+            Integer firstId = objectMapper.readTree(first).at("/data/booking/id").asInt();
+            Integer secondId = objectMapper.readTree(second).at("/data/booking/id").asInt();
+            org.junit.jupiter.api.Assertions.assertEquals(firstId, secondId);
         }
     }
 }

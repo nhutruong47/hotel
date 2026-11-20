@@ -127,7 +127,7 @@ public class BookingApi {
         User user = currentUser(session);
         Booking b = bookingService.getBookingById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
-        if (!b.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        if (!com.hsf.hotel.security.Authz.ownerOrAtLeast(user, b.getUser().getId(), com.hsf.hotel.user.model.UserRole.STAFF)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Không có quyền xem");
         }
         return ResponseEntity.ok(ApiResponse.ok(bookingDto(b.getId())));
@@ -208,7 +208,7 @@ public class BookingApi {
         User user = currentUser(session);
         Booking b = bookingService.getBookingById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
-        if (!b.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        if (!com.hsf.hotel.security.Authz.ownerOrAtLeast(user, b.getUser().getId(), com.hsf.hotel.user.model.UserRole.STAFF)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Không có quyền xem");
         }
         return ResponseEntity.ok(ApiResponse.ok(readOnly.run(() -> bookingService.getBookingTimeline(id)
@@ -222,7 +222,7 @@ public class BookingApi {
         User user = currentUser(session);
         Booking b = bookingService.getBookingById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
-        if (!b.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
+        if (!com.hsf.hotel.security.Authz.ownerOrAtLeast(user, b.getUser().getId(), com.hsf.hotel.user.model.UserRole.STAFF)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Không có quyền tải hóa đơn");
         }
         
@@ -243,15 +243,34 @@ public class BookingApi {
             @RequestParam Integer roomId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkIn,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOut,
-            @RequestParam(required = false) Integer guests) {
+            @RequestParam(required = false) Integer guests,
+            @RequestParam(required = false) String code) {
         Room room = roomService.getRoomById(roomId)
                 .orElseThrow(() -> new ResourceNotFoundException("Room", roomId));
-        var pricing = bookingService.calculatePricing(room, checkIn, checkOut, guests);
+        // Server-side quote is authoritative (ADR-0009): the SPA displays these
+        // numbers instead of re-implementing discount/fee/VAT rules.
         Map<String, Object> data = new HashMap<>();
-        data.put("subtotal", pricing.subtotal());
-        data.put("serviceFee", pricing.serviceFee());
-        data.put("taxAmount", pricing.taxAmount());
-        data.put("total", pricing.total());
+        com.hsf.hotel.booking.service.PricingPolicy.Quote q;
+        try {
+            var quote = bookingService.quote(room, checkIn, checkOut, guests, code);
+            q = quote.pricing();
+            if (code != null && !code.isBlank()) {
+                data.put("code", quote.appliedCode());
+                data.put("codeValid", true);
+            }
+        } catch (com.hsf.hotel.exception.BusinessRuleException invalidCode) {
+            var base = bookingService.quote(room, checkIn, checkOut, guests, null);
+            q = base.pricing();
+            data.put("codeValid", false);
+            data.put("codeError", invalidCode.getCode());
+            data.put("codeMessage", invalidCode.getMessage());
+        }
+        data.put("subtotal", q.subtotal());
+        data.put("discount", q.discount());
+        data.put("serviceFee", q.serviceFee());
+        data.put("taxAmount", q.taxAmount());
+        data.put("total", q.total());
+        data.put("currency", "VND");
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 

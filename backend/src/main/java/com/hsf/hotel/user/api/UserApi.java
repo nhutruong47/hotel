@@ -47,7 +47,7 @@ public class UserApi {
 
     private void requireAdmin(HttpSession session) {
         Object u = session.getAttribute("user");
-        if (!(u instanceof User user) || !"ADMIN".equals(user.getRole())) {
+        if (!(u instanceof User user) || !com.hsf.hotel.security.Authz.atLeast(user, com.hsf.hotel.user.model.UserRole.ADMIN)) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Admin only");
         }
     }

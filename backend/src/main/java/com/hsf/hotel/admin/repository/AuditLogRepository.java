@@ -28,4 +28,20 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     /** Used for time-bound retention sweeps. */
     long deleteByCreatedAtBefore(LocalDateTime cutoff);
+
+    /** Retention sweep for operational rows: everything except the given action prefix (financial). */
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "DELETE FROM AuditLog a WHERE a.createdAt < :cutoff AND (a.action IS NULL OR a.action NOT LIKE :prefix)")
+    int deleteOperationalBefore(@org.springframework.data.repository.query.Param("cutoff") LocalDateTime cutoff,
+                                @org.springframework.data.repository.query.Param("prefix") String excludedPrefix);
+
+    /** Retention sweep for financial rows (action LIKE prefix), e.g. after 10 years. */
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "DELETE FROM AuditLog a WHERE a.createdAt < :cutoff AND a.action LIKE :prefix")
+    int deleteFinancialBefore(@org.springframework.data.repository.query.Param("cutoff") LocalDateTime cutoff,
+                              @org.springframework.data.repository.query.Param("prefix") String financialPrefix);
 }

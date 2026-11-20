@@ -53,13 +53,32 @@ public class AdminCredentialValidator implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        boolean isDev = activeProfile == null || activeProfile.contains("dev") || activeProfile.contains("postgres") || "default".equals(activeProfile);
-        
-        if (!isDev) {
+        java.util.Set<String> profiles = parseProfiles(activeProfile);
+        boolean credentialsConfigured = adminUsername != null && !adminUsername.isBlank()
+                && adminPassword != null && !adminPassword.isBlank();
+
+        if (profiles.contains("prod")) {
             validateProductionCredentials();
-        } else {
+        } else if (credentialsConfigured || profiles.contains("dev")) {
             provisionDevAdmin();
+        } else {
+            // R-11: a server started without any profile ("default") or with a local
+            // profile such as "postgres" must never get a guessable admin account.
+            // The insecure admin/admin123 default exists ONLY for an explicit "dev" profile.
+            log.warn("No admin credentials configured (APP_ADMIN_USERNAME/APP_ADMIN_PASSWORD) and profile {} "
+                    + "is not 'dev' — skipping admin bootstrap. No default admin account was created.", profiles);
         }
+    }
+
+    static java.util.Set<String> parseProfiles(String raw) {
+        java.util.Set<String> set = new java.util.HashSet<>();
+        if (raw != null) {
+            for (String p : raw.split(",")) {
+                if (!p.isBlank()) set.add(p.trim().toLowerCase(java.util.Locale.ROOT));
+            }
+        }
+        if (set.isEmpty()) set.add("default");
+        return set;
     }
 
     private void validateProductionCredentials() {

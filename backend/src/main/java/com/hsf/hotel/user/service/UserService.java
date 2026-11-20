@@ -45,6 +45,14 @@ public class UserService {
     @org.springframework.beans.factory.annotation.Value("${app.email.enabled:true}")
     private boolean emailEnabled = true;
 
+    /**
+     * R-12: when no email provider is configured, accounts used to be silently
+     * auto-verified on first login (an unverified email could hold villas). This
+     * is now an explicit, conscious opt-in — off by default, on for local dev.
+     */
+    @org.springframework.beans.factory.annotation.Value("${app.auth.auto-verify-without-email:false}")
+    private boolean autoVerifyWithoutEmail = false;
+
     public UserService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        NotificationProducer notificationProducer) {
@@ -55,6 +63,11 @@ public class UserService {
 
     @Transactional
     public User registerUser(String username, String password, String email, String fullName) {
+        if (!emailEnabled && !autoVerifyWithoutEmail) {
+            // Without an email provider the account could never be verified.
+            throw new BusinessRuleException("REGISTRATION_UNAVAILABLE",
+                    "Đăng ký tạm thời không khả dụng: hệ thống chưa cấu hình email xác minh tài khoản");
+        }
         String normalizedEmail = EmailNormalizer.normalize(email);
         validateUsername(username);
         validateEmail(normalizedEmail);
@@ -167,7 +180,7 @@ public class UserService {
             return Optional.empty();
         }
         if (!Boolean.TRUE.equals(userOpt.get().getEmailVerified())) {
-            if (!emailEnabled) {
+            if (!emailEnabled && autoVerifyWithoutEmail) {
                 User u = userOpt.get();
                 u.setEmailVerified(true);
                 userRepository.save(u);

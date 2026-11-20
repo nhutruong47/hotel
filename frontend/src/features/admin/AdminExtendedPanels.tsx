@@ -84,6 +84,21 @@ type Payment = {
   transactionRef?: string;
   refundAmount?: number | string;
   booking?: { id: number; guestName?: string };
+  reviewRequired?: boolean;
+  reviewReason?: string;
+};
+
+type ManualRefund = {
+  id: number;
+  paymentId: number;
+  bookingId?: number;
+  guestName?: string;
+  amount: number | string;
+  reason?: string;
+  status: string;
+  requestedBy?: string;
+  createdAt?: string;
+  refundTo?: { bankName?: string; accountNumber?: string; accountName?: string } | null;
 };
 
 const fieldCls = 'mt-1 h-11 w-full rounded-full border border-brand-stone bg-brand-white px-4 text-sm text-brand-charcoal outline-none focus:border-brand-forest';
@@ -169,15 +184,46 @@ export function AnalyticsPanel() {
     mutationFn: ({ id, reason }: { id: number; reason?: string }) => api.post(API_PATHS.payments.fail(id), { reason }),
     onSuccess: () => payments.refetch(),
   });
+  const [paymentNotice, setPaymentNotice] = useState<string | null>(null);
+  const [bankRefs, setBankRefs] = useState<Record<number, string>>({});
+  // ADR-0009 Q5: refunds of bank-transfer payments wait here until ADMIN transfers the money.
+  const manualRefunds = useQuery({
+    queryKey: ['admin', 'manual-refunds'],
+    queryFn: () => api.get<{ refunds: ManualRefund[] }>(API_PATHS.payments.pendingManualRefunds),
+    retry: false,
+  });
   const refundPayment = useMutation({
     mutationFn: ({ id, amount, reason, idempotencyKey }: { id: number; amount: number; reason?: string; idempotencyKey: string }) =>
-      api.post(API_PATHS.payments.refund(id), { amount, reason }, {
+      api.post<{ message?: string; manual?: boolean }>(API_PATHS.payments.refund(id), { amount, reason }, {
         headers: { 'Idempotency-Key': idempotencyKey },
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setPaymentNotice(data?.message ?? null);
+      payments.refetch();
+      refunds.refetch();
+      manualRefunds.refetch();
+    },
+    onError: (err) => setPaymentNotice(err instanceof ApiError ? err.message : 'Refund failed'),
+  });
+  const confirmManualRefund = useMutation({
+    mutationFn: ({ paymentId, refundId, bankReference }: { paymentId: number; refundId: number; bankReference: string }) =>
+      api.post<{ message?: string }>(API_PATHS.payments.confirmManualRefund(paymentId, refundId), { bankReference }),
+    onSuccess: (data) => {
+      setPaymentNotice(data?.message ?? null);
+      manualRefunds.refetch();
       payments.refetch();
       refunds.refetch();
     },
+    onError: (err) => setPaymentNotice(err instanceof ApiError ? err.message : 'Confirmation failed'),
+  });
+  const rejectManualRefund = useMutation({
+    mutationFn: ({ paymentId, refundId }: { paymentId: number; refundId: number }) =>
+      api.post<{ message?: string }>(API_PATHS.payments.rejectManualRefund(paymentId, refundId), { reason: 'Rejected by admin' }),
+    onSuccess: (data) => {
+      setPaymentNotice(data?.message ?? null);
+      manualRefunds.refetch();
+    },
+    onError: (err) => setPaymentNotice(err instanceof ApiError ? err.message : 'Rejection failed'),
   });
 
   const exportReport = useMutation({
@@ -284,8 +330,69 @@ export function AnalyticsPanel() {
         )}
       </section>
 
+      {manualRefunds.isSuccess ? (
+        <section className="rounded-[1.5rem] bg-brand-paper p-6">
+          <h2 className="text-xl text-brand-charcoal">Manual refunds awaiting bank transfer</h2>
+          <p className="mt-1 text-xs text-brand-ink/55">
+            Transfer the amount to the guest, then confirm with the bank transaction reference. The refund is only recorded after confirmation.
+          </p>
+          {(manualRefunds.data?.refunds ?? []).length === 0 ? <Empty>No pending manual refunds.</Empty> : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="text-xs uppercase tracking-[0.14em] text-brand-ink/50">
+                  <tr><th className="p-3">Refund</th><th className="p-3">Booking</th><th className="p-3">Amount</th><th className="p-3">Transfer to</th><th className="p-3">Bank reference</th><th className="p-3">Actions</th></tr>
+                </thead>
+                <tbody>
+                  {(manualRefunds.data?.refunds ?? []).map((r) => (
+                    <tr key={r.id} className="border-t border-brand-stone/40 align-top">
+                      <td className="p-3">#{r.id}<div className="text-xs text-brand-ink/45">payment #{r.paymentId} · {r.requestedBy ?? ''}</div></td>
+                      <td className="p-3">#{r.bookingId ?? '-'}<div className="text-xs text-brand-ink/45">{r.guestName ?? ''}</div></td>
+                      <td className="p-3">{formatVnd(r.amount)}</td>
+                      <td className="p-3 text-xs">
+                        {r.refundTo
+                          ? <>{r.refundTo.bankName ?? '-'}<br />{r.refundTo.accountNumber ?? '-'}<br />{r.refundTo.accountName ?? ''}</>
+                          : <span className="text-brand-coral">No bank details on booking</span>}
+                      </td>
+                      <td className="p-3">
+                        <input
+                          value={bankRefs[r.id] ?? ''}
+                          onChange={(e) => setBankRefs((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                          placeholder="e.g. VCB-20261120-001"
+                          maxLength={128}
+                          className="h-9 w-full rounded-full border border-brand-stone bg-brand-white px-3 text-xs"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={!(bankRefs[r.id] ?? '').trim() || confirmManualRefund.isPending}
+                            onClick={() => confirmManualRefund.mutate({ paymentId: r.paymentId, refundId: r.id, bankReference: (bankRefs[r.id] ?? '').trim() })}
+                            className="rounded-full bg-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-white disabled:opacity-40"
+                          >
+                            Confirm transfer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => rejectManualRefund.mutate({ paymentId: r.paymentId, refundId: r.id })}
+                            className="rounded-full border border-brand-stone px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-ink/70"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
+
       <section className="rounded-[1.5rem] bg-brand-paper p-6">
         <h2 className="text-xl text-brand-charcoal">Payments</h2>
+        {paymentNotice ? <p className="mt-2 rounded-[1rem] bg-brand-white p-3 text-sm text-brand-ink/75">{paymentNotice}</p> : null}
         {(payments.data?.payments ?? []).length === 0 ? <Empty>No payments.</Empty> : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-sm">
@@ -299,7 +406,15 @@ export function AnalyticsPanel() {
                     <td className="p-3">#{p.booking?.id ?? '-'}</td>
                     <td className="p-3">{p.method ?? '-'}</td>
                     <td className="p-3">{formatVnd(p.amount)}</td>
-                    <td className="p-3">{p.status ?? '-'}</td>
+                    <td className="p-3">
+                      {p.status ?? '-'}
+                      {p.reviewRequired ? (
+                        <div className="mt-1 rounded-full bg-brand-coral/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-coral" title={p.reviewReason ?? ''}>
+                          Needs reconciliation
+                        </div>
+                      ) : null}
+                      {p.reviewRequired && p.reviewReason ? <div className="mt-1 max-w-[220px] text-xs text-brand-ink/55">{p.reviewReason}</div> : null}
+                    </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-2">
                         <button type="button" onClick={() => completePayment.mutate(p.id)} className="rounded-full border border-brand-forest px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-forest">Complete</button>

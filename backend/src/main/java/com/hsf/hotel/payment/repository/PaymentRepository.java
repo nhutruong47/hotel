@@ -19,6 +19,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Optional<Payment> findByTransactionRef(String transactionRef);
 
+    List<Payment> findByReviewRequiredTrueOrderByCreatedAtDesc();
+
     Optional<Payment> findByIntentId(String intentId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

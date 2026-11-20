@@ -160,6 +160,18 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         List<Object[]> findOccupancyRowsInRange(@Param("startDate") LocalDate startDate,
                         @Param("endDate") LocalDate endDate);
 
+        /**
+         * ADR-0009 Q9 (Decree 13/2023 data minimisation): erase guests' refund bank
+         * details once the cancellation is older than the cutoff, unless a manual
+         * refund for the booking is still waiting to be paid out.
+         */
+        @org.springframework.data.jpa.repository.Modifying
+        @Query("UPDATE Booking b SET b.refundBankName = NULL, b.refundAccountNumber = NULL, b.refundAccountName = NULL "
+                        + "WHERE b.refundAccountNumber IS NOT NULL AND b.cancelledAt IS NOT NULL AND b.cancelledAt < :cutoff "
+                        + "AND NOT EXISTS (SELECT r.id FROM PaymentRefund r WHERE r.payment.booking = b AND r.status = :pending)")
+        int purgeRefundBankDetails(@Param("cutoff") LocalDateTime cutoff,
+                        @Param("pending") com.hsf.hotel.payment.model.PaymentRefund.RefundStatus pending);
+
         /** Bookings with non-null refund_amount (i.e. refunds processed). */
         @EntityGraph(attributePaths = {"user", "room"})
         @Query("SELECT b FROM Booking b WHERE b.refundAmount IS NOT NULL AND b.refundAmount > 0 " +

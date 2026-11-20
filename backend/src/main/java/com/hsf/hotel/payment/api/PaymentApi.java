@@ -9,12 +9,15 @@ import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.payment.model.Payment;
 import com.hsf.hotel.payment.dto.PaymentResponse;
+import com.hsf.hotel.payment.dto.PaymentRefundResponse;
 import com.hsf.hotel.common.tx.ReadOnlyTransactions;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.repository.BookingRepository;
 import com.hsf.hotel.payment.service.PaymentService;
 import com.hsf.hotel.service.payment.StripePaymentAdapter;
 import com.hsf.hotel.security.AuditActions;
+import com.hsf.hotel.security.Authz;
+import com.hsf.hotel.user.model.UserRole;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -134,7 +137,7 @@ public class PaymentApi {
     }
 
     private void requireAdmin(User user) {
-        if (!"ADMIN".equals(user.getRole())) {
+        if (!Authz.atLeast(user, UserRole.ADMIN)) {
             throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN, "Chỉ admin mới có quyền");
         }
     }
@@ -144,8 +147,24 @@ public class PaymentApi {
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", bookingId));
     }
 
+    private void requireAtLeast(User user, UserRole role) {
+        if (!Authz.atLeast(user, role)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN,
+                    "Bạn không có quyền thực hiện thao tác này");
+        }
+    }
+
+    /** Viewing a booking's payments: its owner, or STAFF+ (operational queues, RBAC matrix). */
+    private void checkBookingReadAccess(User user, Booking booking) {
+        if (!Authz.ownerOrAtLeast(user, booking.getUser().getId(), UserRole.STAFF)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN,
+                    "Bạn không có quyền xem thanh toán của đơn này");
+        }
+    }
+
+    /** Paying for / acting on a booking: its owner, or ADMIN. */
     private void checkBookingAccess(User user, Booking booking) {
-        if (!"ADMIN".equals(user.getRole()) && !booking.getUser().getId().equals(user.getId())) {
+        if (!Authz.ownerOrAtLeast(user, booking.getUser().getId(), UserRole.ADMIN)) {
             throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN,
                     "Bạn không có quyền thực hiện thao tác này");
         }
@@ -211,10 +230,46 @@ public class PaymentApi {
             )));
         }
 
+        PaymentService.requireChargeableAmount(booking.getTotalPrice());
+
+        // R-09: never hand the guest a second payable session for the same booking.
+        // Reuse an open session for the current amount; expire/supersede stale ones
+        // (expired, or amount changed by a booking modification).
+        // Every past checkout attempt (any status) makes the next idempotency key unique.
+        long previousAttempts = paymentService.getPaymentsByBooking(booking.getId()).stream()
+                .filter(p -> p.getTransactionRef() != null && p.getTransactionRef().startsWith("cs_"))
+                .count();
+        for (Payment pending : paymentService.findPendingCheckoutPayments(booking.getId())) {
+            StripePaymentAdapter.CheckoutSessionView view =
+                    stripeAdapter.retrieveCheckoutSession(pending.getTransactionRef());
+            boolean sameAmount = pending.getAmount() != null
+                    && pending.getAmount().compareTo(booking.getTotalPrice()) == 0;
+            if (view != null && view.isOpen() && sameAmount) {
+                log.info("Reusing open Checkout Session {} for booking #{}", view.id(), booking.getId());
+                return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                        "sessionId", view.id(),
+                        "checkoutUrl", view.url(),
+                        "paymentIntentId", pending.getIntentId() != null ? pending.getIntentId() : view.id(),
+                        "amount", booking.getTotalPrice(),
+                        "currency", "VND",
+                        "reused", true
+                )));
+            }
+            if (view != null && view.isOpen()) {
+                stripeAdapter.expireCheckoutSession(view.id());
+            }
+            paymentService.supersedeCheckoutPayment(pending.getId(),
+                    view == null ? "session not retrievable"
+                            : (sameAmount ? "session " + view.status() : "booking total changed"));
+        }
+
         try {
-            // Build Stripe checkout session
+            // Build Stripe checkout session. Stripe requires expires_at >= 30 min;
+            // a payment arriving after the booking hold is handled as a late
+            // payment and flagged for review (ADR-0009 Q4).
             SessionCreateParams.Builder paramsBuilder = SessionCreateParams.builder()
                     .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setExpiresAt(java.time.Instant.now().plus(java.time.Duration.ofMinutes(31)).getEpochSecond())
                     .setSuccessUrl(buildUrl(req.successUrl, booking.getId()))
                     .setCancelUrl(buildUrl(req.cancelUrl, booking.getId()))
                     .putMetadata("booking_id", String.valueOf(booking.getId()))
@@ -241,7 +296,13 @@ public class PaymentApi {
                     .setQuantity(1L)
                     .build());
 
-            Session stripeSession = Session.create(paramsBuilder.build());
+            // Idempotency key: a network retry of this exact attempt returns the same
+            // session from Stripe instead of creating another payable one.
+            com.stripe.net.RequestOptions options = com.stripe.net.RequestOptions.builder()
+                    .setIdempotencyKey("checkout-" + booking.getId() + "-" + amountInSmallestUnit
+                            + "-" + previousAttempts)
+                    .build();
+            Session stripeSession = Session.create(paramsBuilder.build(), options);
 
             // Correlate our payment with the actual Checkout Session. Creating
             // a second independent PaymentIntent here would make the webhook
@@ -294,10 +355,10 @@ public class PaymentApi {
             Map<String, String> metadata = sessionObj.getMetadata();
             String metadataUserId = metadata != null ? metadata.get("user_id") : null;
             String metadataBookingId = metadata != null ? metadata.get("booking_id") : null;
-            if (!"ADMIN".equals(user.getRole())) {
+            if (!Authz.atLeast(user, UserRole.STAFF)) {
                 if (metadataUserId != null && !metadataUserId.equals(String.valueOf(user.getId()))) {
                     throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN,
-                            "Báº¡n khÃ´ng cÃ³ quyá»n xem phiÃªn thanh toÃ¡n nÃ y");
+                            "Bạn không có quyền xem phiên thanh toán này");
                 }
                 if (metadataUserId == null && metadataBookingId != null) {
                     Integer bookingId;
@@ -305,7 +366,7 @@ public class PaymentApi {
                         bookingId = Integer.parseInt(metadataBookingId);
                     } catch (NumberFormatException ex) {
                         throw new ApiException(HttpStatus.FORBIDDEN, com.hsf.hotel.config.ErrorCodes.FORBIDDEN,
-                                "PhiÃªn thanh toÃ¡n khÃ´ng há»£p lá»‡");
+                                "Phiên thanh toán không hợp lệ");
                     }
                     Booking booking = getBookingOrThrow(bookingId);
                     checkBookingAccess(user, booking);
@@ -467,16 +528,103 @@ public class PaymentApi {
         requireAdmin(user);
         
         try {
-            Payment payment = paymentService.refund(id, req.amount, req.reason, user, idempotencyKey);
+            paymentService.refund(id, req.amount, req.reason, user, idempotencyKey);
             auditLogService.log(user, AuditActions.PAYMENT_REFUND, "Payment", id,
                     "amount=" + req.amount + " reason=" + req.reason, request);
-            return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                    "payment", paymentView(id),
-                    "message", "Đã hoàn tiền " + req.amount + " VNĐ"
-            )));
+            String key = idempotencyKey.trim();
+            PaymentRefundResponse refund = readOnly.run(() -> paymentService.getRefundsForPayment(id).stream()
+                    .filter(r -> key.equals(r.getIdempotencyKey()))
+                    .findFirst()
+                    .map(r -> PaymentRefundResponse.from(r, false))
+                    .orElse(null));
+            boolean manual = refund != null && "PENDING_MANUAL".equals(refund.status());
+            Map<String, Object> data = new HashMap<>();
+            data.put("payment", paymentView(id));
+            data.put("refund", refund);
+            data.put("manual", manual);
+            data.put("message", manual
+                    ? "Đã tạo yêu cầu hoàn " + req.amount + " VND qua chuyển khoản. Hãy chuyển tiền cho khách rồi xác nhận kèm mã giao dịch ngân hàng."
+                    : "Đã hoàn tiền " + req.amount + " VND");
+            return ResponseEntity.ok(ApiResponse.ok(data));
         } catch (BusinessRuleException e) {
             throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, e.getCode(), e.getMessage());
         }
+    }
+
+    // ============== Manual refund workflow (ADR-0009 Q5) ==============
+
+    public static class ConfirmManualRefundRequest {
+        @jakarta.validation.constraints.NotBlank(message = "Thiếu mã giao dịch ngân hàng")
+        @Size(max = 128, message = "Mã giao dịch ngân hàng tối đa 128 ký tự")
+        public String bankReference;
+    }
+
+    public static class RejectManualRefundRequest {
+        @Size(max = 500, message = "Lý do tối đa 500 ký tự")
+        public String reason;
+    }
+
+    /** ADMIN work queue: manual refunds awaiting a bank transfer (includes the guest's refund account). */
+    @GetMapping("/refunds/pending")
+    public ResponseEntity<ApiResponse<?>> pendingManualRefunds(HttpSession session) {
+        User user = requireUser(session);
+        requireAdmin(user);
+        List<PaymentRefundResponse> refunds = readOnly.run(() -> paymentService.getPendingManualRefunds()
+                .stream().map(r -> PaymentRefundResponse.from(r, true)).toList());
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("refunds", refunds)));
+    }
+
+    /** Refund history of one payment (MANAGER+ read-only). */
+    @GetMapping("/{id}/refunds")
+    public ResponseEntity<ApiResponse<?>> refundsOfPayment(@PathVariable Integer id, HttpSession session) {
+        User user = requireUser(session);
+        requireAtLeast(user, UserRole.MANAGER);
+        List<PaymentRefundResponse> refunds = readOnly.run(() -> paymentService.getRefundsForPayment(id)
+                .stream().map(r -> PaymentRefundResponse.from(r, false)).toList());
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("refunds", refunds)));
+    }
+
+    @PostMapping("/{id}/refunds/{refundId}/confirm")
+    public ResponseEntity<ApiResponse<?>> confirmManualRefund(
+            @PathVariable Integer id,
+            @PathVariable Long refundId,
+            @Valid @RequestBody ConfirmManualRefundRequest req,
+            HttpSession session,
+            HttpServletRequest request) {
+        User user = requireUser(session);
+        requireAdmin(user);
+        try {
+            paymentService.confirmManualRefund(id, refundId, req.bankReference, user);
+        } catch (BusinessRuleException e) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, e.getCode(), e.getMessage());
+        }
+        auditLogService.log(user, AuditActions.PAYMENT_REFUND_CONFIRM, "Payment", id,
+                "refund=" + refundId + " bankRef=" + req.bankReference, request);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "payment", paymentView(id),
+                "message", "Đã xác nhận hoàn tiền (mã giao dịch " + req.bankReference.trim() + ")")));
+    }
+
+    @PostMapping("/{id}/refunds/{refundId}/reject")
+    public ResponseEntity<ApiResponse<?>> rejectManualRefund(
+            @PathVariable Integer id,
+            @PathVariable Long refundId,
+            @Valid @RequestBody(required = false) RejectManualRefundRequest req,
+            HttpSession session,
+            HttpServletRequest request) {
+        User user = requireUser(session);
+        requireAdmin(user);
+        String reason = req != null ? req.reason : null;
+        try {
+            paymentService.rejectManualRefund(id, refundId, reason, user);
+        } catch (BusinessRuleException e) {
+            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, e.getCode(), e.getMessage());
+        }
+        auditLogService.log(user, AuditActions.PAYMENT_REFUND_REJECT, "Payment", id,
+                "refund=" + refundId + " reason=" + reason, request);
+        return ResponseEntity.ok(ApiResponse.ok(Map.of(
+                "payment", paymentView(id),
+                "message", "Đã hủy yêu cầu hoàn tiền thủ công")));
     }
 
     // ============== Query Endpoints ==============
@@ -490,7 +638,7 @@ public class PaymentApi {
             HttpSession session) {
         User user = requireUser(session);
         Booking booking = getBookingOrThrow(bookingId);
-        checkBookingAccess(user, booking);
+        checkBookingReadAccess(user, booking);
         
         List<PaymentResponse> payments = paymentViews(() -> paymentService.getPaymentsByBooking(bookingId));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("payments", payments)));
@@ -500,11 +648,16 @@ public class PaymentApi {
      * Get all payments (admin only).
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> all(HttpSession session) {
+    public ResponseEntity<ApiResponse<?>> all(
+            @RequestParam(required = false, defaultValue = "false") boolean reviewRequired,
+            HttpSession session) {
         User user = requireUser(session);
-        requireAdmin(user);
-        
-        List<PaymentResponse> payments = paymentViews(() -> paymentService.getPaymentsByStatus(Payment.PaymentStatus.PAID));
+        // Read-only finance view: MANAGER+ (RBAC matrix "analytics"); mutations stay ADMIN.
+        requireAtLeast(user, UserRole.MANAGER);
+
+        List<PaymentResponse> payments = paymentViews(() -> reviewRequired
+                ? paymentService.getPaymentsRequiringReview()
+                : paymentService.getPaymentsByStatus(Payment.PaymentStatus.PAID));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("payments", payments)));
     }
 

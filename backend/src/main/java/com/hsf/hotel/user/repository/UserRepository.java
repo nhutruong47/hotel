@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     Optional<User> findByVerificationToken(String token);
 
     Optional<User> findByResetToken(String resetToken);
+
+    /** Users holding a role, e.g. ADMINs to notify about payments needing review. */
+    java.util.List<User> findByRole(com.hsf.hotel.user.model.UserRole role);
 }

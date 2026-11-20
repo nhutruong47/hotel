@@ -48,4 +48,10 @@ public interface PromotionRepository extends JpaRepository<Promotion, Integer> {
     @org.springframework.data.jpa.repository.Modifying
     @Query("UPDATE Promotion p SET p.currentUses = COALESCE(p.currentUses, 0) + 1 WHERE p.id = :id AND (p.maximumUses IS NULL OR COALESCE(p.currentUses, 0) < p.maximumUses)")
     int incrementUsesAtomic(@Param("id") Integer id);
+
+    /** Returns one use of a promotion code (never below zero). ADR-0009 / R-20. */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Promotion p SET p.currentUses = p.currentUses - 1 "
+            + "WHERE UPPER(p.promoCode) = UPPER(:code) AND p.currentUses IS NOT NULL AND p.currentUses > 0")
+    int decrementUsesByPromoCode(@Param("code") String code);
 }
