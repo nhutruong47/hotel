@@ -30,13 +30,27 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x backend/mvnw
 
-      # Separate step so a wrapper/Maven-download failure is distinguishable
-      # from a build or test failure in the job summary.
+      # The wrapper downloads Maven itself (setup-java only caches ~/.m2/repository).
+      # Caching the distribution removes that network call on most runs.
+      - name: Cache Maven wrapper distribution
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/wrapper
+          key: maven-wrapper-${{ hashFiles('backend/.mvn/wrapper/maven-wrapper.properties') }}
+
+      # Separate step so a wrapper/Maven-download failure is distinguishable from a
+      # build or test failure. Two runs failed here in under a second on a transient
+      # download error (code unaffected), so the bootstrap is retried with backoff.
       - name: Show Java and Maven versions
         working-directory: backend
         run: |
           java -version
-          ./mvnw -B -v
+          for attempt in 1 2 3; do
+            if ./mvnw -B -v; then exit 0; fi
+            echo "::warning::Maven wrapper bootstrap failed (attempt $attempt/3), retrying"
+            sleep $((attempt * 15))
+          done
+          exit 1
 
       # `verify` = unit/H2 tests (surefire, *Test) + PostgreSQL 16 integration tests
       # (failsafe, *IT) via Testcontainers: real Flyway db/postgresql track,
@@ -44,7 +58,8 @@ jobs:
       # GitHub-hosted ubuntu runners ship Docker, so the ITs are never skipped here.
       - name: Unit + PostgreSQL integration tests
         working-directory: backend
-        run: ./mvnw -B verify
+        # Resolver retries absorb transient Maven Central errors during dependency download.
+        run: ./mvnw -B verify -Daether.connector.http.retryHandler.count=5
 
       - name: Upload test reports
         if: failure()
