@@ -18,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21 (Temurin)
         uses: actions/setup-java@v4
@@ -77,7 +77,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Scans the checked-out tree with .gitleaks.toml. Git history is not scanned
       # here: it still contains a leaked key that must be rotated (risk R-01).
@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Compose files render for dev, staging and prod
         run: |
@@ -184,7 +184,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Build backend image
         run: docker build -t hotel-backend:ci backend
@@ -211,7 +211,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js 22 LTS
         uses: actions/setup-node@v4
