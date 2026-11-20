@@ -31,11 +31,11 @@
 | R-12 | Email verification bị bỏ qua trên prod | `UserService.java:170-172` | 4 | 3 | 12 | Backend | Auto-verify chỉ khi bật tường minh `app.auth.auto-verify-without-email` (mặc định `false`); email tắt + cờ tắt → đăng ký `REGISTRATION_UNAVAILABLE`, đăng nhập chưa verify bị từ chối | **Đã sửa + kiểm thử (feature/p1-security-payment, chờ merge)** |
 | R-13 | Demo login có password public trên site production | `frontend/src/features/auth/AuthPages.tsx:337,352,447` | 5 | 3 | 15 | Frontend | Nút demo chỉ hiện khi `NEXT_PUBLIC_ENABLE_DEMO_LOGIN=true` và có `NEXT_PUBLIC_DEMO_LOGIN_PASSWORD`; mật khẩu không còn trong frontend source. Còn lại: mật khẩu tài khoản demo vẫn hardcode trong `backend/.../config/DataInitializer.java:552` (chỉ chạy profile `default/dev/postgres/seed`) — đổi mật khẩu các tài khoản demo trên môi trường đang chạy profile `seed` | **Đã sửa + kiểm thử (feature/p1-security-payment, chờ merge)** |
 | R-14 | RBAC thủ công sai/sót quyền | 16 chỗ `"ADMIN".equals` | 3 | 4 | 12 | Backend | Helper `security/Authz.java` theo `UserRole.includes` thay mọi `"ADMIN".equals` dùng để phân quyền; xem booking/payment: owner hoặc STAFF+; danh sách payment: MANAGER+; refund/xác nhận: ADMIN | **Đã sửa + kiểm thử (feature/p1-security-payment, chờ merge)** |
-| R-15 | nginx không TLS/mất security header/CORS `*` | `nginx.conf:54,92,121-124` | 4 | 4 | 16 | DevOps | TLS (Let's Encrypt), header `always` qua include, bỏ CORS ở nginx | Mở (P1/P5) |
-| R-16 | Không backup → mất toàn bộ dữ liệu booking/payment khi hỏng volume | — | 2 | 5 | 10 | DevOps | `pg_dump` hằng ngày + WAL/offsite + restore drill hằng tháng | Mở (P5) |
-| R-17 | Không monitoring/alert → sự cố (outbox kẹt, webhook lỗi) không ai biết | Actuator `health,info` | 4 | 3 | 12 | DevOps | Prometheus/Grafana, alert outbox backlog, webhook 4xx/5xx, DB pool | Mở (P5) |
+| R-15 | nginx không TLS/mất security header/CORS `*` | `nginx.conf:54,92,121-124` | 4 | 4 | 16 | DevOps | TLS (Let's Encrypt), header `always` qua include, bỏ CORS ở nginx | **Đã xử lý (feature/p5-devops, chờ deploy VPS)** |
+| R-16 | Không backup → mất toàn bộ dữ liệu booking/payment khi hỏng volume | — | 2 | 5 | 10 | DevOps | `pg_dump` hằng ngày + WAL/offsite + restore drill hằng tháng | **Đã xử lý (feature/p5-devops, chờ deploy VPS)** |
+| R-17 | Không monitoring/alert → sự cố (outbox kẹt, webhook lỗi) không ai biết | Actuator `health,info` | 4 | 3 | 12 | DevOps | Prometheus/Grafana, alert outbox backlog, webhook 4xx/5xx, DB pool | **Đã xử lý (feature/p5-devops, chờ deploy VPS)** |
 | R-18 | Không scale ngang (state in-memory, scheduler chạy trùng) | `RateLimitFilter`, `LoginAttemptService`, `BookingScheduler` | 2 | 3 | 6 | Backend | Spring Session Redis, Bucket4j-Redis, ShedLock. P1 chỉ sửa rò bộ nhớ của rate limiter (evict window hết hạn) + thêm bucket nhạy cảm; vẫn in-memory | Mở (P3/P5) |
-| R-19 | DB/Redis/RabbitMQ lộ port ra Internet với mật khẩu mặc định | `docker-compose.yml:19,32-33,48-52` | 3 | 5 | 15 | DevOps | Bỏ `ports` ở prod compose, secrets bắt buộc, firewall VPS | Mở (P5) |
+| R-19 | DB/Redis/RabbitMQ lộ port ra Internet với mật khẩu mặc định | `docker-compose.yml:19,32-33,48-52` | 3 | 5 | 15 | DevOps | Bỏ `ports` ở prod compose, secrets bắt buộc, firewall VPS | **Đã xử lý (feature/p5-devops, chờ deploy VPS)** |
 | R-20 | Promotion cạn lượt sai do không hoàn `currentUses` | `BookingService.java:307` | 3 | 2 | 6 | Backend | `VoucherService.releaseDiscountCode` trả lượt voucher **hoặc** promotion khi expire/cancel hold | **Đã sửa + kiểm thử (feature/p1-security-payment, chờ merge)** |
 | R-21 | `modifyBooking` làm sai tổng tiền booking PAID/đổi sang ngày bảo trì | `BookingService.java:610-660` | 2 | 4 | 8 | Backend | Viết lại: tái định giá đầy đủ (`PricingPolicy`), kiểm tra availability + bảo trì + min/max stay; booking `PAID` đổi tổng → `MODIFICATION_REQUIRES_SUPPORT` (ADR-0009 Q3) | **Đã sửa + kiểm thử (feature/p1-security-payment, chờ merge)** |
 | R-22 | Nghiệp vụ day-use/late payment/housekeeping chưa được xác nhận → thiết kế sai | [business-analysis.md](../business/business-analysis.md) mục [CẦN XÁC NHẬN] | 2 | 3 | 6 | BA | Q1–Q7, Q9, Q11 đã chốt trong [ADR-0009](../adr/0009-business-policy-decisions.md) (theo ủy quyền repo owner); còn Q8 (housekeeping), Q10 (SLA) — workshop với chủ villa trước P4. Mọi quyết định ADR-0009 có thể đảo bằng ADR mới | Giảm (còn Q8, Q10) |
@@ -109,3 +109,14 @@ Sau khi `feature/p0-hardening` và `feature/p1-security-payment` merge:
 | Medium | R-09 tồn dư (cần kiểm thử Stripe test mode), R-18 (rate limit/session/lockout in-memory, scheduler không ShedLock), R-22 (Q8/Q10), R-25 | P3/P5/P6 |
 
 *(Bản ghi lịch sử)* Sau P0, các rủi ro Critical/High còn mở là: R-01, R-08, R-13, R-15, R-19, R-09, R-10, R-12, R-14, R-17 — đầu vào của P1.
+
+## Bằng chứng đóng rủi ro P5 (2026-11-20)
+
+| ID | Bằng chứng |
+|---|---|
+| R-15 | `ops/nginx`: TLS 1.2/1.3 + HSTS + header bảo mật include ở mọi location có `add_header`; bỏ CORS `*`; `/actuator` → 404; `client_max_body_size 10m`; CI `nginx -t` trên template đã render |
+| R-16 | `ops/backup/pg-backup.sh` (verify `pg_restore --list` + sha256 + retention + off-site hook) và `restore-drill.sh`; chạy thật trên PostgreSQL 16.6 local và trong CI (`infra-validate`); alert `BackupMissing` (26h) |
+| R-17 | Micrometer/Prometheus + 13 alert rule (`promtool` trong CI) + Alertmanager + Grafana dashboard; `OperationalMetrics` (6 gauge nghiệp vụ) có test; log JSON ECS (`ObservabilityIntegrationTest`) |
+| R-19 | Base compose không publish port DB/Redis/RabbitMQ (CI fail nếu vi phạm); mọi secret bắt buộc (`:?`); Grafana/Prometheus chỉ `127.0.0.1`; firewall trong deployment guide |
+
+Còn mở sau P5: uptime check bên ngoài VPS (giám sát sập cùng host), Redis-backed session/rate limit (R-18), off-site backup phải được chủ hệ thống cấu hình (`BACKUP_OFFSITE_CMD`).

@@ -1,0 +1,36 @@
+# =============================================================================
+# Local development override:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+# Ports are bound to 127.0.0.1 only (never reachable from the network).
+# Use .env.dev.example as a template for local secrets.
+# =============================================================================
+name: nhu-villas-dev
+
+services:
+  db:
+    ports: ["127.0.0.1:5432:5432"]
+  redis:
+    ports: ["127.0.0.1:6379:6379"]
+  rabbitmq:
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"   # management UI
+
+  backend:
+    ports: ["127.0.0.1:8080:8080"]
+    environment:
+      APP_EMAIL_ENABLED: "true"
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      # Local runs are plain HTTP; Chrome/Firefox still accept Secure cookies on localhost.
+      SESSION_COOKIE_SAME_SITE: lax
+      MANAGEMENT_ENDPOINTS: health,info,prometheus
+
+  frontend:
+    ports: ["127.0.0.1:3000:3000"]
+
+  mailpit:
+    image: axllent/mailpit:v1.15.0
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"   # web UI

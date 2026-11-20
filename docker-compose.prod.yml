@@ -1,0 +1,174 @@
+# =============================================================================
+# Production override (single VPS, ADR-0007):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-build
+# Only nginx publishes ports (80/443). Grafana/Prometheus are bound to
+# 127.0.0.1 — reach them through an SSH tunnel. See docs/operations/deployment-guide.md.
+# =============================================================================
+name: nhu-villas
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+services:
+  db:
+    deploy:
+      resources:
+        limits: {cpus: "1.5", memory: 1g}
+
+  redis:
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 256m}
+
+  rabbitmq:
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 512m}
+
+  backend:
+    environment:
+      # Actuator (incl. /actuator/prometheus) on an internal-only port: not
+      # published, not proxied by nginx (R-17).
+      MANAGEMENT_SERVER_PORT: "8081"
+      MANAGEMENT_ENDPOINTS: health,info,prometheus
+      SESSION_COOKIE_SAME_SITE: lax
+    deploy:
+      resources:
+        limits: {cpus: "2", memory: 1536m}
+
+  frontend:
+    deploy:
+      resources:
+        limits: {cpus: "1", memory: 512m}
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?SERVER_NAME (public domain) is required}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ops/nginx/snippets:/etc/nginx/snippets:ro
+      - ./ops/nginx/templates:/etc/nginx/templates:ro
+      - ./ops/nginx/40-reload-certificates.sh:/docker-entrypoint.d/40-reload-certificates.sh:ro
+      - ./ops/certbot/conf:/etc/letsencrypt:ro
+      - ./ops/certbot/www:/var/www/certbot:ro
+    depends_on:
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/nginx-health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *default-logging
+
+  certbot:
+    image: certbot/certbot:v2.11.0
+    restart: unless-stopped
+    volumes:
+      - ./ops/certbot/conf:/etc/letsencrypt
+      - ./ops/certbot/www:/var/www/certbot
+    entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"]
+    logging: *default-logging
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: hotel_user
+      PGPASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      PGDATABASE: hotel
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_OFFSITE_CMD: ${BACKUP_OFFSITE_CMD:-}
+      BACKUP_ON_START: ${BACKUP_ON_START:-1}
+      METRICS_DIR: /metrics
+      TZ: Asia/Ho_Chi_Minh
+    entrypoint: ["/bin/sh", "/ops/backup/cron-entrypoint.sh"]
+    volumes:
+      - ./ops/backup:/ops/backup:ro
+      - ${BACKUP_HOST_DIR:-./backups}:/backups
+      - backup_metrics:/metrics
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v2.53.2
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    ports: ["127.0.0.1:9090:9090"]
+    volumes:
+      - ./ops/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    logging: *default-logging
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+    volumes:
+      # Create from alertmanager.yml.example (git-ignored: holds the SMTP password).
+      - ./ops/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana-oss:11.2.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    ports: ["127.0.0.1:3001:3000"]
+    volumes:
+      - ./ops/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    logging: *default-logging
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/textfile
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+      - backup_metrics:/textfile:ro
+    logging: *default-logging
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_URI: db:5432/hotel?sslmode=disable
+      DATA_SOURCE_USER: hotel_user
+      DATA_SOURCE_PASS: ${DB_PASSWORD:?DB_PASSWORD is required}
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *default-logging
+
+volumes:
+  prometheus_data:
+  alertmanager_data:
+  grafana_data:
+  backup_metrics:

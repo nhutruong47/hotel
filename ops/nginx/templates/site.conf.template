@@ -1,0 +1,99 @@
+# Rendered by the nginx image entrypoint (envsubst) to /etc/nginx/conf.d/site.conf.
+# Only ${SERVER_NAME} is substituted; nginx variables ($host, ...) are untouched.
+
+# ---- HTTP: ACME challenges + redirect everything else to HTTPS ----
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${SERVER_NAME};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# ---- HTTPS ----
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${SERVER_NAME};
+
+    ssl_certificate     /etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${SERVER_NAME}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # Actuator (health, prometheus) is internal-only: management port 8081 is not
+    # proxied, and nothing under /actuator is reachable through the edge.
+    location /actuator/ {
+        return 404;
+    }
+
+    # Credential endpoints: tight edge budget against brute force.
+    location /api/v1/auth/ {
+        limit_req zone=auth burst=10 nodelay;
+        include /etc/nginx/snippets/proxy-headers.conf;
+        proxy_set_header Connection "";
+        proxy_pass http://backend;
+    }
+
+    # Payment webhooks must never be throttled by the edge (providers retry, but
+    # throttling delays confirmations); they are authenticated by the backend.
+    location /api/v1/payments/webhook/ {
+        include /etc/nginx/snippets/proxy-headers.conf;
+        proxy_set_header Connection "";
+        proxy_pass http://backend;
+    }
+
+    location /api/ {
+        limit_req zone=api burst=40 nodelay;
+        include /etc/nginx/snippets/proxy-headers.conf;
+        proxy_set_header Connection "";
+        # The backend sends its own strict API headers; avoid duplicates.
+        proxy_hide_header X-Frame-Options;
+        proxy_hide_header X-Content-Type-Options;
+        proxy_hide_header Referrer-Policy;
+        proxy_hide_header Strict-Transport-Security;
+        proxy_hide_header Permissions-Policy;
+        proxy_pass http://backend;
+    }
+
+    location /uploads/ {
+        include /etc/nginx/snippets/proxy-headers.conf;
+        proxy_set_header Connection "";
+        expires 7d;
+        proxy_pass http://backend;
+    }
+
+    location /_next/static/ {
+        include /etc/nginx/snippets/proxy-headers.conf;
+        proxy_set_header Connection "";
+        proxy_pass http://frontend;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    location / {
+        limit_req zone=general burst=60 nodelay;
+        include /etc/nginx/snippets/proxy-headers.conf;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_pass http://frontend;
+    }
+}

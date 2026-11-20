@@ -36,14 +36,16 @@ RUN chown -R appuser:appgroup /app
 
 USER appuser
 
-# Expose port
-EXPOSE 8080
+# 8080 = application; 8081 = actuator when MANAGEMENT_SERVER_PORT=8081 (internal only)
+EXPOSE 8080 8081
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+# Health check (actuator port follows MANAGEMENT_SERVER_PORT, default = app port)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+    CMD wget -q --spider "http://localhost:${MANAGEMENT_SERVER_PORT:-8080}/actuator/health" || exit 1
 
-# JVM optimization for 512MB container (Render free tier)
+# Default JVM tuning keeps the existing 512MB Render deployment working.
+# docker-compose.yml overrides JAVA_OPTS (heap from the container limit:
+# -XX:MaxRAMPercentage=75) for the VPS deployment.
 ENV JAVA_OPTS="-XX:+UseContainerSupport -Xmx220m -Xms96m -XX:MaxMetaspaceSize=170m -XX:CompressedClassSpaceSize=32m -XX:ReservedCodeCacheSize=48m -Xss256k -XX:+UseSerialGC -XX:+ExitOnOutOfMemoryError"
 
 # Run application

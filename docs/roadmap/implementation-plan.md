@@ -28,6 +28,7 @@
 | **P3-Modular** | Package theo module; Facade; ArchUnit; tách `BookingService`/`AdminApi`; ShedLock; dọn dead code | Trung bình | L | R-23 | TD-26..30, TD-36 |
 | **P4-Housekeeping** | Room status, cleaning task, assignment, gắn inspection (sau khi Q8 được trả lời) | Trung bình | M | R-22 | — |
 | **P5-DevOps/Obs** | Compose dev/staging/prod; nginx TLS; CI build image → GHCR → deploy VPS; Micrometer/Prometheus/Grafana/Loki; JSON log; pg_dump + restore drill; `.env.example` chuẩn | Cao | M | R-15..R-17, R-19 | TD-31..34, TD-42 |
+|  | **P5 xong** (`feature/p5-devops`): compose dev/staging/prod, nginx TLS, Prometheus/Alertmanager/Grafana, log JSON, backup + restore drill, CI `infra-validate` + image GHCR + workflow Deploy; Loki hoãn ([ADR-0011](../adr/0011-observability-stack.md), [deployment-guide](../operations/deployment-guide.md)) |  |  |  |  |
 | **P6-Quality** | k6 load test; OWASP ZAP baseline; chaos (DB/RabbitMQ down, gateway timeout); báo cáo performance và security | Trung bình | M | — | TD-35 |
 | **P7** | Inventory, Employee/shift | Thấp – Trung bình | L | — | — |
 

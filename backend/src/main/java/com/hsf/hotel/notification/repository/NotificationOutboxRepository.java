@@ -24,6 +24,13 @@ public interface NotificationOutboxRepository extends JpaRepository<Notification
             @Param("now") LocalDateTime now,
             Pageable pageable);
 
+    /** Monitoring (P5): backlog size per status. */
+    long countByStatus(NotificationOutbox.OutboxStatus status);
+
+    /** Monitoring (P5): creation time of the oldest event still in the given status. */
+    @Query("SELECT MIN(o.createdAt) FROM NotificationOutbox o WHERE o.status = :status")
+    LocalDateTime findOldestCreatedAt(@Param("status") NotificationOutbox.OutboxStatus status);
+
     @Modifying
     @Query("DELETE FROM NotificationOutbox o WHERE o.status = :status AND o.publishedAt < :cutoff")
     int deletePublishedBefore(

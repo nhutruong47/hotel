@@ -16,6 +16,8 @@ public interface PaymentRefundRepository extends JpaRepository<PaymentRefund, Lo
 
     List<PaymentRefund> findByPaymentIdOrderByCreatedAtDesc(Integer paymentId);
 
+    long countByStatus(PaymentRefund.RefundStatus status);
+
     /** ADMIN work queue: manual refunds waiting for a bank transfer (ADR-0009 Q5). */
     @EntityGraph(attributePaths = {"payment", "payment.booking", "processedBy"})
     List<PaymentRefund> findByStatusOrderByCreatedAtAsc(PaymentRefund.RefundStatus status);

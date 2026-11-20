@@ -121,3 +121,18 @@ ehthumbs.db
 # =========================
 *.swp
 *.swo
+
+# =========================
+# Operations (P5) - runtime state and secrets
+# =========================
+ops/alertmanager/alertmanager.yml
+ops/certbot/
+backups/
+.env.dev
+.env.staging
+.env.prod
+# Committed templates (no secrets)
+!.env.dev.example
+!.env.prod.example
+# ops/backup holds backup SCRIPTS (versioned), not backup data
+!ops/backup/

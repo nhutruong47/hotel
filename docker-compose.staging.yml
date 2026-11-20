@@ -1,0 +1,23 @@
+# =============================================================================
+# Staging override — production topology with demo-friendly settings:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.staging.yml up -d
+# Use a separate host or at least a separate env file (.env.staging) and domain.
+# Stripe must use TEST keys here.
+# =============================================================================
+name: nhu-villas-staging
+
+services:
+  backend:
+    environment:
+      # Seeds demo villas/guests (DataInitializer) on top of the prod profile.
+      SPRING_PROFILES_ACTIVE: prod,seed
+
+  frontend:
+    build:
+      args:
+        NEXT_PUBLIC_ENABLE_DEMO_LOGIN: "true"
+        NEXT_PUBLIC_DEMO_LOGIN_PASSWORD: ${NEXT_PUBLIC_DEMO_LOGIN_PASSWORD:?demo password required on staging}
+
+  backup:
+    environment:
+      BACKUP_RETENTION_DAYS: "3"

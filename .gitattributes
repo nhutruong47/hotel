@@ -1,2 +1,6 @@
 /mvnw text eol=lf
 *.cmd text eol=crlf
+# Ops files run on Linux: always LF
+*.sh text eol=lf
+*.conf text eol=lf
+*.template text eol=lf

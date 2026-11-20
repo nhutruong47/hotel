@@ -1,0 +1,117 @@
+# Alert rules (validated in CI with `promtool check rules`). Thresholds follow
+# docs/business/business-analysis.md NFRs and ADR-0009; see the runbook for the
+# response to each alert: docs/operations/runbook.md
+groups:
+  - name: availability
+    rules:
+      - alert: BackendDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: Backend is not answering /actuator/prometheus
+          runbook: docs/operations/runbook.md#backenddown
+
+      - alert: PostgresDown
+        expr: pg_up == 0 or up{job="postgres"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations:
+          summary: PostgreSQL is unreachable
+          runbook: docs/operations/runbook.md#postgresdown
+
+      - alert: RabbitMQDown
+        expr: up{job="rabbitmq"} == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: RabbitMQ is down — emails queue up in the transactional outbox
+          runbook: docs/operations/runbook.md#rabbitmqdown
+
+      - alert: HighServerErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{job="backend",status=~"5.."}[10m]))
+            / clamp_min(sum(rate(http_server_requests_seconds_count{job="backend"}[10m])), 1e-9) > 0.01
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: More than 1% of API requests fail with 5xx
+          runbook: docs/operations/runbook.md#highservererrorrate
+
+      - alert: SlowApi
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{job="backend",uri!~"/actuator.*"}[10m]))) > 1.5
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: p95 API latency above 1.5 s
+
+  - name: business
+    rules:
+      - alert: OutboxBacklogStale
+        expr: hotel_outbox_oldest_pending_age_seconds > 600
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: A notification has waited more than 10 minutes to be published
+          runbook: docs/operations/runbook.md#outboxbacklogstale
+
+      - alert: OutboxDeadLetters
+        expr: hotel_outbox_events{status="failed"} > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: Notification events exhausted their retries (dead letters)
+          runbook: docs/operations/runbook.md#outboxdeadletters
+
+      - alert: PaymentsNeedReconciliation
+        expr: hotel_payments_review_required > 0
+        for: 1h
+        labels: {severity: warning}
+        annotations:
+          summary: Received payments are flagged for reconciliation (ADR-0009 Q4)
+          runbook: docs/operations/runbook.md#paymentsneedreconciliation
+
+      - alert: ManualRefundsWaiting
+        expr: hotel_refunds_pending_manual > 0
+        for: 72h
+        labels: {severity: warning}
+        annotations:
+          summary: A manual refund has waited more than 3 days (target 5 business days, ADR-0009 Q5)
+          runbook: docs/operations/runbook.md#manualrefundswaiting
+
+  - name: capacity-and-backup
+    rules:
+      - alert: DiskAlmostFull
+        expr: |
+          (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) < 0.20
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: Less than 20% disk space left on {{ $labels.mountpoint }}
+          runbook: docs/operations/runbook.md#diskalmostfull
+
+      - alert: JvmHeapPressure
+        expr: |
+          sum by (instance) (jvm_memory_used_bytes{job="backend",area="heap"})
+            / sum by (instance) (jvm_memory_max_bytes{job="backend",area="heap"}) > 0.9
+        for: 15m
+        labels: {severity: warning}
+        annotations:
+          summary: Backend heap above 90% for 15 minutes
+
+      - alert: BackupMissing
+        expr: time() - hotel_backup_last_success_timestamp_seconds > 26 * 3600
+        for: 10m
+        labels: {severity: critical}
+        annotations:
+          summary: No successful database backup in the last 26 hours (RPO 24h, ADR-0009 Q10)
+          runbook: docs/operations/runbook.md#backupmissing
+
+      - alert: BackupMetricAbsent
+        expr: absent(hotel_backup_last_success_timestamp_seconds)
+        for: 26h
+        labels: {severity: critical}
+        annotations:
+          summary: The backup job has never reported success
+          runbook: docs/operations/runbook.md#backupmissing

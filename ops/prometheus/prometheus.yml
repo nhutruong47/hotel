@@ -1,0 +1,37 @@
+# Prometheus for Nhu Villas (docker-compose.prod.yml). Validated in CI with
+# `promtool check config`. All targets are on the private compose network.
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  external_labels:
+    system: nhu-villas
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["backend:8081"]   # internal management port (MANAGEMENT_SERVER_PORT)
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: rabbitmq
+    static_configs:
+      - targets: ["rabbitmq:15692"]  # rabbitmq_prometheus plugin (enabled by default)
+
+  - job_name: node
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

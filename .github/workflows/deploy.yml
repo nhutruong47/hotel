@@ -1,0 +1,59 @@
+# Manual production deploy to the VPS (ADR-0007, docs/operations/deployment-guide.md).
+# Requires a GitHub Environment named "production" (add required reviewers there)
+# with secrets: VPS_HOST, VPS_USER, VPS_SSH_KEY, VPS_KNOWN_HOSTS, VPS_APP_DIR.
+# Images must already exist in GHCR (pushed by CI on main for that commit).
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (full commit SHA of a main build)"
+        required: true
+        type: string
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.image_tag }} to production
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check deploy configuration
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          missing=""
+          for v in VPS_HOST VPS_USER VPS_SSH_KEY VPS_KNOWN_HOSTS VPS_APP_DIR; do
+            eval "val=\${$v}"; [ -n "$val" ] || missing="$missing $v"
+          done
+          [ -z "$missing" ] || { echo "::error::Missing environment secrets:$missing"; exit 1; }
+          echo "$TAG" | grep -Eq '^[0-9a-f]{40}$' || { echo "::error::image_tag must be a full 40-char commit SHA"; exit 1; }
+
+      - name: Deploy over SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          set -e
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
+            "set -e; cd '$VPS_APP_DIR' && git fetch --quiet origin && git checkout --quiet '$TAG' && REGISTRY='ghcr.io/$OWNER' sh ops/deploy/deploy.sh '$TAG'"

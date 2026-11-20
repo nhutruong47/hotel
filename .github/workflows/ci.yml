@@ -89,6 +89,122 @@ jobs:
       - name: Scan for committed secrets
         run: ./gitleaks detect --no-git --source . --config .gitleaks.toml --redact --no-banner
 
+  # P5: everything under ops/ and the compose files is validated with the real tools,
+  # and the backup is restored for real (restore drill) on every push.
+  infra-validate:
+    name: Infrastructure validation (compose, nginx, Prometheus, backup drill)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Compose files render for dev, staging and prod
+        run: |
+          set -e
+          for overlay in "-f docker-compose.dev.yml" \
+                         "-f docker-compose.prod.yml" \
+                         "-f docker-compose.prod.yml -f docker-compose.staging.yml"; do
+            echo "::group::docker-compose.yml $overlay"
+            # shellcheck disable=SC2086
+            docker compose --env-file .github/ci/ci.env -f docker-compose.yml $overlay config --quiet
+            echo "::endgroup::"
+          done
+          # Data services must never publish host ports in the shared/prod stack (R-19).
+          docker compose --env-file .github/ci/ci.env -f docker-compose.yml -f docker-compose.prod.yml config --format json > /tmp/prod.json
+          for svc in db redis rabbitmq backend frontend; do
+            if [ "$(jq -r --arg s "$svc" '.services[$s].ports // [] | length' /tmp/prod.json)" != "0" ]; then
+              echo "::error::service $svc publishes a host port in production"; exit 1
+            fi
+          done
+
+      - name: nginx -t (rendered template, dummy certificate)
+        run: |
+          set -e
+          LE=/tmp/le/live/ci.example.test
+          mkdir -p "$LE"
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 -subj "/CN=ci.example.test" \
+            -keyout "$LE/privkey.pem" -out "$LE/fullchain.pem" 2>/dev/null
+          docker run --rm -e SERVER_NAME=ci.example.test \
+            --add-host frontend:127.0.0.1 --add-host backend:127.0.0.1 \
+            -v "$PWD/ops/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+            -v "$PWD/ops/nginx/snippets:/etc/nginx/snippets:ro" \
+            -v "$PWD/ops/nginx/templates:/etc/nginx/templates:ro" \
+            -v /tmp/le:/etc/letsencrypt:ro \
+            nginx:1.27-alpine nginx -t
+
+      - name: Prometheus config and alert rules
+        run: |
+          docker run --rm -v "$PWD/ops/prometheus:/etc/prometheus:ro" --entrypoint promtool \
+            prom/prometheus:v2.53.2 check config /etc/prometheus/prometheus.yml
+          docker run --rm -v "$PWD/ops/prometheus:/etc/prometheus:ro" --entrypoint promtool \
+            prom/prometheus:v2.53.2 check rules /etc/prometheus/alerts.yml
+
+      - name: Alertmanager config template
+        run: |
+          docker run --rm -v "$PWD/ops/alertmanager:/cfg:ro" --entrypoint amtool \
+            prom/alertmanager:v0.27.0 check-config /cfg/alertmanager.yml.example
+
+      - name: Grafana dashboards are valid JSON
+        run: for f in ops/grafana/dashboards/*.json; do jq empty "$f"; done
+
+      - name: Shell scripts (shellcheck)
+        run: |
+          docker run --rm -v "$PWD:/mnt" -w /mnt koalaman/shellcheck:v0.10.0 -s sh \
+            ops/backup/*.sh ops/nginx/*.sh ops/deploy/*.sh
+
+      - name: Backup + restore drill against PostgreSQL 16
+        run: |
+          set -e
+          docker network create drill
+          docker run -d --name drill-db --network drill -e POSTGRES_PASSWORD=drill -e POSTGRES_DB=hotel postgres:16-alpine
+          for i in $(seq 1 30); do docker exec drill-db pg_isready -U postgres -d hotel && break; sleep 1; done
+          docker exec drill-db psql -U postgres -d hotel -v ON_ERROR_STOP=1 -c \
+            "CREATE TABLE users(id int); CREATE TABLE rooms(id int); CREATE TABLE bookings(id int); CREATE TABLE payments(id int);
+             INSERT INTO bookings SELECT generate_series(1,100);"
+          mkdir -p /tmp/backups /tmp/metrics
+          run() {
+            docker run --rm --network drill -e PGHOST=drill-db -e PGUSER=postgres -e PGPASSWORD=drill \
+              -e PGDATABASE=hotel -e BACKUP_DIR=/backups -e METRICS_DIR=/metrics \
+              -v "$PWD/ops/backup:/ops/backup:ro" -v /tmp/backups:/backups -v /tmp/metrics:/metrics \
+              postgres:16-alpine /bin/sh "/ops/backup/$1"
+          }
+          run pg-backup.sh
+          run restore-drill.sh
+          grep -q '^hotel_backup_last_success_timestamp_seconds ' /tmp/metrics/hotel_backup_success.prom
+          ls -l /tmp/backups
+
+  docker-images:
+    name: Docker images (build; push to GHCR on main)
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-check, infra-validate]
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t hotel-backend:ci backend
+
+      - name: Build frontend image (production flags)
+        run: docker build --build-arg NEXT_PUBLIC_ENABLE_DEMO_LOGIN=false -t hotel-frontend:ci frontend
+
+      - name: Push images to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          set -e
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          OWNER="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          for app in backend frontend; do
+            for tag in "${{ github.sha }}" latest; do
+              docker tag "hotel-$app:ci" "ghcr.io/$OWNER/hotel-$app:$tag"
+              docker push "ghcr.io/$OWNER/hotel-$app:$tag"
+            done
+          done
+
   frontend-check:
     name: Frontend Quality & Build (Next.js 15 & TypeScript)
     runs-on: ubuntu-latest
