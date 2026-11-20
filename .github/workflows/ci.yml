@@ -30,6 +30,14 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x backend/mvnw
 
+      # Separate step so a wrapper/Maven-download failure is distinguishable
+      # from a build or test failure in the job summary.
+      - name: Show Java and Maven versions
+        working-directory: backend
+        run: |
+          java -version
+          ./mvnw -B -v
+
       # `verify` = unit/H2 tests (surefire, *Test) + PostgreSQL 16 integration tests
       # (failsafe, *IT) via Testcontainers: real Flyway db/postgresql track,
       # ddl-auto=validate, exclusion constraint, concurrency and webhook idempotency.
