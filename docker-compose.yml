@@ -14,7 +14,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      # The script lives in database/ (the old ./init-db.sql path did not exist, so Docker
+      # silently created an empty directory and btree_gist/pg_trgm were never pre-created).
+      - ./database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     ports:
       - "5432:5432"
     healthcheck:

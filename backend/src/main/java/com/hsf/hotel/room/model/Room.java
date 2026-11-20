@@ -16,7 +16,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
         @Index(name = "idx_rooms_room_type", columnList = "room_type_id"),
         @Index(name = "idx_rooms_room_number", columnList = "roomNumber", unique = true)
 })
-public class Room implements java.io.Serializable {
+@jakarta.persistence.EntityListeners(com.hsf.hotel.common.audit.AuditStampListener.class)
+public class Room implements java.io.Serializable, com.hsf.hotel.common.audit.AuditStamped {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -283,4 +284,42 @@ public class Room implements java.io.Serializable {
 
     public String getSlug() { return slug; }
     public void setSlug(String slug) { this.slug = slug; }
+
+    // ---------------- audit columns (V19, AuditStampListener) ----------------
+    @jakarta.persistence.Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @jakarta.persistence.Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
+    @jakarta.persistence.Column(name = "created_by", updatable = false)
+    private Integer createdBy;
+
+    @jakarta.persistence.Column(name = "updated_by")
+    private Integer updatedBy;
+
+    @Override
+    public void onCreateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        if (createdAt == null) createdAt = now;
+        if (createdBy == null) createdBy = actorUserId;
+    }
+
+    @Override
+    public void onUpdateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        updatedAt = now;
+        updatedBy = actorUserId;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public java.time.LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Integer getCreatedBy() { return createdBy; }
+    public Integer getUpdatedBy() { return updatedBy; }
+
+    // ---------------- property dimension (V20, ADR-0008) ----------------
+    /** Owning property (hotel/branch). 1 = Nhu Villas Đà Lạt, the only property today. */
+    @jakarta.persistence.Column(name = "property_id", nullable = false)
+    private Integer propertyId = 1;
+
+    public Integer getPropertyId() { return propertyId; }
+    public void setPropertyId(Integer propertyId) { this.propertyId = propertyId != null ? propertyId : 1; }
 }

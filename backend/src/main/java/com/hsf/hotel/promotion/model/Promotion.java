@@ -17,7 +17,8 @@ import java.util.List;
     @Index(name = "idx_promotion_end", columnList = "endDate"),
     @Index(name = "idx_promotion_category", columnList = "category")
 })
-public class Promotion implements java.io.Serializable {
+@jakarta.persistence.EntityListeners(com.hsf.hotel.common.audit.AuditStampListener.class)
+public class Promotion implements java.io.Serializable, com.hsf.hotel.common.audit.AuditStamped {
 
     public enum PromotionCategory {
         SEASONAL("Mùa cao điểm"),
@@ -190,5 +191,33 @@ public class Promotion implements java.io.Serializable {
 
     public List<Room> getRooms() { return rooms; }
     public void setRooms(List<Room> rooms) { this.rooms = rooms; }
-}
 
+    // ---------------- audit columns (V19, AuditStampListener) ----------------
+    @jakarta.persistence.Column(name = "created_by", updatable = false)
+    private Integer createdBy;
+
+    @jakarta.persistence.Column(name = "updated_by")
+    private Integer updatedBy;
+
+    @Override
+    public void onCreateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        if (getCreatedAt() == null) setCreatedAt(now);
+        if (createdBy == null) createdBy = actorUserId;
+    }
+
+    @Override
+    public void onUpdateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        setUpdatedAt(now);
+        updatedBy = actorUserId;
+    }
+
+    public Integer getCreatedBy() { return createdBy; }
+    public Integer getUpdatedBy() { return updatedBy; }
+
+    /** V20: null = valid at every property. */
+    @jakarta.persistence.Column(name = "property_id")
+    private Integer propertyId;
+
+    public Integer getPropertyId() { return propertyId; }
+    public void setPropertyId(Integer propertyId) { this.propertyId = propertyId; }
+}

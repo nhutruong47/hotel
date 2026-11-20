@@ -9,7 +9,8 @@ import java.time.LocalDate;
         @Index(name = "idx_vouchers_code", columnList = "code", unique = true),
         @Index(name = "idx_vouchers_expiry", columnList = "expiryDate")
 })
-public class Voucher {
+@jakarta.persistence.EntityListeners(com.hsf.hotel.common.audit.AuditStampListener.class)
+public class Voucher implements com.hsf.hotel.common.audit.AuditStamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -94,4 +95,41 @@ public class Voucher {
     public void setPercent(Boolean percent) {
         this.percent = percent;
     }
+
+    // ---------------- audit columns (V19, AuditStampListener) ----------------
+    @jakarta.persistence.Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @jakarta.persistence.Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
+    @jakarta.persistence.Column(name = "created_by", updatable = false)
+    private Integer createdBy;
+
+    @jakarta.persistence.Column(name = "updated_by")
+    private Integer updatedBy;
+
+    @Override
+    public void onCreateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        if (createdAt == null) createdAt = now;
+        if (createdBy == null) createdBy = actorUserId;
+    }
+
+    @Override
+    public void onUpdateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        updatedAt = now;
+        updatedBy = actorUserId;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public java.time.LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Integer getCreatedBy() { return createdBy; }
+    public Integer getUpdatedBy() { return updatedBy; }
+
+    /** V20: null = valid at every property. */
+    @jakarta.persistence.Column(name = "property_id")
+    private Integer propertyId;
+
+    public Integer getPropertyId() { return propertyId; }
+    public void setPropertyId(Integer propertyId) { this.propertyId = propertyId; }
 }

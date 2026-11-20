@@ -6,7 +6,8 @@ import jakarta.persistence.*;
 @Entity
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Table(name = "room_types")
-public class RoomTypeEntity implements java.io.Serializable {
+@jakarta.persistence.EntityListeners(com.hsf.hotel.common.audit.AuditStampListener.class)
+public class RoomTypeEntity implements java.io.Serializable, com.hsf.hotel.common.audit.AuditStamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,5 +56,33 @@ public class RoomTypeEntity implements java.io.Serializable {
     public String getDisplayName() {
         return this.name;
     }
-}
 
+    // ---------------- audit columns (V19, AuditStampListener) ----------------
+    @jakarta.persistence.Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @jakarta.persistence.Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
+    @jakarta.persistence.Column(name = "created_by", updatable = false)
+    private Integer createdBy;
+
+    @jakarta.persistence.Column(name = "updated_by")
+    private Integer updatedBy;
+
+    @Override
+    public void onCreateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        if (createdAt == null) createdAt = now;
+        if (createdBy == null) createdBy = actorUserId;
+    }
+
+    @Override
+    public void onUpdateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        updatedAt = now;
+        updatedBy = actorUserId;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public java.time.LocalDateTime getUpdatedAt() { return updatedAt; }
+    public Integer getCreatedBy() { return createdBy; }
+    public Integer getUpdatedBy() { return updatedBy; }}

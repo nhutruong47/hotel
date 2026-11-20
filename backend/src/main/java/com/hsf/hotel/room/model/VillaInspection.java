@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
     @Index(name = "idx_inspections_type", columnList = "inspection_type"),
     @Index(name = "idx_inspections_scheduled_date", columnList = "scheduled_date")
 })
-public class VillaInspection {
+@jakarta.persistence.EntityListeners(com.hsf.hotel.common.audit.AuditStampListener.class)
+public class VillaInspection implements com.hsf.hotel.common.audit.AuditStamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -154,4 +155,23 @@ public class VillaInspection {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
-}
+
+    // ---------------- audit columns (V19, AuditStampListener) ----------------
+    @jakarta.persistence.Column(name = "created_by", updatable = false)
+    private Integer createdBy;
+
+    @jakarta.persistence.Column(name = "updated_by")
+    private Integer updatedBy;
+
+    @Override
+    public void onCreateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        if (createdBy == null) createdBy = actorUserId;
+    }
+
+    @Override
+    public void onUpdateStamp(java.time.LocalDateTime now, Integer actorUserId) {
+        updatedBy = actorUserId;
+    }
+
+    public Integer getCreatedBy() { return createdBy; }
+    public Integer getUpdatedBy() { return updatedBy; }}

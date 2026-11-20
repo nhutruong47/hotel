@@ -13,6 +13,7 @@
 | [0007](0007-docker-compose-vps-deployment.md) | Triển khai bằng Docker Compose trên VPS | Accepted | 2026-11-20 |
 | [0008](0008-single-property-multi-property-ready.md) | Single-property, multi-property ready | Accepted | 2026-11-20 |
 | [0009](0009-business-policy-decisions.md) | Chốt chính sách nghiệp vụ Q1–Q11 (day-use, no-show, sửa booking, đối soát, hoàn tiền thủ công, VND, VAT, lưu trữ, min/max stay) | Accepted | 2026-11-20 |
+| [0010](0010-p2-schema-hardening-scope.md) | Phạm vi P2: siết schema tại DB (V15–V20), một track Flyway, giữ `Integer` id ở Java | Accepted | 2026-11-20 |
 
 ## Quy trình
 

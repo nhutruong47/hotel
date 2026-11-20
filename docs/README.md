@@ -19,8 +19,9 @@ Cập nhật: 2026-11-20. Tài liệu cũ **không bị xóa**. Khi thông tin m
 | [architecture/database-design.md](architecture/database-design.md) | Schema, V13 (chống overlap) và V14 (đối soát payment, refund thủ công) kèm rollback, lộ trình V15–V25, index/locking/retention |
 | [business/business-analysis.md](business/business-analysis.md) | Actor, business rule, workflow, FR/NFR, acceptance criteria; câu hỏi Q1–Q11 (đã chốt phần lớn trong ADR-0009) |
 | [roadmap/implementation-plan.md](roadmap/implementation-plan.md) | Priority matrix, các phase P0–P7 (kết quả P0/P1), migration/cutover plan, Definition of Done |
-| [adr/](adr/README.md) | Architecture Decision Records 0001–0009 |
+| [adr/](adr/README.md) | Architecture Decision Records 0001–0010 |
 | [adr/0009-business-policy-decisions.md](adr/0009-business-policy-decisions.md) | Chốt chính sách nghiệp vụ: day-use, no-show, sửa booking, đối soát, hoàn tiền thủ công, VND, VAT, lưu trữ, min/max stay |
+| [operations/p2-release-notes.md](operations/p2-release-notes.md) | Release notes P2: migration V15–V20, preflight, checklist deploy/rollback, thay đổi profile cho developer |
 | [operations/p1-release-notes.md](operations/p1-release-notes.md) | Release notes P1: thay đổi API, biến môi trường mới, checklist deploy (chuyển giá sang VND, SMTP), thay đổi người dùng thấy |
 
 ## 2. Tài liệu hiện có và trạng thái

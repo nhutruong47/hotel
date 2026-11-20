@@ -338,4 +338,22 @@ public class Booking {
     void onUpdate() {
         modifiedAt = LocalDateTime.now();
     }
+
+    // ---------------- discount references (V16) ----------------
+    /**
+     * Typed references to the voucher / promotion whose code is in
+     * {@code appliedVoucherCode} (expand step: the code column is kept for
+     * compatibility). Plain ids, not associations, so the booking module does
+     * not load voucher/promotion aggregates (module boundary, ADR-0001).
+     */
+    @jakarta.persistence.Column(name = "voucher_id")
+    private Integer voucherId;
+
+    @jakarta.persistence.Column(name = "promotion_id")
+    private Integer promotionId;
+
+    public Integer getVoucherId() { return voucherId; }
+    public void setVoucherId(Integer voucherId) { this.voucherId = voucherId; }
+    public Integer getPromotionId() { return promotionId; }
+    public void setPromotionId(Integer promotionId) { this.promotionId = promotionId; }
 }

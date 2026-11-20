@@ -76,6 +76,8 @@ public class SessionAuthBridgeFilter extends OncePerRequestFilter {
                 List<SimpleGrantedAuthority> authorities = authoritiesFor(current.getRoleEnum());
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(current.getUsername(), null, authorities);
+                // Acting user id for audit columns (AuditStampListener, V19).
+                auth.setDetails(current.getId());
                 SecurityContext context = holderStrategy.createEmptyContext();
                 context.setAuthentication(auth);
                 holderStrategy.setContext(context);

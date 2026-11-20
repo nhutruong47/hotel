@@ -410,6 +410,9 @@ public class BookingService {
         booking.setTaxAmount(pricing.taxAmount());
         booking.setTotalPrice(finalPrice);
         booking.setAppliedVoucherCode(appliedCode);
+        // V16: typed references next to the legacy code column (expand step).
+        booking.setVoucherId(resolved.voucher() != null ? resolved.voucher().getId() : null);
+        booking.setPromotionId(resolved.promotion() != null ? resolved.promotion().getId() : null);
         booking.setDiscountAmount(discount);
 
         Booking saved = bookingRepository.save(booking);

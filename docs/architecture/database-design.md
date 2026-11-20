@@ -190,6 +190,12 @@ Vòng đời refund:
 
 Thứ tự đề xuất. Số version thực tế cấp phát khi triển khai. **Đánh số lại 2026-11-20**: V14 đã được dùng cho payment review/manual refunds (P1), nên các migration kế hoạch dịch lên một số.
 
+> **Trạng thái 2026-11-20 (nhánh `feature/p2-database`, [ADR-0010](../adr/0010-p2-schema-hardening-scope.md))**: **V15–V20 đã triển khai** kèm rollback `db/rollback/U15..U20` và kiểm chứng trên PostgreSQL 16.6 (`SchemaIntegrityIT` 5 test, `PostgresMigrationIT` latest = 20; U20→U15 rồi áp lại; preflight V15/V17 dừng đúng khi có dữ liệu vi phạm). Khác biệt so với bảng dưới:
+> - **V18**: chỉ đổi khóa `villa_inspections` sang `BIGINT`; **không** đổi timestamp và **không** đổi `Integer → Long` ở Java (đã hoãn có lý do, ADR-0010).
+> - **V19**: không dùng Spring Data JPA Auditing mà dùng `common/audit/AuditStampListener` + `AuditStamped` (id người thao tác do `SessionAuthBridgeFilter` gắn vào `Authentication.details`). Việc đổi tên `bookings.modified_at → updated_at` để sau.
+> - **V17**: thêm CHECK cho `rooms` (giá ≥ 0, `minimum_stay ≥ 1`, `maximum_stay ≥ minimum_stay`, `capacity > 0`), `bookings.refund_percentage` 0..100, `vouchers.amount ≤ 100` khi là phần trăm; UNIQUE promo code dùng `UPPER(promo_code)`.
+> - Track migration H2 (`db/migration`), `db/postgresql-legacy` và các script SQL Server đã bị xóa; profile `postgres` chạy Flyway + `validate` như prod; `dev`/`test` (H2) tắt Flyway.
+
 | Migration | Nội dung | Loại | Preflight / rủi ro | Rollback |
 |---|---|---|---|---|
 | V15 `rooms_integrity` | `rooms.slug` UNIQUE (preflight trùng slug); `rooms.version` `SET DEFAULT 0` + backfill + `NOT NULL`; index `room_gallery_images(room_id)`, `review_photos(review_id)`, `promotion_rooms(room_id)`; port index V2/V3 còn thiếu (`payments(intent_id)` nếu chưa có, `notifications(user_id, created_at)`) | Additive | Trùng slug → dừng | Drop constraint/index |

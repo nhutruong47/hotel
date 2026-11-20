@@ -1,0 +1,22 @@
+-- Manual rollback for V17. Drops constraints only.
+BEGIN;
+ALTER TABLE reviews DROP CONSTRAINT IF EXISTS chk_reviews_rating;
+ALTER TABLE reviews DROP CONSTRAINT IF EXISTS chk_reviews_sub_ratings;
+DROP INDEX IF EXISTS uq_reviews_booking;
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS chk_bookings_money_non_negative;
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS chk_bookings_refund_percentage;
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS chk_bookings_guests;
+ALTER TABLE payments DROP CONSTRAINT IF EXISTS chk_payments_amounts;
+ALTER TABLE payments DROP CONSTRAINT IF EXISTS chk_payments_status;
+ALTER TABLE payments DROP CONSTRAINT IF EXISTS chk_payments_method;
+ALTER TABLE payments DROP CONSTRAINT IF EXISTS chk_payments_gateway;
+ALTER TABLE vouchers DROP CONSTRAINT IF EXISTS chk_vouchers_values;
+ALTER TABLE promotions DROP CONSTRAINT IF EXISTS chk_promotions_values;
+DROP INDEX IF EXISTS uq_promotions_promo_code;
+ALTER TABLE rooms DROP CONSTRAINT IF EXISTS chk_rooms_values;
+ALTER TABLE booking_status_transitions DROP CONSTRAINT IF EXISTS chk_bst_statuses;
+ALTER TABLE contact_messages DROP CONSTRAINT IF EXISTS chk_contact_enums;
+ALTER TABLE villa_maintenances DROP CONSTRAINT IF EXISTS chk_maint_status;
+ALTER TABLE villa_inspections DROP CONSTRAINT IF EXISTS chk_inspection_enums;
+DELETE FROM flyway_schema_history WHERE version = '17';
+COMMIT;
