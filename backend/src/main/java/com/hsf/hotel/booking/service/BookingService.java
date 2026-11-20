@@ -12,6 +12,7 @@ import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.booking.model.BookingStatus;
 import com.hsf.hotel.booking.model.BookingStateMachine;
+import com.hsf.hotel.booking.model.Occupancy;
 import com.hsf.hotel.notification.model.NotificationType;
 import com.hsf.hotel.room.model.Room;
 import com.hsf.hotel.user.model.User;
@@ -206,11 +207,12 @@ public class BookingService {
         if (!Boolean.TRUE.equals(room.getIsAvailable())) {
             return false;
         }
-        boolean hasBookingConflict = !bookingRepository.findConflictingBookings(room, checkIn, checkOut).isEmpty();
+        LocalDate occupiedUntil = Occupancy.exclusiveEnd(checkIn, checkOut);
+        boolean hasBookingConflict = !bookingRepository.findConflictingBookings(room, checkIn, occupiedUntil).isEmpty();
         if (hasBookingConflict) return false;
 
         if (maintenanceRepository != null) {
-            boolean hasMaintenanceConflict = !maintenanceRepository.findConflictingMaintenances(room, checkIn, checkOut).isEmpty();
+            boolean hasMaintenanceConflict = !maintenanceRepository.findConflictingMaintenances(room, checkIn, occupiedUntil).isEmpty();
             if (hasMaintenanceConflict) return false;
         }
         return true;
@@ -235,13 +237,14 @@ public class BookingService {
             throw new ResourceNotFoundException("Room", room.getId());
         }
 
-        List<Booking> conflicts = bookingRepository.findConflictingBookingsForUpdate(lockedRoom, checkIn, checkOut);
+        LocalDate occupiedUntil = Occupancy.exclusiveEnd(checkIn, checkOut);
+        List<Booking> conflicts = bookingRepository.findConflictingBookingsForUpdate(lockedRoom, checkIn, occupiedUntil);
         if (!conflicts.isEmpty() || !Boolean.TRUE.equals(lockedRoom.getIsAvailable())) {
             throw new BusinessRuleException("ROOM_UNAVAILABLE", "Phòng đã được đặt trong khoảng thời gian này");
         }
 
         if (maintenanceRepository != null) {
-            var maintConflicts = maintenanceRepository.findConflictingMaintenances(lockedRoom, checkIn, checkOut);
+            var maintConflicts = maintenanceRepository.findConflictingMaintenances(lockedRoom, checkIn, occupiedUntil);
             if (!maintConflicts.isEmpty()) {
                 throw new BusinessRuleException("ROOM_IN_MAINTENANCE", "Phòng đang trong lịch bảo trì vào thời gian này");
             }
@@ -625,7 +628,8 @@ public class BookingService {
             // Lock the room row + exclude this booking from the conflict set so
             // we don't collide with our own date range.
             List<Booking> conflicts = bookingRepository
-                    .findConflictingBookingsForUpdateExcluding(room, bookingId, newCheckIn, newCheckOut);
+                    .findConflictingBookingsForUpdateExcluding(room, bookingId, newCheckIn,
+                            Occupancy.exclusiveEnd(newCheckIn, newCheckOut));
             if (!conflicts.isEmpty()) {
                 throw new BusinessRuleException("ROOM_UNAVAILABLE", "Phòng đã được đặt trong khoảng thời gian mới");
             }
@@ -923,7 +927,9 @@ public class BookingService {
         data.put("wishlistCount", wishlistCount);
         data.put("unreadNotifications", unreadNotifications);
         data.put("totalSpent", totalSpent);
-        data.put("nextStay", nextStay);
+        // Map inside this read-only transaction: the entity would be serialized after
+        // commit and fail on its lazy room/user proxies (P0-04).
+        data.put("nextStay", com.hsf.hotel.booking.dto.BookingSummaryResponse.from(nextStay));
         return data;
     }
 

@@ -33,8 +33,7 @@ public interface RoomRepository extends JpaRepository<Room, Integer>, JpaSpecifi
             "AND (CAST(:checkIn AS date) IS NULL OR CAST(:checkOut AS date) IS NULL OR NOT EXISTS (" +
             "    SELECT b FROM Booking b WHERE b.room = r " +
             "    AND b.status NOT IN ('CANCELLED', 'EXPIRED', 'NO_SHOW') " +
-            "    AND b.checkInDate < :checkOut " +
-            "    AND b.checkOutDate > :checkIn" +
+            "    AND " + com.hsf.hotel.booking.model.Occupancy.OVERLAP_JPQL +
             "))")
     List<Room> findAvailableRooms(
             @Param("checkIn") LocalDate checkIn,

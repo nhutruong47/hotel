@@ -6,6 +6,12 @@ import com.hsf.hotel.exception.ApiException;
 import com.hsf.hotel.exception.BusinessRuleException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.admin.dto.AdminResponseDtos;
+import com.hsf.hotel.booking.dto.BookingSummaryResponse;
+import com.hsf.hotel.common.tx.ReadOnlyTransactions;
+import com.hsf.hotel.contact.dto.ContactMessageResponse;
+import com.hsf.hotel.promotion.dto.PromotionResponse;
+import com.hsf.hotel.review.dto.AdminReviewResponse;
+import com.hsf.hotel.room.dto.MaintenanceResponse;
 import com.hsf.hotel.room.model.Amenity;
 import com.hsf.hotel.admin.model.AuditLog;
 import com.hsf.hotel.booking.model.Booking;
@@ -59,6 +65,7 @@ public class AdminApi {
     private final PromotionService promotionService;
     private final ContactService contactService;
     private final AuditLogService auditLogService;
+    private final ReadOnlyTransactions readOnly;
 
     public AdminApi(BookingService bookingService,
                     RoomService roomService,
@@ -70,7 +77,8 @@ public class AdminApi {
                     UserService userService,
                     PromotionService promotionService,
                     ContactService contactService,
-                    AuditLogService auditLogService) {
+                    AuditLogService auditLogService,
+                    ReadOnlyTransactions readOnly) {
         this.bookingService = bookingService;
         this.roomService = roomService;
         this.roomTypeRepository = roomTypeRepository;
@@ -82,6 +90,18 @@ public class AdminApi {
         this.promotionService = promotionService;
         this.contactService = contactService;
         this.auditLogService = auditLogService;
+        this.readOnly = readOnly;
+    }
+
+    /** Reload a booking in a read-only transaction and map it (no entity / lazy proxy leaves the API). */
+    private BookingSummaryResponse bookingView(Integer id) {
+        return readOnly.run(() -> bookingService.getBookingById(id)
+                .map(BookingSummaryResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking", id)));
+    }
+
+    private List<BookingSummaryResponse> bookingViews(java.util.function.Supplier<List<Booking>> loader) {
+        return readOnly.run(() -> loader.get().stream().map(BookingSummaryResponse::from).toList());
     }
 
     private User requireAdmin(HttpSession session) {
@@ -134,7 +154,7 @@ public class AdminApi {
         data.put("pendingBookings", bookingService.countByStatus(BookingStatus.PENDING_PAYMENT));
         data.put("totalUsers", totalUsers);
         data.put("totalReviews", reviewService.countAll());
-        data.put("recentBookings", bookingService.getRecentBookings(5));
+        data.put("recentBookings", bookingViews(() -> bookingService.getRecentBookings(5)));
         data.put("mostBookedRooms", bookingService.getMostBookedRooms());
         data.put("mostRatingRooms", bookingService.getMostRatingRooms());
         return ResponseEntity.ok(ApiResponse.ok(data));
@@ -147,11 +167,11 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> bookings(@RequestParam(required = false) String status,
                                                HttpSession session) {
         requireStaffOrAdmin(session);
-        List<Booking> bookings;
+        List<BookingSummaryResponse> bookings;
         try {
             bookings = (status != null && !status.isBlank())
-                    ? bookingService.getRecentBookingsByStatus(BookingStatus.valueOf(status), 200)
-                    : bookingService.getRecentBookings(200);
+                    ? bookingViews(() -> bookingService.getRecentBookingsByStatus(BookingStatus.valueOf(status), 200))
+                    : bookingViews(() -> bookingService.getRecentBookings(200));
         } catch (IllegalArgumentException ex) {
             throw new ApiException(HttpStatus.BAD_REQUEST, ErrorCodes.BAD_REQUEST,
                     "Trạng thái không hợp lệ: " + status);
@@ -167,10 +187,10 @@ public class AdminApi {
     @PostMapping("/bookings/{id}/complete")
     public ResponseEntity<ApiResponse<?>> complete(@PathVariable Integer id, HttpSession session) {
         User admin = requireStaffOrAdmin(session);
-        Booking booking = bookingService.markAsCompleted(id, admin);
+        bookingService.markAsCompleted(id, admin);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã đánh dấu hoàn thành đơn #" + id,
-                "booking", booking
+                "booking", bookingView(id)
         )));
     }
 
@@ -180,7 +200,7 @@ public class AdminApi {
         Booking booking = bookingService.cancelBooking(id, admin);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã hủy đặt phòng #" + id,
-                "booking", booking,
+                "booking", bookingView(id),
                 "refundAmount", booking.getRefundAmount(),
                 "refundPercentage", booking.getRefundPercentage()
         )));
@@ -481,7 +501,7 @@ public class AdminApi {
         auditLogService.log(admin, AuditActions.BOOKING_CHECKIN, "Booking", id, "Admin checked in guest", request);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã nhận phòng cho đơn #" + id,
-                "booking", booking
+                "booking", bookingView(id)
         )));
     }
 
@@ -494,7 +514,7 @@ public class AdminApi {
         auditLogService.log(admin, AuditActions.BOOKING_CHECKOUT, "Booking", id, "Admin checked out guest", request);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã trả phòng cho đơn #" + id,
-                "booking", booking
+                "booking", bookingView(id)
         )));
     }
 
@@ -508,7 +528,7 @@ public class AdminApi {
                 "Guest marked as no-show", request);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã đánh dấu khách không đến cho đơn #" + id,
-                "booking", booking
+                "booking", bookingView(id)
         )));
     }
 
@@ -518,7 +538,7 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> todayCheckIns(HttpSession session) {
         requireStaffOrAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "bookings", bookingService.getTodayCheckIns()
+                "bookings", bookingViews(bookingService::getTodayCheckIns)
         )));
     }
 
@@ -526,7 +546,7 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> todayCheckOuts(HttpSession session) {
         requireStaffOrAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "bookings", bookingService.getTodayCheckOuts()
+                "bookings", bookingViews(bookingService::getTodayCheckOuts)
         )));
     }
 
@@ -536,7 +556,7 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> listPromotions(HttpSession session) {
         requireManagerOrAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "promotions", promotionService.getAllPromotions()
+                "promotions", readOnly.run(() -> promotionService.getAllPromotions().stream().map(PromotionResponse::from).toList())
         )));
     }
 
@@ -552,8 +572,11 @@ public class AdminApi {
             saved = promotionService.createPromotion(promo);
         }
         auditLogService.log(admin, AuditActions.ADMIN_PROMOTION_CHANGE, "Promotion", saved.getId(), saved.getTitle(), request);
+        final Integer savedId = saved.getId();
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "promotion", saved,
+                "promotion", readOnly.run(() -> promotionService.getPromotionById(savedId)
+                        .map(PromotionResponse::from)
+                        .orElseThrow(() -> new ResourceNotFoundException("Promotion", savedId))),
                 "message", promo.getId() != null ? "Cập nhật khuyến mãi thành công" : "Tạo khuyến mãi thành công"
         )));
     }
@@ -572,7 +595,7 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> listReviews(HttpSession session) {
         requireManagerOrAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "reviews", reviewService.getAllReviews()
+                "reviews", readOnly.run(() -> reviewService.getAllReviews().stream().map(AdminReviewResponse::from).toList())
         )));
     }
 
@@ -613,7 +636,7 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> listContacts(HttpSession session) {
         requireStaffOrAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "contacts", contactService.getAllContacts()
+                "contacts", readOnly.run(() -> contactService.getAllContacts().stream().map(ContactMessageResponse::from).toList())
         )));
     }
 
@@ -722,7 +745,7 @@ public class AdminApi {
     public ResponseEntity<ApiResponse<?>> listRefunds(HttpSession session) {
         requireAdmin(session);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "bookings", bookingService.getRefundedBookings()
+                "bookings", bookingViews(bookingService::getRefundedBookings)
         )));
     }
 
@@ -746,9 +769,10 @@ public class AdminApi {
         if (villaMaintenanceService == null) {
             return ResponseEntity.ok(ApiResponse.ok(List.of()));
         }
-        var list = roomId != null
+        var list = readOnly.run(() -> (roomId != null
                 ? villaMaintenanceService.getMaintenancesForRoom(roomId)
-                : villaMaintenanceService.getAllMaintenances();
+                : villaMaintenanceService.getAllMaintenances())
+                .stream().map(MaintenanceResponse::from).toList());
         return ResponseEntity.ok(ApiResponse.ok(list));
     }
 
@@ -764,7 +788,7 @@ public class AdminApi {
                 req.roomId, req.startDate, req.endDate, req.reason, admin);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã lên lịch bảo trì biệt thự thành công",
-                "maintenance", maint
+                "maintenance", readOnly.run(() -> MaintenanceResponse.from(maint))
         )));
     }
 

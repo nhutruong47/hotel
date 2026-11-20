@@ -71,7 +71,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         // CHECKED_IN, CHECKED_OUT, COMPLETED, and PENDING_PAYMENT (active holds).
         @Query("SELECT b FROM Booking b WHERE b.room = :room " +
                         "AND b.status NOT IN ('CANCELLED', 'EXPIRED', 'NO_SHOW') " +
-                        "AND (b.checkInDate < :checkOut AND b.checkOutDate > :checkIn)")
+                        "AND " + com.hsf.hotel.booking.model.Occupancy.OVERLAP_JPQL)
         List<Booking> findConflictingBookings(
                         @Param("room") Room room,
                         @Param("checkIn") LocalDate checkIn,
@@ -80,7 +80,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         @Lock(LockModeType.PESSIMISTIC_WRITE)
         @Query("SELECT b FROM Booking b WHERE b.room = :room " +
                         "AND b.status NOT IN ('CANCELLED', 'EXPIRED', 'NO_SHOW') " +
-                        "AND (b.checkInDate < :checkOut AND b.checkOutDate > :checkIn)")
+                        "AND " + com.hsf.hotel.booking.model.Occupancy.OVERLAP_JPQL)
         List<Booking> findConflictingBookingsForUpdate(
                         @Param("room") Room room,
                         @Param("checkIn") LocalDate checkIn,
@@ -95,7 +95,7 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
         @Query("SELECT b FROM Booking b WHERE b.room = :room " +
                         "AND b.id <> :excludeBookingId " +
                         "AND b.status NOT IN ('CANCELLED', 'EXPIRED', 'NO_SHOW') " +
-                        "AND (b.checkInDate < :checkOut AND b.checkOutDate > :checkIn)")
+                        "AND " + com.hsf.hotel.booking.model.Occupancy.OVERLAP_JPQL)
         List<Booking> findConflictingBookingsForUpdateExcluding(
                         @Param("room") Room room,
                         @Param("excludeBookingId") Integer excludeBookingId,

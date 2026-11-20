@@ -518,6 +518,50 @@ class PaymentServiceTest {
         }
 
         @Test
+        @DisplayName("P0-03: refund after policy cancellation must not double-count booking.refundAmount")
+        void refundAfterPolicyCancellationIsNotDoubleCounted() {
+            testPayment.setStatus(Payment.PaymentStatus.PAID);
+            testPayment.setAmount(BigDecimal.valueOf(1000));
+            testPayment.setRefundAmount(BigDecimal.ZERO);
+            // Cancellation already recorded the 100% policy entitlement on the booking.
+            testBooking.setStatus(BookingStatus.CANCELLED);
+            testBooking.setRefundAmount(BigDecimal.valueOf(1000));
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
+            when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+            when(paymentGateway.refund(any(), any(), eq("refund-p0-03"))).thenReturn(true);
+            when(bookingRepository.save(any())).thenReturn(testBooking);
+
+            paymentService.refund(1, BigDecimal.valueOf(1000), "Policy refund", testUser, "refund-p0-03");
+
+            assertEquals(0, BigDecimal.valueOf(1000).compareTo(testBooking.getRefundAmount()),
+                    "booking.refundAmount must equal the amount actually refunded, not entitlement + refund");
+        }
+
+        @Test
+        @DisplayName("P0-03: booking.refundAmount sums refunds across all payments of the booking")
+        void bookingRefundSumsAcrossPayments() {
+            testPayment.setStatus(Payment.PaymentStatus.PAID);
+            testPayment.setAmount(BigDecimal.valueOf(1000));
+            testPayment.setRefundAmount(BigDecimal.ZERO);
+            Payment duplicateLatePayment = new Payment();
+            duplicateLatePayment.setId(2);
+            duplicateLatePayment.setAmount(BigDecimal.valueOf(1000));
+            duplicateLatePayment.setRefundAmount(BigDecimal.valueOf(1000));
+            when(paymentRepository.findByIdForUpdate(1)).thenReturn(Optional.of(testPayment));
+            when(bookingRepository.findByIdForUpdate(100)).thenReturn(Optional.of(testBooking));
+            when(paymentRepository.save(any(Payment.class))).thenReturn(testPayment);
+            when(paymentRepository.findByBookingIdOrderByCreatedAtDesc(100))
+                    .thenReturn(List.of(duplicateLatePayment, testPayment));
+            when(paymentGateway.refund(any(), any(), eq("refund-p0-03b"))).thenReturn(true);
+            when(bookingRepository.save(any())).thenReturn(testBooking);
+
+            paymentService.refund(1, BigDecimal.valueOf(400), "Partial", testUser, "refund-p0-03b");
+
+            assertEquals(0, BigDecimal.valueOf(1400).compareTo(testBooking.getRefundAmount()));
+        }
+
+        @Test
         @DisplayName("Should throw exception for negative refund amount")
         void testRefundNegativeAmount() {
             testPayment.setStatus(Payment.PaymentStatus.PAID);

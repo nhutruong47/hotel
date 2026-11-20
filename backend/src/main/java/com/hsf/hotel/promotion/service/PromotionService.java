@@ -51,6 +51,11 @@ public class PromotionService {
     }
 
     @Transactional(readOnly = true)
+    public java.util.Optional<Promotion> getPromotionById(Integer id) {
+        return id == null ? java.util.Optional.empty() : promotionRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
     public List<Promotion> getAllPromotions() {
         return promotionRepository.findByIsActiveTrueOrderByDisplayOrderAsc();
     }

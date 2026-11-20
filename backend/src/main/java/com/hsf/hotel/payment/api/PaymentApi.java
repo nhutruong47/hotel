@@ -8,6 +8,8 @@ import com.hsf.hotel.exception.BusinessRuleException;
 import com.hsf.hotel.exception.ResourceNotFoundException;
 import com.hsf.hotel.booking.model.Booking;
 import com.hsf.hotel.payment.model.Payment;
+import com.hsf.hotel.payment.dto.PaymentResponse;
+import com.hsf.hotel.common.tx.ReadOnlyTransactions;
 import com.hsf.hotel.user.model.User;
 import com.hsf.hotel.booking.repository.BookingRepository;
 import com.hsf.hotel.payment.service.PaymentService;
@@ -57,18 +59,32 @@ public class PaymentApi {
     private final BookingRepository bookingRepository;
     private final StripePaymentAdapter stripeAdapter;
     private final String baseUrl;
+    private final ReadOnlyTransactions readOnly;
 
     public PaymentApi(
             PaymentService paymentService,
             AuditLogService auditLogService,
             BookingRepository bookingRepository,
             StripePaymentAdapter stripeAdapter,
-            @Value("${app.base-url:http://localhost:5173}") String baseUrl) {
+            @Value("${app.base-url:http://localhost:5173}") String baseUrl,
+            ReadOnlyTransactions readOnly) {
         this.paymentService = paymentService;
         this.auditLogService = auditLogService;
         this.bookingRepository = bookingRepository;
         this.stripeAdapter = stripeAdapter;
         this.baseUrl = baseUrl;
+        this.readOnly = readOnly;
+    }
+
+    /** Reload a payment in a read-only transaction and map it (P0-04: never serialize the entity). */
+    private PaymentResponse paymentView(Integer id) {
+        return readOnly.run(() -> paymentService.getPaymentById(id)
+                .map(PaymentResponse::from)
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", id)));
+    }
+
+    private List<PaymentResponse> paymentViews(java.util.function.Supplier<List<Payment>> loader) {
+        return readOnly.run(() -> loader.get().stream().map(PaymentResponse::from).toList());
     }
 
     // ============== Request DTOs ==============
@@ -157,7 +173,7 @@ public class PaymentApi {
                         + " method=" + payment.getMethod(), request);
 
         Map<String, Object> data = new HashMap<>();
-        data.put("payment", payment);
+        data.put("payment", paymentView(payment.getId()));
         data.put("message", "Đã ghi nhận thanh toán. Vui lòng chờ admin xác nhận.");
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
@@ -261,7 +277,9 @@ public class PaymentApi {
             HttpSession session) {
         User user = requireUser(session);
         Payment localPayment = paymentService.getPaymentByTransactionRef(sessionId);
-        checkBookingAccess(user, localPayment.getBooking());
+        // payment.booking is a lazy proxy: only its id is safe outside a transaction,
+        // so reload the booking before reading booking.user for the ownership check.
+        checkBookingAccess(user, getBookingOrThrow(localPayment.getBooking().getId()));
 
         if (!stripeAdapter.isRealStripeEnabled()) {
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
@@ -407,7 +425,7 @@ public class PaymentApi {
                 "booking=" + payment.getBooking().getId() + " amount=" + payment.getAmount(), request);
         
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "payment", payment,
+                "payment", paymentView(id),
                 "message", "Đã xác nhận thanh toán thành công"
         )));
     }
@@ -430,7 +448,7 @@ public class PaymentApi {
                 "reason=" + reason, request);
         
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "payment", payment,
+                "payment", paymentView(id),
                 "message", "Đã đánh dấu thanh toán thất bại"
         )));
     }
@@ -453,7 +471,7 @@ public class PaymentApi {
             auditLogService.log(user, AuditActions.PAYMENT_REFUND, "Payment", id,
                     "amount=" + req.amount + " reason=" + req.reason, request);
             return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                    "payment", payment,
+                    "payment", paymentView(id),
                     "message", "Đã hoàn tiền " + req.amount + " VNĐ"
             )));
         } catch (BusinessRuleException e) {
@@ -474,7 +492,7 @@ public class PaymentApi {
         Booking booking = getBookingOrThrow(bookingId);
         checkBookingAccess(user, booking);
         
-        List<Payment> payments = paymentService.getPaymentsByBooking(bookingId);
+        List<PaymentResponse> payments = paymentViews(() -> paymentService.getPaymentsByBooking(bookingId));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("payments", payments)));
     }
 
@@ -486,7 +504,7 @@ public class PaymentApi {
         User user = requireUser(session);
         requireAdmin(user);
         
-        List<Payment> payments = paymentService.getPaymentsByStatus(Payment.PaymentStatus.PAID);
+        List<PaymentResponse> payments = paymentViews(() -> paymentService.getPaymentsByStatus(Payment.PaymentStatus.PAID));
         return ResponseEntity.ok(ApiResponse.ok(Map.of("payments", payments)));
     }
 

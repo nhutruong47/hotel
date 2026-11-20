@@ -433,9 +433,11 @@ public class PaymentService {
         // Sync the booking side: record the refund so the booking summary
         // shows what was returned and persists an audit trail row.
         if (booking != null) {
-            BigDecimal bookingRefund = booking.getRefundAmount() != null
-                    ? booking.getRefundAmount() : BigDecimal.ZERO;
-            booking.setRefundAmount(bookingRefund.add(refundAmount));
+            // P0-03: booking.refundAmount already holds the policy entitlement set at
+            // cancellation (BookingService#calculateRefund). Adding the executed refund
+            // on top double-counted it. Once money has actually moved, the booking shows
+            // the total refunded across all of its payments (recomputed, so idempotent).
+            booking.setRefundAmount(totalRefundedForBooking(booking.getId(), saved));
 
             boolean isFullRefund = totalRefund.compareTo(payment.getAmount()) >= 0;
             BookingStatus currentBookingStatus = booking.getStatus();
@@ -461,6 +463,23 @@ public class PaymentService {
         log.info("Payment {} refunded amount={} by {}", paymentId, refundAmount,
                 processedBy != null ? processedBy.getUsername() : "system");
         return saved;
+    }
+
+    /** Sum of refunds executed on every payment of the booking, using the fresh value for {@code current}. */
+    private BigDecimal totalRefundedForBooking(Integer bookingId, Payment current) {
+        BigDecimal total = current.getRefundAmount() != null ? current.getRefundAmount() : BigDecimal.ZERO;
+        List<Payment> payments = paymentRepository.findByBookingIdOrderByCreatedAtDesc(bookingId);
+        if (payments != null) {
+            for (Payment other : payments) {
+                if (other.getId() != null && other.getId().equals(current.getId())) continue;
+                if (other.getRefundAmount() != null) total = total.add(other.getRefundAmount());
+            }
+        }
+        return total;
+    }
+
+    public java.util.Optional<Payment> getPaymentById(Integer id) {
+        return id == null ? java.util.Optional.empty() : paymentRepository.findById(id);
     }
 
     public List<Payment> getPaymentsByBooking(Integer bookingId) {

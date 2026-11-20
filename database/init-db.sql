@@ -6,6 +6,9 @@
 -- Create extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+-- Required by Flyway V13 (bookings_no_overlap exclusion constraint). Created here
+-- as superuser so the migration also works when the app role is not the DB owner.
+CREATE EXTENSION IF NOT EXISTS "btree_gist";
 
 -- Create application user (if not exists via POSTGRES_USER)
 DO $$

@@ -112,8 +112,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException e, HttpServletRequest req) {
         Throwable root = e.getMostSpecificCause();
         logWarn(req, "DataIntegrityViolationException", root != null ? root.getMessage() : e.getMessage());
+        if (isBookingOverlapViolation(e)) {
+            // Last line of defence (V13 exclusion constraint) — same contract as the
+            // service-level availability check so clients handle both identically.
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(ApiResponse.error(ErrorCodes.ROOM_UNAVAILABLE,
+                            "Phòng đã được đặt trong khoảng thời gian này"));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiResponse.error(ErrorCodes.CONFLICT, "Operation conflicts with current data"));
+    }
+
+    /** PostgreSQL exclusion_violation (SQLSTATE 23P01) raised by {@code bookings_no_overlap}. */
+    static boolean isBookingOverlapViolation(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t instanceof java.sql.SQLException sql && "23P01".equals(sql.getSQLState())) {
+                return true;
+            }
+            if (t.getMessage() != null && t.getMessage().contains("bookings_no_overlap")) {
+                return true;
+            }
+            if (t.getCause() == t) break;
+        }
+        return false;
     }
 
     @ExceptionHandler({OptimisticLockException.class, PessimisticLockException.class, org.springframework.orm.ObjectOptimisticLockingFailureException.class})

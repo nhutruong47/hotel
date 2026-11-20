@@ -91,9 +91,13 @@ public class CsrfCookieFilter extends OncePerRequestFilter {
         }
         String token = TokenHasher.generateToken(24);
         Cookie cookie = new Cookie(token);
+        // Deliberately NOT HttpOnly: the SPA must read this cookie and echo it in
+        // X-XSRF-TOKEN (double-submit pattern). Per RFC 6265 §5.2.6 the mere presence
+        // of an "HttpOnly" attribute (even "HttpOnly=false") makes the cookie HttpOnly,
+        // so the attribute must be omitted entirely.
         response.addHeader("Set-Cookie",
                 COOKIE_NAME + "=" + token
-                        + "; Path=/; HttpOnly=false; SameSite=Strict"
+                        + "; Path=/; SameSite=Strict"
                         + (secure ? "; Secure" : "")
                         + "; Max-Age=86400");
         return List.of(cookie);

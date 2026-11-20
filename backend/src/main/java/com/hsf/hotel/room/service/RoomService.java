@@ -115,7 +115,8 @@ public class RoomService {
         if (!Boolean.TRUE.equals(room.getIsAvailable())) {
             return false;
         }
-        return bookingRepository.findConflictingBookings(room, checkIn, checkOut).isEmpty();
+        return bookingRepository.findConflictingBookings(room, checkIn,
+                com.hsf.hotel.booking.model.Occupancy.exclusiveEnd(checkIn, checkOut)).isEmpty();
     }
 
     @CacheEvict(cacheNames = {"rooms", "roomViews"}, allEntries = true)

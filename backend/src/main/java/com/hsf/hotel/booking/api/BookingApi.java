@@ -13,6 +13,8 @@ import com.hsf.hotel.booking.service.BookingService;
 import com.hsf.hotel.room.service.RoomService;
 import com.hsf.hotel.booking.dto.BookingMapper;
 import com.hsf.hotel.booking.dto.BookingDTO;
+import com.hsf.hotel.booking.dto.BookingTransitionResponse;
+import com.hsf.hotel.common.tx.ReadOnlyTransactions;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -45,13 +47,15 @@ public class BookingApi {
     private final VoucherService voucherService;
     private final AuditLogService auditLogService;
     private final BookingMapper bookingMapper;
+    private final ReadOnlyTransactions readOnly;
 
     public BookingApi(BookingService bookingService, RoomService roomService,
                       com.hsf.hotel.common.service.InvoiceService invoiceService,
                       com.hsf.hotel.payment.repository.PaymentRepository paymentRepository,
                       VoucherService voucherService,
                       AuditLogService auditLogService,
-                      BookingMapper bookingMapper) {
+                      BookingMapper bookingMapper,
+                      ReadOnlyTransactions readOnly) {
         this.bookingService = bookingService;
         this.roomService = roomService;
         this.invoiceService = invoiceService;
@@ -59,6 +63,18 @@ public class BookingApi {
         this.voucherService = voucherService;
         this.auditLogService = auditLogService;
         this.bookingMapper = bookingMapper;
+        this.readOnly = readOnly;
+    }
+
+    /**
+     * Reload and map a booking inside a read-only transaction. With open-in-view=false
+     * (production) mapping a booking returned from a committed service transaction hits
+     * lazy proxies (room.roomType, ...) and fails with LazyInitializationException (P0-04).
+     */
+    private BookingDTO bookingDto(Integer id) {
+        return readOnly.run(() -> bookingService.getBookingById(id)
+                .map(bookingMapper::bookingToBookingDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking", id)));
     }
 
     public static class CreateBookingRequest {
@@ -101,8 +117,8 @@ public class BookingApi {
     @GetMapping
     public ResponseEntity<ApiResponse<?>> myBookings(HttpSession session) {
         User user = currentUser(session);
-        List<Booking> bookings = bookingService.getUserBookings(user);
-        List<BookingDTO> dtos = bookingMapper.bookingsToBookingDTOs(bookings);
+        List<BookingDTO> dtos = readOnly.run(() ->
+                bookingMapper.bookingsToBookingDTOs(bookingService.getUserBookings(user)));
         return ResponseEntity.ok(ApiResponse.ok(dtos));
     }
 
@@ -114,7 +130,7 @@ public class BookingApi {
         if (!b.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Không có quyền xem");
         }
-        return ResponseEntity.ok(ApiResponse.ok(bookingMapper.bookingToBookingDTO(b)));
+        return ResponseEntity.ok(ApiResponse.ok(bookingDto(b.getId())));
     }
 
 
@@ -137,7 +153,7 @@ public class BookingApi {
                 request);
 
         Map<String, Object> data = new HashMap<>();
-        data.put("booking", bookingMapper.bookingToBookingDTO(booking));
+        data.put("booking", bookingDto(booking.getId()));
         data.put("reference", "NV-" + booking.getId());
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
@@ -156,7 +172,7 @@ public class BookingApi {
         data.put("message", "Đã hủy đặt phòng thành công");
         data.put("refundPercentage", booking.getRefundPercentage());
         data.put("refundAmount", booking.getRefundAmount());
-        data.put("booking", bookingMapper.bookingToBookingDTO(booking));
+        data.put("booking", bookingDto(booking.getId()));
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 
@@ -181,7 +197,7 @@ public class BookingApi {
         Booking booking = bookingService.modifyBooking(id, user, req.checkIn, req.checkOut, req.guests);
         return ResponseEntity.ok(ApiResponse.ok(Map.of(
                 "message", "Đã cập nhật thông tin đặt phòng",
-                "booking", bookingMapper.bookingToBookingDTO(booking)
+                "booking", bookingDto(booking.getId())
         )));
     }
 
@@ -195,7 +211,8 @@ public class BookingApi {
         if (!b.getUser().getId().equals(user.getId()) && !"ADMIN".equals(user.getRole())) {
             throw new ApiException(HttpStatus.FORBIDDEN, ErrorCodes.FORBIDDEN, "Không có quyền xem");
         }
-        return ResponseEntity.ok(ApiResponse.ok(bookingService.getBookingTimeline(id)));
+        return ResponseEntity.ok(ApiResponse.ok(readOnly.run(() -> bookingService.getBookingTimeline(id)
+                .stream().map(BookingTransitionResponse::from).toList())));
     }
 
     /* ---------- invoice ---------- */
